@@ -1,9 +1,12 @@
 #include "sim.hpp"
 
+
 void uut_init(uut_t * uut){
 
     // Create module and testbench
-    uut->mod = new Vmtt_top();
+
+	uut->mod = new Vmpt_top();
+
     uut->trace = new VerilatedVcdC();
     uut->clkcnt = 0;
 
@@ -14,7 +17,7 @@ void uut_init(uut_t * uut){
 	uut->trace->open("waves/trace.vcd");
 
 	//TEST vmem
-	vmem_init(&uut->vRAM, 1000000, 1, 1);
+	vmem_init(&uut->vRAM, 512, 0, 1);
 }
 
 void uut_cycle(uut_t * uut){
@@ -28,14 +31,6 @@ void uut_cycle(uut_t * uut){
 		// Add fixed signals here (if any)
 		uut->mod->m_mem_gnt=1;
 		uut->mod->m_mem_be=0xFF;
-
-		//uut->mod->mmpt_reg_i = 0x1040000000000000; //MODE = 46, SDID = 1, PPN = 0
-								
-		// 0000 0000 00.00 0000 0000 0000 0000 001.0 0000 0001 1111 1111 1111 1111 
-		//		PN3				PN2					PN1		    PN0      OFFSET
-		//  0	 0	   0	0	 0	  0	   0    2     0    1     F	  F	  F	   F
-		uut->mod->spa_i=0x0000000201FFFF; //PN3 = 0, PN2 = 1,  PN1 = 1, PN0 = F
-
 	}
 }
 

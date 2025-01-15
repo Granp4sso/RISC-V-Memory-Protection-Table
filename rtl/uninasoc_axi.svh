@@ -18,8 +18,10 @@
 //////////////////////////////////////////////////////
 
 // AXI4 bus parameters
-localparam int unsigned AXI_DATA_WIDTH   = 64;
-localparam int unsigned AXI_ADDR_WIDTH   = 64;
+localparam int unsigned AXI_DATA_WIDTH   = `AXI_DATA_WIDTH;
+localparam int unsigned AXI_ADDR_WIDTH   = `AXI_ADDR_WIDTH;
+//localparam int unsigned AXI_DATA_WIDTH   = 64;
+//localparam int unsigned AXI_ADDR_WIDTH   = 64;
 localparam int unsigned AXI_STRB_WIDTH   = 4;
 localparam int unsigned AXI_ID_WIDTH     = 2;
 localparam int unsigned AXI_LEN_WIDTH    = 8;
