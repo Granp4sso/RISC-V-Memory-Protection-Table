@@ -12,6 +12,7 @@ int main(int argc, char **argv){
     for(int i = 0; i < SIM_CYCLES; i++){
         // Change your signals here
         uut_eval(&mtt);
+        //mmt.flush_i=1;
     }
 
 	// Stop Simulation
