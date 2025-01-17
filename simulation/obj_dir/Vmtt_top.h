@@ -26,16 +26,31 @@ VL_MODULE(Vmtt_top) {
     // propagate new values into/out from the Verilated model.
     VL_IN8(clk_i,0,0);
     VL_IN8(rst_ni,0,0);
-    VL_OUT8(toggle_o,0,0);
+    VL_IN8(flush_i,0,0);
+    VL_IN8(ptw_enable_i,0,0);
+    VL_IN8(addr_valid_i,0,0);
+    VL_OUT8(access_page_fault_o,0,0);
+    VL_OUT8(format_error_o,2,0);
+    VL_OUT8(ptw_busy_o,0,0);
+    VL_OUT8(ptw_valid_o,0,0);
+    VL_IN8(access_type_i,1,0);
+    VL_OUT8(allow_o,0,0);
+    VL_IN64(paddr_i,55,0);
+    VL_IN64(mmpt_reg_i,63,0);
+    VL_OUT64(tlb_entry_o,63,0);
     
     // LOCAL SIGNALS
     // Internals; generally not touched by application code
-    CData/*0:0*/ mtt_top__DOT__toggle;
+    CData/*2:0*/ mtt_top__DOT__curr_state;
+    CData/*2:0*/ mtt_top__DOT__next_state;
+    CData/*1:0*/ mtt_top__DOT__curr_lookup_state;
+    CData/*1:0*/ mtt_top__DOT__next_lookup_state;
+    QData/*55:0*/ mtt_top__DOT__paddr;
     
     // LOCAL VARIABLES
     // Internals; generally not touched by application code
     CData/*0:0*/ __Vclklast__TOP__clk_i;
-    CData/*0:0*/ __Vm_traceActivity[1];
+    CData/*0:0*/ __Vm_traceActivity[2];
     
     // INTERNAL VARIABLES
     // Internals; generally not touched by application code
@@ -73,6 +88,9 @@ VL_MODULE(Vmtt_top) {
   private:
     static QData _change_request(Vmtt_top__Syms* __restrict vlSymsp);
     static QData _change_request_1(Vmtt_top__Syms* __restrict vlSymsp);
+  public:
+    static void _combo__TOP__3(Vmtt_top__Syms* __restrict vlSymsp);
+  private:
     void _ctor_var_reset() VL_ATTR_COLD;
   public:
     static void _eval(Vmtt_top__Syms* __restrict vlSymsp);
@@ -83,8 +101,8 @@ VL_MODULE(Vmtt_top) {
   public:
     static void _eval_initial(Vmtt_top__Syms* __restrict vlSymsp) VL_ATTR_COLD;
     static void _eval_settle(Vmtt_top__Syms* __restrict vlSymsp) VL_ATTR_COLD;
-    static void _sequent__TOP__1(Vmtt_top__Syms* __restrict vlSymsp);
-    static void _settle__TOP__2(Vmtt_top__Syms* __restrict vlSymsp) VL_ATTR_COLD;
+    static void _sequent__TOP__2(Vmtt_top__Syms* __restrict vlSymsp);
+    static void _settle__TOP__1(Vmtt_top__Syms* __restrict vlSymsp) VL_ATTR_COLD;
   private:
     static void traceChgSub0(void* userp, VerilatedVcd* tracep);
     static void traceChgTop0(void* userp, VerilatedVcd* tracep);

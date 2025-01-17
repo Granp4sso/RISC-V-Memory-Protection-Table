@@ -11,6 +11,7 @@
 
 // INCLUDE MODULE CLASSES
 #include "Vmtt_top.h"
+#include "Vmtt_top___024unit.h"
 
 // SYMS CLASS
 class Vmtt_top__Syms : public VerilatedSyms {
