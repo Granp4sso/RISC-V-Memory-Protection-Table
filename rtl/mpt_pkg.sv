@@ -9,6 +9,7 @@ parameter int PLEN = (XLEN == 32) ? 34 : 56;
 // Define lengths for various fields based on XLEN
 localparam int MPTL2_INFO_LEN = (XLEN == 32) ? 22 : 44;
 localparam int MMPT_PPN_LEN = (XLEN == 32) ? 22: 44;
+localparam int MMPT_MODE_LEN = (XLEN == 32) ? 2: 4;
 localparam int WPRI_BITS_LEN = (XLEN == 32) ? 2 : 10;
 localparam int MPTL2_PPN_LEN = 44;                      // PPN_LEN used only in RV64 MPTL3_entry
 localparam SDID_LEN = 6;                                // Supervisor Domain ID length
