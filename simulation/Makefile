@@ -47,7 +47,7 @@ build: verilate
 
 # Build Verilator
 verilate:
-	$(VERILATOR) -Wall $(WARNINGSBYPASS) --top-module $(TOP_MODULE) --trace -cc $(RTL_DIR)/$(TOP_MODULE).sv $(VINCLUDE);
+	$(VERILATOR) -Wall $(WARNINGSBYPASS) --top-module $(TOP_MODULE) --trace -cc $(RTL_DIR)/mpt_pkg.sv $(RTL_DIR)/$(TOP_MODULE).sv $(VINCLUDE);
 	cd $(SIM_DIR)/obj_dir; make -f V$(TOP_MODULE).mk
 
 # Generate Waves
