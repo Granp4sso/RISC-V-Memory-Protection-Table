@@ -34,3 +34,9 @@
 
 # Verilator
 *.vcd
+
+# Build artifacts
+simulation/obj_dir/
+
+# VS Code settings
+.vscode/

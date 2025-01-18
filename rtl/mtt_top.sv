@@ -1,17 +1,28 @@
 // Author: Stefano Mercogliano <stefano.mercogliano@unina.it>
-// Description: TBD
+// Author: Valerio Di Domenico <valer.didomenico@studenti.unina.it>
+
+// Description:
+// This module implements the top-level logic for managing memory protection 
+// table lookups. It handles state transitions for the Page Table Walk 
+// (PTW) process, validates addresses, and manages TLB entries based on 
+// memory access type. The module communicates with control, memory and CSR 
+// ports, indicating if access is allowed and if any errors occur during address translation.
+
+
+/* verilator lint_off IMPORTSTAR */
 import mpt_pkg::*;
+/* verilator lint_on IMPORTSTAR */
+
 
 module mtt_top #(
-    parameter int unsigned ADDR_LEN = 56,
-    parameter int unsigned XLEN = 64
+    
 ) (
     // Control Port
     input logic  clk_i,
     input logic  rst_ni,
     input logic  flush_i,                       // Flush signal to reset internal state
     input logic  ptw_enable_i,                  // Page Table Walk enable signal
-    input logic  [ADDR_LEN-1:0] paddr_i,        // Physical address input
+    input logic  [PLEN-1:0] paddr_i,            // Physical address input
     input logic  addr_valid_i,                  // Address validity signal
 
     // CSR Port
@@ -23,7 +34,7 @@ module mtt_top #(
 
     // Memory Port (TODO: Integrate with uninasoc_mem.svh for memory interface)
     //output logic   mem_master_req, 
-    //output logic   [ADDR_LEN-1:0] mem_master_addr,
+    //output logic   [PLEN-1:0] mem_master_addr,
     //input  logic   mem_master_valid,
 
     // Status Port
@@ -33,7 +44,7 @@ module mtt_top #(
     input mpt_access_e access_type_i,           // Memory access type (read, write, execute)
 
     // Output Port
-    output logic [63:0] TLB_entry_o,            // Output TLB entry (contains SDID, physical address, and permissions)
+    output logic [TLB_ENTRY_LEN-1:0] tlb_entry_o,            // Output TLB entry (contains SDID, physical address, and permissions)
     output logic   allow_o                      // Access allowed output (indicates if access is allowed)
 );
 
@@ -42,7 +53,7 @@ module mtt_top #(
     mpt_lookup_state_e curr_lookup_state, next_lookup_state;
 
     // Register to store the physical address
-    logic [ADDR_LEN-1:0] paddr;
+    logic [PLEN-1:0] paddr;
 
     always_comb begin
         // Default values
@@ -53,12 +64,16 @@ module mtt_top #(
         ptw_busy_o = 0;
         ptw_valid_o = 0;
         allow_o = 0;
+        tlb_entry_o = 0;
 
         case (curr_state)
             IDLE: begin
                 if (ptw_enable_i && addr_valid_i) begin
                     next_state = VALIDATE_ADDRESS;
                 end
+            end
+            default: begin
+                next_state = IDLE;
             end
         endcase
     end
@@ -77,6 +92,9 @@ module mtt_top #(
                     if(addr_valid_i) begin
                         paddr<=paddr_i; // Save paddr_i in paddr register when in IDLE state and addr_valid_i = 1
                     end
+                end
+                default: begin
+                    curr_state <= IDLE;
                 end
             endcase
         end
