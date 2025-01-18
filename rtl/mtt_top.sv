@@ -68,10 +68,16 @@ module mtt_top #(
 
         case (curr_state)
             IDLE: begin
+                ptw_busy_o = 0;
                 if (ptw_enable_i && addr_valid_i) begin
                     next_state = VALIDATE_ADDRESS;
                 end
             end
+
+            VALIDATE_ADDRESS: begin
+                
+            end
+
             default: begin
                 next_state = IDLE;
             end
@@ -94,7 +100,7 @@ module mtt_top #(
                     end
                 end
                 default: begin
-                    curr_state <= IDLE;
+                    curr_state <= next_state;
                 end
             endcase
         end

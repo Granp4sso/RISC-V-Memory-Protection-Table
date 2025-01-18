@@ -13,9 +13,13 @@ int main(int argc, char **argv){
         // Change your signals here
         uut_eval(&mtt);
 
+		mtt.ptw_enable_i = 1;
+
 		if (i == 10){
 			mtt.flush_i=1;
+			mtt.addr_valid_i = 1;
 		}
+
     }
 
 	// Stop Simulation

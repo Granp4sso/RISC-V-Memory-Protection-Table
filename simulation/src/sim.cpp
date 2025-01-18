@@ -21,9 +21,12 @@ void uut_cycle(uut_t * uut){
     if(!uut->clkcnt) uut->mod->rst_ni = 0;
 	else{
 		uut->mod->rst_ni = 1;
-
+		
 		// Add fixed signals here (if any)
-
+		uut->mod->paddr_i=0xFFFFFFFFFFFFFFFF;
+		uut->mod->flush_i = uut->flush_i;
+		uut->mod->ptw_enable_i = uut->ptw_enable_i;
+		uut->mod->addr_valid_i = uut->addr_valid_i;
 	}
 }
 
