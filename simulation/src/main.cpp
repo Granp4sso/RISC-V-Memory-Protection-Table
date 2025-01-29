@@ -59,6 +59,7 @@ int main(int argc, char **argv){
 			mtt.mod->flush_i=1;
 		}
 		if (i==11) mtt.mod->flush_i=0;
+
     }
 
 	// Stop Simulation

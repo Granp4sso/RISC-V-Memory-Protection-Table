@@ -35,6 +35,7 @@ void uut_cycle(uut_t * uut){
 		//		PN3				PN2					PN1		    PN0      OFFSET
 		//  0	 0	   0	0	 0	  0	   0    2     0    1     F	  F	  F	   F
 		uut->mod->spa_i=0x0000000201FFFF; //PN3 = 0, PN2 = 1,  PN1 = 1, PN0 = F
+
 	}
 }
 

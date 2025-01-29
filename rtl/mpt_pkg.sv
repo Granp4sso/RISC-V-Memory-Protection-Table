@@ -5,6 +5,7 @@
 // This package defines structures, parameters, and state machines for managing 
 // Memory Protection Tables (MPT) in systems with 32-bit and 64-bit architectures. 
 // It includes types for MPT entries, access permissions, error handling, and PLB entries.
+
 // The package supports different memory protection modes and lookup levels, 
 // adapting to various system configurations based on the XLEN (architecture width).
 
@@ -36,6 +37,7 @@
         localparam logic [MMPT_MODE_LEN-1:0] SMMPT34_MODE = 4'b01;
         localparam logic [MMPT_MODE_LEN-1:0] SMMPT46_MODE = 4'b0001;
         localparam logic [MMPT_MODE_LEN-1:0] SMMPT56_MODE = 4'b0010;                                
+
 
         // State machine states for MPT operations
         typedef enum logic [2:0] {
@@ -76,6 +78,7 @@
         } page_format_fault_e;
 
         // PLB entry permissions
+
         typedef enum logic [1:0] {
                     DISALLOWED = 2'b00, // Access not allowed
                     ALLOW_RX   = 2'b01, // Read and execute (but no write) access allowed
@@ -131,6 +134,7 @@
                 typedef enum logic [1:0] {
                     MPT_BARE        = 2'b00, // No supervisor domain protection
                     MPT_34          = 2'b01 // Page-based supervisor domain protection up to 34-bit physical addresses
+
                 } mpt_mode_e;
 
                 // MMPT register structure for 32-bit systems
@@ -194,6 +198,7 @@
                     logic [SDID_LEN-1:0]      SDID;      // Supervisor domain identifier. Must be set to 0 if mode = BARE
                     logic [WPRI_BITS_LEN-1:0] WPRI_BITS; // Write-preserved, read-ignored bits
                     logic [MMPT_PPN_LEN-1:0]  PPN;       // Physical page number (PPN) of the root page of the memory protection tables. Must be set to 0 if mode = BARE
+
                 } mmpt_reg_t;
         `endif
     endpackage;

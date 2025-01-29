@@ -1,10 +1,12 @@
 // Author: Stefano Mercogliano <stefano.mercogliano@unina.it>
 // Author: Valerio Di Domenico <didomenico.valerio@virgilio.it>
 
+
 // Description:
 // This module implements the top-level logic for managing memory protection 
 // table lookups. It handles state transitions for the Page Table Walk 
 // (PTW) process, validates addresses, and manages PLB entries based on 
+
 // memory access type. The module communicates with control, memory and CSR 
 // ports, indicating if access is allowed and if any errors occur during address translation.
 
