@@ -4,7 +4,7 @@
 // Description:
 // This module implements the top-level logic for managing memory protection 
 // table lookups. It handles state transitions for the Page Table Walk 
-// (PTW) process, validates addresses, and manages TLB entries based on 
+// (PTW) process, validates addresses, and manages PLB entries based on 
 // memory access type. The module communicates with control, memory and CSR 
 // ports, indicating if access is allowed and if any errors occur during address translation.
 
@@ -44,7 +44,7 @@ module mtt_top #(
     input mpt_access_e access_type_i,          // Memory access type (read, write, execute)
 
     // Output Port
-    output tlb_entry_t tlb_entry_o,            // Output TLB entry (contains SDID, physical address, and permissions)
+    output plb_entry_t plb_entry_o,            // Output PLB entry (contains SDID, physical address, and permissions)
     output logic allow_o                       // Access allowed output (indicates if access is allowed)
 );  
     // Registers
@@ -54,7 +54,7 @@ module mtt_top #(
     mmpt_reg_t mmpt_q;
     mpt_access_e access_type_q;
     logic [XLEN-1:0] mptl_entry_q;
-    tlb_entry_t tlb_entry_d, tlb_entry_q;
+    plb_entry_t plb_entry_d, plb_entry_q;
     logic access_page_fault_d, access_page_fault_q;
     logic [2:0] format_error_cause_d, format_error_cause_q;
     
@@ -71,12 +71,14 @@ module mtt_top #(
    
     always_comb begin 
         // Default values
+        access_page_fault_d = 0;
         access_page_fault_o = 0;
+        format_error_cause_d = 0;
         format_error_o = 0;
         ptw_busy_o = 0;
         ptw_valid_o = 0;
         allow_o = 0;
-        tlb_entry_o = 0;
+        plb_entry_o = 0;
         m_mem_wdata = 0;
         m_mem_we = 0;
         m_mem_be = 0;
@@ -86,7 +88,8 @@ module mtt_top #(
             IDLE: begin
                 ptw_busy_o = 0;
                 allow_o = 0;
-                format_error_cause_d = 0;
+                //format_error_cause_d = 0;
+                //access_page_fault_d = 0;
                 if (ptw_enable_i && addr_valid_i) begin
                     next_state_d = VALIDATE_ADDRESS;
                 end
@@ -203,7 +206,7 @@ module mtt_top #(
                                         if (access_type_q inside {ACCESS_READ, ACCESS_EXEC}) begin
                                             next_state_d = COMMIT;
                                             permissions = ALLOW_RX;
-                                            tlb_entry_d = {mmpt_q.SDID, spa_q, permissions};
+                                            plb_entry_d = {mmpt_q.SDID, spa_q, permissions};
                                         end else begin
                                             next_state_d = ERROR;
                                         end
@@ -219,7 +222,7 @@ module mtt_top #(
                                         if (access_type_q inside {ACCESS_READ, ACCESS_WRITE}) begin
                                             next_state_d = COMMIT;
                                             permissions = ALLOW_RW;
-                                            tlb_entry_d = {mmpt_q.SDID, spa_q, permissions};
+                                            plb_entry_d = {mmpt_q.SDID, spa_q, permissions};
                                         end else begin
                                             next_state_d = ERROR;
                                             access_page_fault_d = 1;
@@ -236,7 +239,7 @@ module mtt_top #(
                                         if (access_type_q inside {ACCESS_READ,  ACCESS_WRITE,  ACCESS_EXEC}) begin
                                             next_state_d = COMMIT;
                                             permissions = ALLOW_RWX;
-                                            tlb_entry_d = {mmpt_q.SDID, spa_q, permissions};
+                                            plb_entry_d = {mmpt_q.SDID, spa_q, permissions};
                                         end else begin
                                             next_state_d = ERROR;
                                             access_page_fault_d = 1;
@@ -279,14 +282,14 @@ module mtt_top #(
                                         endcase
 
                                         // Verify if the requested access type is allowed by the MPT permissions.
-                                        // If permitted, proceed to COMMIT state and update the TLB entry.
+                                        // If permitted, proceed to COMMIT state and update the PLB entry.
                                         // Otherwise, transition to ERROR state and raise a page fault. 
                                         if ((access_type_q == ACCESS_READ  && (permissions inside {ALLOW_RX, ALLOW_RW, ALLOW_RWX})) ||
                                             (access_type_q == ACCESS_WRITE && (permissions inside {ALLOW_RW, ALLOW_RWX})) ||
                                             (access_type_q == ACCESS_EXEC  && (permissions inside {ALLOW_RX, ALLOW_RWX}))) 
                                         begin
                                             next_state_d = COMMIT;
-                                            tlb_entry_d = {mmpt_q.SDID, spa_q, permissions};
+                                            plb_entry_d = {mmpt_q.SDID, spa_q, permissions};
                                             
                                         end else begin
                                         // ACCESS_NONE: This case should never occur in normal operation.
@@ -312,36 +315,18 @@ module mtt_top #(
                             format_error_cause_d = RESERVED_BITS_USED;                              
                             next_state_d = ERROR;
                         end else begin
-                            // The entry is selected by page.pn[1], and the 2-bit field in the entry is selected using page.pn[0]
-                            case (spa_q.PN0) 
-                                4'b0000: permissions = mptl1_entry.PAGE_0_PERM;
-                                4'b0001: permissions = mptl1_entry.PAGE_1_PERM;
-                                4'b0010: permissions = mptl1_entry.PAGE_2_PERM;
-                                4'b0011: permissions = mptl1_entry.PAGE_3_PERM;
-                                4'b0100: permissions = mptl1_entry.PAGE_4_PERM;
-                                4'b0101: permissions = mptl1_entry.PAGE_5_PERM;
-                                4'b0110: permissions = mptl1_entry.PAGE_6_PERM;
-                                4'b0111: permissions = mptl1_entry.PAGE_7_PERM;
-                                4'b1000: permissions = mptl1_entry.PAGE_8_PERM;
-                                4'b1001: permissions = mptl1_entry.PAGE_9_PERM;
-                                4'b1010: permissions = mptl1_entry.PAGE_10_PERM;
-                                4'b1011: permissions = mptl1_entry.PAGE_11_PERM;
-                                4'b1100: permissions = mptl1_entry.PAGE_12_PERM;
-                                4'b1101: permissions = mptl1_entry.PAGE_13_PERM;
-                                4'b1110: permissions = mptl1_entry.PAGE_14_PERM;
-                                4'b1111: permissions = mptl1_entry.PAGE_15_PERM;
-                            endcase
+                            // Directly index into the PAGE_PERM array using spa_q.PN0
+                            permissions = mptl1_entry.PAGE_PERM[spa_q.PN0];
 
                             // Verify if the requested access type is allowed by the MPT permissions.
-                            // If permitted, proceed to COMMIT state and update the TLB entry.
+                            // If permitted, proceed to COMMIT state and update the PLB entry.
                             // Otherwise, transition to ERROR state and raise a page fault. 
                             if ((access_type_q == ACCESS_READ  && (permissions inside {ALLOW_RX, ALLOW_RW, ALLOW_RWX})) ||
                                 (access_type_q == ACCESS_WRITE && (permissions inside {ALLOW_RW, ALLOW_RWX})) ||
                                 (access_type_q == ACCESS_EXEC  && (permissions inside {ALLOW_RX, ALLOW_RWX}))) 
                             begin
                                 next_state_d = COMMIT;
-                                tlb_entry_d = {mmpt_q.SDID, spa_q, permissions};
-                                
+                                plb_entry_d = {mmpt_q.SDID, spa_q, permissions};
                             end else begin
                                 // ACCESS_NONE: This case should never occur in normal operation.
                                 // If it does, a page fault is raised
@@ -376,9 +361,9 @@ module mtt_top #(
                 next_state_d = IDLE;
             end
 
-            // Access allowed and TLB entry ready
+            // Access allowed and PLB entry ready
             COMMIT: begin
-                tlb_entry_o = tlb_entry_q; 
+                plb_entry_o = plb_entry_q; 
                 ptw_busy_o = 1;
                 ptw_valid_o = 1;
                 allow_o = 1;
@@ -414,18 +399,19 @@ module mtt_top #(
             mptl_entry_q <= 0;
             format_error_cause_q <= 0;
             access_type_q <= 0;
-            tlb_entry_q <= 0;
+            plb_entry_q <= 0;
             access_page_fault_q <= 0;
         end else begin
             curr_state_q <= next_state_d;
             curr_lookup_state_q <= next_lookup_state_d;
             format_error_cause_q <= format_error_cause_d;
+            access_page_fault_q <= 0;
             case (curr_state_q) 
                 IDLE: begin
                     if(addr_valid_i) begin
-                        spa_q <= spa_i;                 // Save current spa_i
-                        mmpt_q <= mmpt_reg_i;           // Save current MMTP register
-                        access_type_q <= access_type_i; // Save access type
+                        spa_q <= spa_i;                 
+                        mmpt_q <= mmpt_reg_i;           
+                        access_type_q <= access_type_i; 
                     end
                 end
                 WAIT_FOR_RVALID: begin
@@ -435,7 +421,7 @@ module mtt_top #(
                 end
                 
                 MPT_LOOKUP: begin
-                    tlb_entry_q <= tlb_entry_d;
+                    plb_entry_q <= plb_entry_d;
                     access_page_fault_q <= access_page_fault_d;
                 end
                 

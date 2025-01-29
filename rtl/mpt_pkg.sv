@@ -4,7 +4,7 @@
 // Description: 
 // This package defines structures, parameters, and state machines for managing 
 // Memory Protection Tables (MPT) in systems with 32-bit and 64-bit architectures. 
-// It includes types for MPT entries, access permissions, error handling, and TLB entries.
+// It includes types for MPT entries, access permissions, error handling, and PLB entries.
 // The package supports different memory protection modes and lookup levels, 
 // adapting to various system configurations based on the XLEN (architecture width).
 
@@ -28,7 +28,7 @@
         localparam int MMPT_PPN_LEN   = (XLEN == 32) ? 22 : 44;
         localparam int MMPT_MODE_LEN  = (XLEN == 32) ? 2 : 4;
         localparam int WPRI_BITS_LEN  = (XLEN == 32) ? 2 : 10;
-        localparam int TLB_ENTRY_LEN  = (XLEN == 32) ? 42 : 64;
+        localparam int PLB_ENTRY_LEN  = (XLEN == 32) ? 42 : 64;
         localparam int MPTL2_PPN_LEN  = 44;
         localparam int SDID_LEN = 6; 
 
@@ -75,7 +75,7 @@
             UNDEFINED_MPT_LOOKUP_STATE = 3'b110  // Undefined mpt lookup state
         } page_format_fault_e;
 
-        // TLB entry permissions
+        // PLB entry permissions
         typedef enum logic [1:0] {
                     DISALLOWED = 2'b00, // Access not allowed
                     ALLOW_RX   = 2'b01, // Read and execute (but no write) access allowed
@@ -83,12 +83,12 @@
                     ALLOW_RWX  = 2'b11  // Read, write and execute access is allowed
         } mpt_permissions_e;
 
-        // TLB entry structure
+        // PLB entry structure
         typedef struct packed {
                     logic [SDID_LEN-1:0]  SDID;        // Supervisor domain identifier
                     logic [PLEN-1:0]      SPA;         // Supervisor physical address 
                     mpt_permissions_e     PERMISSIONS; // Permissions associated with SPA
-        } tlb_entry_t;
+        } plb_entry_t;
 
             `ifdef XLEN_32
 
@@ -124,15 +124,7 @@
                 // access permissions is selected using page.pn[0].
                 typedef struct packed {
                     logic [15:0] RESERVED;
-                    logic [1:0]  PAGE_7_PERM;
-                    logic [1:0]  PAGE_6_PERM;
-                    logic [1:0]  PAGE_5_PERM;
-                    logic [1:0]  PAGE_4_PERM;
-                    logic [1:0]  PAGE_3_PERM;
-                    logic [1:0]  PAGE_2_PERM;
-                    logic [1:0]  PAGE_1_PERM;
-                    logic [1:0]  PAGE_0_PERM;
-                    
+                    mpt_permissions_e [7:0] PAGE_PERM;                    
                 } mptl1_entry_t;
 
                 // MPT operational modes for 32-bit systems
@@ -188,22 +180,7 @@
                 // access permissions is selected using page.pn[0].
                 typedef struct packed {
                     logic [31:0] RESERVED;
-                    logic [1:0]  PAGE_15_PERM;
-                    logic [1:0]  PAGE_14_PERM;
-                    logic [1:0]  PAGE_13_PERM;
-                    logic [1:0]  PAGE_12_PERM;
-                    logic [1:0]  PAGE_11_PERM;
-                    logic [1:0]  PAGE_10_PERM;
-                    logic [1:0]  PAGE_9_PERM;
-                    logic [1:0]  PAGE_8_PERM;
-                    logic [1:0]  PAGE_7_PERM;
-                    logic [1:0]  PAGE_6_PERM;
-                    logic [1:0]  PAGE_5_PERM;
-                    logic [1:0]  PAGE_4_PERM;
-                    logic [1:0]  PAGE_3_PERM;
-                    logic [1:0]  PAGE_2_PERM;
-                    logic [1:0]  PAGE_1_PERM;
-                    logic [1:0]  PAGE_0_PERM;
+                    mpt_permissions_e [15:0] PAGE_PERM;
                 } mptl1_entry_t;
 
                 typedef enum logic [3:0] {

@@ -1,33 +1,35 @@
 [*]
 [*] GTKWave Analyzer v3.3.104 (w)1999-2020 BSI
-[*] Tue Jan 28 15:58:50 2025
+[*] Wed Jan 29 16:43:14 2025
 [*]
 [dumpfile] "/home/valerio/Desktop/RISC-V-Memory-Protection-Table/simulation/waves/trace.vcd"
-[dumpfile_mtime] "Tue Jan 28 15:57:38 2025"
-[dumpfile_size] 13459
+[dumpfile_mtime] "Wed Jan 29 16:41:33 2025"
+[dumpfile_size] 16792
 [savefile] "/home/valerio/Desktop/RISC-V-Memory-Protection-Table/simulation/waves/conf.gtkw"
-[timestart] 174
+[timestart] 9
 [size] 1850 1016
 [pos] 1849 0
-*-5.000000 249 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+*-7.000000 470 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
 [treeopen] TOP.
 [sst_width] 233
 [signals_width] 400
 [sst_expanded] 1
-[sst_vpaned_height] 328
+[sst_vpaned_height] 339
 @28
 mtt_top.clk_i
 mtt_top.ptw_enable_i
 mtt_top.addr_valid_i
 mtt_top.flush_i
 @22
+mtt_top.mmpt_reg_i[63:0]
+mtt_top.mmpt_q[63:0]
 mtt_top.spa_i[55:0]
 mtt_top.spa_q[55:0]
 @28
 mtt_top.access_type_i[1:0]
 mtt_top.access_type_q[1:0]
-mtt_top.next_state_d[2:0]
 mtt_top.curr_state_q[2:0]
+mtt_top.next_state_d[2:0]
 mtt_top.curr_lookup_state_q[1:0]
 @22
 mtt_top.next_look_up_addr[43:0]
@@ -118,21 +120,19 @@ mtt_top.m_mem_be[7:0]
 mtt_top.mptl3_entry[63:0]
 mtt_top.mptl2_entry[63:0]
 mtt_top.mptl1_entry[63:0]
-mtt_top.tlb_entry_o[63:0]
 @28
 mtt_top.permissions[1:0]
 mtt_top.ptw_busy_o
 mtt_top.access_page_fault_o
 mtt_top.ptw_valid_o
 mtt_top.format_error_cause_d[2:0]
-@29
 mtt_top.format_error_cause_q[2:0]
-@28
 mtt_top.format_error_o[2:0]
 @22
-mtt_top.tlb_entry_d[63:0]
-mtt_top.tlb_entry_q[63:0]
-mtt_top.tlb_entry_o[63:0]
+mtt_top.plb_entry_d[63:0]
+mtt_top.plb_entry_q[63:0]
+@23
+mtt_top.plb_entry_o[63:0]
 @28
 mtt_top.access_page_fault_d
 mtt_top.access_page_fault_q

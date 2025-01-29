@@ -9,7 +9,7 @@ TOP_MODULE = mtt_top
 TESTBENCH = tb_verilator/$(TOP_MODULE)_tb
 OLDTESTBENCH = tb_verilator/$(OLDTOP_MODULE)_tb
 
-SIM_SRC = 	$(SIM_SRC_DIR)/logger.cpp $(SIM_SRC_DIR)/vmem.cpp $(SIM_SRC_DIR)/sim.cpp $(SIM_SRC_DIR)/main.cpp 
+SIM_SRC = $(wildcard $(SIM_SRC_DIR)/*.cpp)
 
 TRACE_DIR = waves
 
