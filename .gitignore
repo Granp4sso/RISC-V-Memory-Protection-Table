@@ -37,6 +37,8 @@
 
 # Build artifacts
 simulation/obj_dir/
+simulation/waves/*
+simulation/logfile
 
 # VS Code settings
 .vscode/

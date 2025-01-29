@@ -9,12 +9,12 @@ TOP_MODULE = mtt_top
 TESTBENCH = tb_verilator/$(TOP_MODULE)_tb
 OLDTESTBENCH = tb_verilator/$(OLDTOP_MODULE)_tb
 
-SIM_SRC = 	$(SIM_SRC_DIR)/main.cpp $(SIM_SRC_DIR)/sim.cpp 
+SIM_SRC = $(wildcard $(SIM_SRC_DIR)/*.cpp)
 
 TRACE_DIR = waves
 
 # Use this envvar to include sv headers (if any)
-VINCLUDE =
+VINCLUDE = -I$(RTL_DIR)
 # Filename for the top module
 TOP_MODULE = mtt_top
 

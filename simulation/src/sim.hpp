@@ -1,10 +1,15 @@
 #ifndef SIM
 #define SIM
 
+//TEST vmem
+#include "vmem.h"
+#include "logger.h"
+
 // Dependencies from Verilator
 #include "Vmtt_top.h"
 #include "verilated.h"
 #include "verilated_vcd_c.h"
+
 
 
 #define CLK_HALF_PERIOD 10
@@ -15,10 +20,7 @@ struct uut_t {
     Vmtt_top *     mod;
 	VerilatedVcdC * trace;
 	uint64_t		clkcnt;
-	uint64_t        flush_i;
-	uint64_t 		ptw_enable_i;
-	uint64_t 		addr_valid_i;
-	
+	vmem_t       vRAM;
 };
 
 void uut_init(uut_t * uut);
