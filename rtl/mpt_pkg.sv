@@ -25,6 +25,7 @@
 
         // Define lengths for various fields based on XLEN
         localparam int MPTL2_INFO_LEN = (XLEN == 32) ? 22 : 44;
+
         localparam int MMPT_PPN_LEN   = (XLEN == 32) ? 22 : 44;
         localparam int MMPT_MODE_LEN  = (XLEN == 32) ? 2 : 4;
         localparam int WPRI_BITS_LEN  = (XLEN == 32) ? 2 : 10;
@@ -54,6 +55,7 @@
             MPTL3_LOOKUP = 2'b00, // Used only in RV64 when physical address width is >= 46 bits
             MPTL2_LOOKUP = 2'b01, // Used in RV32, or in RV64 when physical address width is <= 46 bits
             MPTL1_LOOKUP = 2'b10  // Used to fetch permissions from MPTL1
+
         } mpt_lookup_state_e;
 
         // MPT access types

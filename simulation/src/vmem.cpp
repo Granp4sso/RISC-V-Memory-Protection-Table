@@ -44,13 +44,13 @@ void vmem_init(vmem_t * Memory, uint32_t size, uint32_t data_baddr, uint8_t log)
 */	
 
 	// MPTL2_entry.TYPE_MPT_L1_DIR with INFO = 0x8
-
+/*
 	Memory->mem[0].cell = 0x08;
     Memory->mem[1].cell = 0x00;
     Memory->mem[2].cell = 0x00;
     Memory->mem[3].cell = 0x00;
     Memory->mem[4].cell = 0x00;
-	Memory->mem[5].cell = 0x40;
+	Memory->mem[5].cell = 0x10;
     Memory->mem[6].cell = 0x00;
     Memory->mem[7].cell = 0x00; 
 
@@ -58,12 +58,12 @@ void vmem_init(vmem_t * Memory, uint32_t size, uint32_t data_baddr, uint8_t log)
 	Memory->mem[8].cell = 0x00;
     Memory->mem[9].cell = 0x00;
     Memory->mem[10].cell = 0x00;
-    Memory->mem[11].cell = 0xFF;
+    Memory->mem[11].cell = 0x80; // RW permission
     Memory->mem[12].cell = 0x00;
-	Memory->mem[13].cell = 0x00;
+	Memory->mem[13].cell = 0x10;
     Memory->mem[14].cell = 0x00;
     Memory->mem[15].cell = 0x00; 
-
+*/
 
 	// Enable memory logging
 	if(log){

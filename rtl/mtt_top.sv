@@ -8,7 +8,6 @@
 // memory access type. The module communicates with control, memory and CSR 
 // ports, indicating if access is allowed and if any errors occur during address translation.
 
-
 /* verilator lint_off IMPORTSTAR */
 import mpt_pkg::*;
 /* verilator lint_on IMPORTSTAR */
@@ -83,6 +82,7 @@ module mtt_top #(
         m_mem_we = 0;
         m_mem_be = 0;
         m_mem_req = 0;
+        //next_look_up_addr = 0;
 
         case (curr_state_q)
             IDLE: begin
@@ -119,15 +119,10 @@ module mtt_top #(
                             
                             // Check if spa_q width is within the allowed range; if valid, compute next MPT pointer, else generate error
                             SMMPT56_MODE: begin
-                                if (spa_q >= 56'h10000000000000) begin
-                                    format_error_cause_d = NOT_VALID_ADDR;
-                                    next_state_d = ERROR;
-                                end else begin
                                     next_look_up_addr = mmpt_q.PPN + {34'b0, spa_q.PN3};
                                     next_state_d = WAIT_FOR_GRANT;
                                     next_lookup_state_d = MPTL3_LOOKUP;
                                 end
-                            end
 
                             // Generate error if reserved MODE bits are used 
                             default: begin
@@ -209,6 +204,7 @@ module mtt_top #(
                                             plb_entry_d = {mmpt_q.SDID, spa_q, permissions};
                                         end else begin
                                             next_state_d = ERROR;
+                                            access_page_fault_d = 1;
                                         end
                                     end
                                 end

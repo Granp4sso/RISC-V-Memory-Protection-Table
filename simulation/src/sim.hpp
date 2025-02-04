@@ -1,7 +1,6 @@
 #ifndef SIM
 #define SIM
 
-//TEST vmem
 #include "vmem.h"
 #include "logger.h"
 
@@ -14,7 +13,6 @@
 
 #define CLK_HALF_PERIOD 10
 #define SIM_CYCLES 300
-
 
 struct uut_t {
     Vmtt_top *     mod;
