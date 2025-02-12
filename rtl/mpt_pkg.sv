@@ -15,28 +15,7 @@
         
         `ifndef XLEN
             `define XLEN 64  
-        `endif
-        
-        // 64-bit or 32-bit architecture
-        parameter int XLEN = 64;
-        
-        // Physical address length (PLEN) based on XLEN
-        localparam int PLEN = (XLEN == 32) ? 34 : 56;
-
-        // Define lengths for various fields based on XLEN
-        localparam int MPTL2_INFO_LEN = (XLEN == 32) ? 22 : 44;
-
-        localparam int MMPT_PPN_LEN   = (XLEN == 32) ? 22 : 44;
-        localparam int MMPT_MODE_LEN  = (XLEN == 32) ? 2 : 4;
-        localparam int WPRI_BITS_LEN  = (XLEN == 32) ? 2 : 10;
-        localparam int PLB_ENTRY_LEN  = (XLEN == 32) ? 42 : 64;
-        localparam int MPTL2_PPN_LEN  = 44;
-        localparam int SDID_LEN = 6; 
-
-        localparam logic [MMPT_MODE_LEN-1:0] BARE_MODE    = 0; 
-        localparam logic [MMPT_MODE_LEN-1:0] SMMPT34_MODE = 4'b01;
-        localparam logic [MMPT_MODE_LEN-1:0] SMMPT46_MODE = 4'b0001;
-        localparam logic [MMPT_MODE_LEN-1:0] SMMPT56_MODE = 4'b0010;                                
+        `endif                           
 
         // State machine states for MPT operations
         typedef enum logic [2:0] {
@@ -85,14 +64,30 @@
                     ALLOW_RWX  = 2'b11  // Read, write and execute access is allowed
         } mpt_permissions_e;
 
-        // PLB entry structure
-        typedef struct packed {
-                    logic [SDID_LEN-1:0]  SDID;        // Supervisor domain identifier
-                    logic [PLEN-1:0]      SPA;         // Supervisor physical address 
-                    mpt_permissions_e     PERMISSIONS; // Permissions associated with SPA
-        } plb_entry_t;
+            `ifndef XLEN
+                // 32-bit architecture
+                parameter int XLEN = 32;
+                
+                // Physical address length (PLEN)
+                localparam int PLEN = 34;
 
-            `ifdef XLEN_32
+                // Define lengths for various fields
+                localparam int MPTL2_INFO_LEN = 22;
+                localparam int MMPT_PPN_LEN   = 22;
+                localparam int MMPT_MODE_LEN  = 2 ;
+                localparam int WPRI_BITS_LEN  = 2 ;
+                localparam int PLB_ENTRY_LEN  = 42;
+                localparam int SDID_LEN = 6; 
+
+                localparam logic [MMPT_MODE_LEN-1:0] BARE_MODE    = 0; 
+                localparam logic [MMPT_MODE_LEN-1:0] SMMPT34_MODE = 2'b01;
+
+                // PLB entry structure
+                typedef struct packed {
+                            logic [SDID_LEN-1:0]  SDID;        // Supervisor domain identifier
+                            logic [PLEN-1:0]      SPA;         // Supervisor physical address 
+                            mpt_permissions_e     PERMISSIONS; // Permissions associated with SPA
+                } plb_entry_t;
 
                 // Supervisor physical address for RV32
                 typedef struct packed {
@@ -109,7 +104,7 @@
                     TYPE_1G_ALLOW_RW  = 3'b010, // Read and write (but no execute) is allowed to this 1 GiB address range for the domain
                     TYPE_1G_ALLOW_RWX = 3'b011, // Read, write and execute is allowed to this 1 GiB address range for the domain
                     TYPE_MPT_L1_DIR   = 3'b100, // In this case the INFO field provides the PPN of the MPTL1 page.
-                    TYPE_4M_PAGES     = 3'b101, // The 32 MiB range of address space is partitioned into 8 4 MiB pages where each page has read/write/execute access specified via the INFO field
+                    TYPE_4M_PAGES     = 3'b101  // The 32 MiB range of address space is partitioned into 8 4 MiB pages where each page has read/write/execute access specified via the INFO field
                 } mptl2_type_e;
 
                 // MPTL2 entry structure for 32-bit systems
@@ -144,6 +139,32 @@
                 } mmpt_reg_t;
 
             `else  // XLEN assumed to be 64
+
+                // 64-bit or 32-bit architecture
+                parameter int XLEN = 64;
+                
+                // Physical address length (PLEN) based on XLEN
+                localparam int PLEN = 56;
+
+                // Define lengths for various fields based on XLEN
+                localparam int MPTL2_INFO_LEN = 44;
+                localparam int MMPT_PPN_LEN   = 44;
+                localparam int MMPT_MODE_LEN  = 4;
+                localparam int WPRI_BITS_LEN  = 10;
+                localparam int PLB_ENTRY_LEN  = 64;
+                localparam int MPTL2_PPN_LEN  = 44;
+                localparam int SDID_LEN = 6; 
+
+                localparam logic [MMPT_MODE_LEN-1:0] BARE_MODE    = 0; 
+                localparam logic [MMPT_MODE_LEN-1:0] SMMPT46_MODE = 4'b0001;
+                localparam logic [MMPT_MODE_LEN-1:0] SMMPT56_MODE = 4'b0010;   
+
+                // PLB entry structure
+                typedef struct packed {
+                            logic [SDID_LEN-1:0]  SDID;        // Supervisor domain identifier
+                            logic [PLEN-1:0]      SPA;         // Supervisor physical address 
+                            mpt_permissions_e     PERMISSIONS; // Permissions associated with SPA
+                } plb_entry_t;
 
                 // Supervisor physical address for RV64
                 typedef struct packed {
