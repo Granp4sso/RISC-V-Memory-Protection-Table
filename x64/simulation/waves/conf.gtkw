@@ -1,0 +1,37 @@
+[*]
+[*] GTKWave Analyzer v3.3.104 (w)1999-2020 BSI
+[*] Sat Feb 15 10:34:26 2025
+[*]
+[dumpfile] "/home/valerio/Desktop/RISC-V-Memory-Protection-Table/simulation/waves/trace.vcd"
+[dumpfile_mtime] "Sat Feb 15 10:32:34 2025"
+[dumpfile_size] 40929
+[savefile] "/home/valerio/Desktop/RISC-V-Memory-Protection-Table/simulation/waves/conf.gtkw"
+[timestart] 9
+[size] 1800 1043
+[pos] 1849 0
+*-7.000000 470 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[treeopen] mpt_top.
+[treeopen] mpt_top.inst_mpt64.
+[treeopen] TOP.
+[sst_width] 233
+[signals_width] 400
+[sst_expanded] 1
+[sst_vpaned_height] 350
+@28
+mpt_top.clk_i
+mpt_top.flush_i
+@22
+mpt_top.mmpt_reg_i[63:0]
+@28
+mpt_top.m_mem_valid
+mpt_top.m_mem_req
+@22
+mpt_top.m_mem_rdata[63:0]
+mpt_top.plb_entry_o[63:0]
+@28
+mpt_top.ptw_busy_o
+mpt_top.format_error_o[2:0]
+@23
+mpt_top.spa_i[55:0]
+[pattern_trace] 1
+[pattern_trace] 0

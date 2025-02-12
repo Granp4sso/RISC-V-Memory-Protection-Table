@@ -1,0 +1,34 @@
+[*]
+[*] GTKWave Analyzer v3.3.104 (w)1999-2020 BSI
+[*] Sat Feb 15 15:46:18 2025
+[*]
+[dumpfile] "/home/valerio/Desktop/x32/simulation/waves/trace.vcd"
+[dumpfile_mtime] "Sat Feb 15 15:43:44 2025"
+[dumpfile_size] 16210
+[savefile] "/home/valerio/Desktop/x32/simulation/waves/conf.gtkw"
+[timestart] 9
+[size] 1800 1043
+[pos] 1849 0
+*-7.000000 470 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[treeopen] mpt32_top.
+[treeopen] TOP.
+[sst_width] 233
+[signals_width] 400
+[sst_expanded] 1
+[sst_vpaned_height] 361
+@28
+mpt32_top.clk_i
+mpt32_top.flush_i
+mpt32_top.m_mem_valid
+mpt32_top.m_mem_req
+mpt32_top.ptw_busy_o
+mpt32_top.format_error_o[2:0]
+mpt32_top.curr_state_q[2:0]
+@22
+mpt32_top.m_mem_addr[31:0]
+mpt32_top.m_mem_rdata[31:0]
+mpt32_top.mptl1_entry[31:0]
+@23
+mpt32_top.mptl2_entry[31:0]
+[pattern_trace] 1
+[pattern_trace] 0
