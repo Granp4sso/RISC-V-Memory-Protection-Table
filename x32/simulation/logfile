@@ -1,7 +1,0 @@
-
-		      [VMemory	] LOAD: Data		0x01000005 - Address 0x00000000 - Byte Enable 0xff
-		      [VMemory	] LOAD: Data		0x00000005 - Address 0x00000004 - Byte Enable 0xff
-		      [VMemory	] LOAD: Data		0x01000005 - Address 0x00000000 - Byte Enable 0xff
-		      [VMemory	] LOAD: Data		0x0000ffff - Address 0x00000004 - Byte Enable 0xff
-		      [VMemory	] LOAD: Data		0x01000005 - Address 0x00000000 - Byte Enable 0xff
-		      [VMemory	] LOAD: Data		0x00000008 - Address 0x00000004 - Byte Enable 0xff

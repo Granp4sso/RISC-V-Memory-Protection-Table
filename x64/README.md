@@ -1,1 +1,0 @@
-# RISC-V-Memory-Protection-Table
