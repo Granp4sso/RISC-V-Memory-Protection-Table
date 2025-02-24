@@ -1,12 +1,10 @@
 // Author: Stefano Mercogliano <stefano.mercogliano@unina.it>
 // Author: Valerio Di Domenico <didomenico.valerio@virgilio.it>
 
-
 // Description:
 // This module implements the top-level logic for managing memory protection 
 // table lookups. It handles state transitions for the Page Table Walk 
 // (PTW) process, validates addresses, and manages PLB entries based on 
-
 // memory access type. The module communicates with control, memory and CSR 
 // ports, indicating if access is allowed and if any errors occur during address translation.
 
@@ -18,7 +16,7 @@ import mpt_pkg::*;
 // Import headers
 `include "uninasoc_mem.svh" 
 
-module mtt_top #(
+module mpt32_top #(
     
 ) (
     // Control Port
@@ -48,7 +46,8 @@ module mtt_top #(
     // Output Port
     output plb_entry_t plb_entry_o,            // Output PLB entry (contains SDID, physical address, and permissions)
     output logic allow_o                       // Access allowed output (indicates if access is allowed)
-);  
+);
+
     // Registers
     mpt_state_e next_state_d, curr_state_q;
     mpt_lookup_state_e next_lookup_state_d, curr_lookup_state_q;
@@ -59,18 +58,18 @@ module mtt_top #(
     plb_entry_t plb_entry_d, plb_entry_q;
     logic access_page_fault_d, access_page_fault_q;
     logic [2:0] format_error_cause_d, format_error_cause_q;
+
     
     // Address used to access the next level of the Memory Protection Table
     logic [MMPT_PPN_LEN-1:0] next_look_up_addr;
 
-    // MPT entries received from memory
-    mptl3_entry_t mptl3_entry;
+   // MPT entries received from memory
     mptl2_entry_t mptl2_entry;
     mptl1_entry_t mptl1_entry;
 
     // This holds the permissions associated with the memory protection entries    
     mpt_permissions_e permissions;
-   
+
     always_comb begin 
         // Default values
         access_page_fault_d = 0;
@@ -85,13 +84,13 @@ module mtt_top #(
         m_mem_we = 0;
         m_mem_be = 0;
         m_mem_req = 0;
+        //next_look_up_addr = 0;
+
 
         case (curr_state_q)
             IDLE: begin
                 ptw_busy_o = 0;
                 allow_o = 0;
-                //format_error_cause_d = 0;
-                //access_page_fault_d = 0;
                 if (ptw_enable_i && addr_valid_i) begin
                     next_state_d = VALIDATE_ADDRESS;
                 end
@@ -101,49 +100,32 @@ module mtt_top #(
                     // Validate the received physical address against the maximum addressable address for the current MPT mode. 
                     // If the address is invalid, generate a format_fault error
                     ptw_busy_o = 1;
-                    case (mmpt_q.MODE) 
+                    case (mmpt_q.MODE)
                             // No supervisor domain protection, access is allowed  
                             BARE_MODE: begin
                                 next_state_d = COMMIT;
                             end
 
                             // Check if spa_q width is within the allowed range; if valid, compute next MPT pointer, else generate error
-                            SMMPT46_MODE: begin
-                                if (spa_q >= 56'h400000000000) begin
-                                    format_error_cause_d = NOT_VALID_ADDR; 
-                                    next_state_d = ERROR;
-                                end else begin
-                                    next_look_up_addr = mmpt_q.PPN + {23'b0, spa_q.PN2};
+                            SMMPT34_MODE: begin
+                                    next_look_up_addr = mmpt_q.PPN + {13'b0, spa_q.PN2};
                                     next_state_d = WAIT_FOR_GRANT;
                                     next_lookup_state_d = MPTL2_LOOKUP;
                                 end
-                            end
                             
-                            // Check if spa_q width is within the allowed range; if valid, compute next MPT pointer, else generate error
-                            SMMPT56_MODE: begin
-                                if (spa_q >= 56'h10000000000000) begin
-                                    format_error_cause_d = NOT_VALID_ADDR;
-                                    next_state_d = ERROR;
-                                end else begin
-                                    next_look_up_addr = mmpt_q.PPN + {34'b0, spa_q.PN3};
-                                    next_state_d = WAIT_FOR_GRANT;
-                                    next_lookup_state_d = MPTL3_LOOKUP;
-                                end
-                            end
-
                             // Generate error if reserved MODE bits are used 
                             default: begin
                                 format_error_cause_d = RESERVED_BITS_USED; 
                                 next_state_d = ERROR;
                             end
-                        endcase
-                    end
-
+                    endcase
+            end
+            
             // Request memory access and transition to WAIT_FOR_RVALID after receiving the grant signal  
             WAIT_FOR_GRANT: begin
                 ptw_busy_o = 1;
                 m_mem_req = 1;
-                m_mem_addr = {20'b0, next_look_up_addr};
+                m_mem_addr = {10'b0, next_look_up_addr};
                 if (m_mem_gnt) begin
                     next_state_d = WAIT_FOR_RVALID;
                 end
@@ -161,32 +143,15 @@ module mtt_top #(
             MPT_LOOKUP: begin
                 ptw_busy_o = 1;
                 case (curr_lookup_state_q)
-                    // Perform L3 lookup
-                    MPTL3_LOOKUP: begin
-                        mptl3_entry = mptl_entry_q;
-                            if (!mptl3_entry.VALID) begin  // Check valid bit 
-                                format_error_cause_d = NOT_VALID_MPTL3_ENTRY;
-                                next_state_d = ERROR;
-                            end else if (mptl3_entry.RESERVED != 0) begin   // Reserved bit used
-                                format_error_cause_d = RESERVED_BITS_USED; 
-                                next_state_d = ERROR;
-                            end else begin
-                                //Compute next MPT pointer
-                                next_look_up_addr = {23'b0, spa_q.PN2} + mptl3_entry.MPTL2_PPN;
-                                next_state_d = WAIT_FOR_GRANT;
-                                next_lookup_state_d = MPTL2_LOOKUP; 
-                            end
-                        end
-
                     // Perform L2 lookup
                     MPTL2_LOOKUP: begin
                         mptl2_entry = mptl_entry_q;
                         if (mptl2_entry.RESERVED != 0) begin // Check reserved bit
                             format_error_cause_d = RESERVED_BITS_USED;
                             next_state_d = ERROR;
-                        end else begin
+                        end else begin 
                             case (mptl2_entry.TYPE) 
-                                
+
                                 // Read, write or execute is not allowed to this 1 GiB address range for the domain
                                 TYPE_1G_DISALLOW : begin
                                     if (mptl2_entry.INFO != 0) begin
@@ -211,6 +176,7 @@ module mtt_top #(
                                             plb_entry_d = {mmpt_q.SDID, spa_q, permissions};
                                         end else begin
                                             next_state_d = ERROR;
+                                            access_page_fault_d = 1;
                                         end
                                     end
                                 end
@@ -252,35 +218,27 @@ module mtt_top #(
                                 // INFO field provides the PPN of the MPTL1 page
                                 TYPE_MPT_L1_DIR: begin
                                     //Compute next MPT pointer
-                                    next_look_up_addr = {34'b0, spa_q.PN1} + mptl2_entry.INFO; 
+                                    next_look_up_addr = {12'b0, spa_q.PN1} + mptl2_entry.INFO;
                                     next_state_d = WAIT_FOR_GRANT;
                                     next_lookup_state_d = MPTL1_LOOKUP; 
                                 end
-
-                                // The 32 MiB range of address space is partitioned into 16 2 MiB pages where each page has read/write/execute access specified via the INFO field
-                                TYPE_2M_PAGES: begin
-                                    if (mptl2_entry.INFO[43:32] != 0) begin
+                                
+                                // The 32 MiB range of address space is partitioned into 8 4 MiB pages where each page has read/write/execute access specified via the INFO field
+                                TYPE_4M_PAGES: begin
+                                    if (mptl2_entry.INFO[21:16] != 0) begin
                                         format_error_cause_d = RESERVED_BITS_USED;                                        
                                         next_state_d = ERROR;
                                     end else begin 
                                         // MPTL2 info field contains permissions
-                                        case (spa_q.PN1[8:5]) 
-                                            4'b0000: permissions = mptl2_entry.INFO[1:0];
-                                            4'b0001: permissions = mptl2_entry.INFO[3:2];
-                                            4'b0010: permissions = mptl2_entry.INFO[5:4];
-                                            4'b0011: permissions = mptl2_entry.INFO[7:6];
-                                            4'b0100: permissions = mptl2_entry.INFO[9:8];
-                                            4'b0101: permissions = mptl2_entry.INFO[11:10];
-                                            4'b0110: permissions = mptl2_entry.INFO[13:12];
-                                            4'b0111: permissions = mptl2_entry.INFO[15:14];
-                                            4'b1000: permissions = mptl2_entry.INFO[17:16];
-                                            4'b1001: permissions = mptl2_entry.INFO[19:18];
-                                            4'b1010: permissions = mptl2_entry.INFO[21:20];
-                                            4'b1011: permissions = mptl2_entry.INFO[23:22];
-                                            4'b1100: permissions = mptl2_entry.INFO[25:24];
-                                            4'b1101: permissions = mptl2_entry.INFO[27:26];
-                                            4'b1110: permissions = mptl2_entry.INFO[29:28];
-                                            4'b1111: permissions = mptl2_entry.INFO[31:30];
+                                        case (spa_q.PN1[9:7]) 
+                                            3'b000: permissions = mptl2_entry.INFO[1:0];
+                                            3'b001: permissions = mptl2_entry.INFO[3:2];
+                                            3'b010: permissions = mptl2_entry.INFO[5:4];
+                                            3'b011: permissions = mptl2_entry.INFO[7:6];
+                                            3'b100: permissions = mptl2_entry.INFO[9:8];
+                                            3'b101: permissions = mptl2_entry.INFO[11:10];
+                                            3'b110: permissions = mptl2_entry.INFO[13:12];
+                                            3'b111: permissions = mptl2_entry.INFO[15:14];
                                         endcase
 
                                         // Verify if the requested access type is allowed by the MPT permissions.
@@ -300,7 +258,7 @@ module mtt_top #(
                                             next_state_d = ERROR;
                                         end
                                     end
-                                end                                
+                                end
                                 // Type field undefined
                                 default: begin
                                     format_error_cause_d = UNDEFINED_MPTL2_TYPE;
@@ -337,14 +295,13 @@ module mtt_top #(
                             end     
                         end
                     end
-
                     default: begin
                         // Invalid look_up_state
                         format_error_cause_d = UNDEFINED_MPT_LOOKUP_STATE;
                         next_state_d = ERROR;
                     end
-            endcase
-            end
+                endcase
+                end
 
             // Wait for the mem_valid signal before transitioning to the IDLE state
             FLUSH: begin
@@ -353,7 +310,7 @@ module mtt_top #(
                     next_state_d = IDLE;    
                 end
             end
-            
+
             // Handles format errors or page faults during memory access            
             ERROR: begin
                 ptw_busy_o = 1;
@@ -375,8 +332,8 @@ module mtt_top #(
             default: begin
                 ptw_busy_o = 1;
                 next_state_d = IDLE;
-            end   
-    endcase
+            end 
+        endcase
 
         // Handle flush request  
         if (flush_i) begin
@@ -395,7 +352,7 @@ module mtt_top #(
     always_ff @(posedge clk_i) begin
         if (!rst_ni) begin
             curr_state_q <= IDLE;
-            curr_lookup_state_q <= MPTL3_LOOKUP;
+            curr_lookup_state_q <= MPTL2_LOOKUP;
             spa_q <= 0;
             mmpt_q <= 0;
             mptl_entry_q <= 0;

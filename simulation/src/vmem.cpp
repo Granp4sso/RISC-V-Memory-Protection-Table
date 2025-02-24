@@ -30,41 +30,6 @@ void vmem_init(vmem_t * Memory, uint32_t size, uint32_t data_baddr, uint8_t log)
 	Memory->mem_op = 0;
 	Memory->mem_strb = 0;
 
-/*
-   // MPTL2_entry.TYPE_1G_ALLOW_RW 
-   
-    Memory->mem[0].cell = 0x00;
-    Memory->mem[1].cell = 0x00;
-    Memory->mem[2].cell = 0x00;
-    Memory->mem[3].cell = 0x00;
-    Memory->mem[4].cell = 0x00;
-	Memory->mem[5].cell = 0x10;
-    Memory->mem[6].cell = 0x00;
-    Memory->mem[7].cell = 0x00;
-*/	
-
-	// MPTL2_entry.TYPE_MPT_L1_DIR with INFO = 0x8
-
-	Memory->mem[0].cell = 0x08;
-    Memory->mem[1].cell = 0x00;
-    Memory->mem[2].cell = 0x00;
-    Memory->mem[3].cell = 0x00;
-    Memory->mem[4].cell = 0x00;
-	Memory->mem[5].cell = 0x40;
-    Memory->mem[6].cell = 0x00;
-    Memory->mem[7].cell = 0x00; 
-
-	//MPTL1_entry 
-	Memory->mem[8].cell = 0x00;
-    Memory->mem[9].cell = 0x00;
-    Memory->mem[10].cell = 0x00;
-    Memory->mem[11].cell = 0xFF;
-    Memory->mem[12].cell = 0x00;
-	Memory->mem[13].cell = 0x00;
-    Memory->mem[14].cell = 0x00;
-    Memory->mem[15].cell = 0x00; 
-
-
 	// Enable memory logging
 	if(log){
 		printf("[VMemory\t] opening logfile\n");
@@ -80,14 +45,75 @@ void vmem_init(vmem_t * Memory, uint32_t size, uint32_t data_baddr, uint8_t log)
 
 }
 
-void vmem_protocol(vmem_t * Memory, Vmtt_top *tb){
-	if(tb->m_mem_addr - Memory->mem_baddr >= Memory->mem_size && tb->m_mem_req){
-		printf("[VMemory\t] ERROR: Requesting out of range memory location <0x%08lx> on instruction port\n", tb->m_mem_addr);
-	}
-	else vmem_data_protocol(Memory, tb); 
-}
 
-void vmem_data_protocol(vmem_t * Memory, Vmtt_top *tb){
+
+
+#ifdef ARCH_rv32
+	void vmem_protocol(vmem_t * Memory, Vmpt_top *tb){
+		if(tb->m_mem_addr - Memory->mem_baddr >= Memory->mem_size && tb->m_mem_req){
+			printf("[VMemory\t] ERROR: Requesting out of range memory location <0x%08x> on instruction port\n", tb->m_mem_addr);
+		}
+		else vmem_data_protocol(Memory, tb); 
+	}
+#elif defined(ARCH_rv64)
+	void vmem_protocol(vmem_t * Memory, Vmpt_top *tb){
+		if(tb->m_mem_addr - Memory->mem_baddr >= Memory->mem_size && tb->m_mem_req){
+			printf("[VMemory\t] ERROR: Requesting out of range memory location <0x%08lx> on instruction port\n", tb->m_mem_addr);
+		}
+		else vmem_data_protocol(Memory, tb); 
+	}
+
+#endif
+
+
+
+// TODO
+#ifdef ARCH_rv32
+	void vmem_data_protocol(vmem_t *Memory, Vmpt_top *tb) {
+		switch (Memory->mem_state) {
+			case VMEM_DATA_FIRST_REQUEST: {
+				if (tb->m_mem_req) {
+					Memory->mem_addr = tb->m_mem_addr - Memory->mem_baddr;
+					Memory->mem_strb = tb->m_mem_be;
+					Memory->mem_op = tb->m_mem_we;
+					Memory->mem_wdata = tb->m_mem_wdata;
+					Memory->mem_state = VMEM_DATA_B2B_REQUEST;
+				}
+				tb->m_mem_valid = 0;
+				break;
+			}
+			case VMEM_DATA_B2B_REQUEST: {
+				uint32_t req_addr = Memory->mem_addr & 0xFFFFFFFC;
+				uint32_t temp = Memory->mem[req_addr].cell |
+							(Memory->mem[req_addr + 1].cell << 8) |
+							(Memory->mem[req_addr + 2].cell << 16) |
+							(Memory->mem[req_addr + 3].cell << 24);
+
+				if (Memory->mem_op == DATA_PORT_READ) {
+					tb->m_mem_rdata = temp;
+					if (Memory->log)
+						fprintf(Memory->log, "\n\t\t      [VMemory\t] LOAD: Data\t\t0x%08x - Address 0x%08x - Byte Enable 0x%02x",
+								tb->m_mem_rdata, req_addr + Memory->mem_baddr, Memory->mem_strb);
+				}
+
+				tb->m_mem_valid = 1;
+				if (tb->m_mem_req) {
+					Memory->mem_addr = tb->m_mem_addr - Memory->mem_baddr;
+					Memory->mem_strb = tb->m_mem_be;
+					Memory->mem_op = tb->m_mem_we;
+					Memory->mem_wdata = tb->m_mem_wdata;
+					Memory->mem_state = VMEM_DATA_B2B_REQUEST;
+				} else {
+					Memory->mem_state = VMEM_DATA_FIRST_REQUEST;
+				}
+				break;
+			}
+		}
+	}
+
+#elif defined(ARCH_rv64)
+
+	void vmem_data_protocol(vmem_t * Memory, Vmpt_top *tb){
 
 	// The protocol here is for loads and store. The memory follows a unified address space for both instructions and data, so be careful ;)
 	switch(Memory->mem_state){
@@ -160,7 +186,6 @@ void vmem_data_protocol(vmem_t * Memory, Vmtt_top *tb){
 							break;
 						}
 					}
-				
 			} 
 			tb->m_mem_valid = 1;
 					
@@ -173,11 +198,11 @@ void vmem_data_protocol(vmem_t * Memory, Vmtt_top *tb){
 				Memory->mem_state = VMEM_DATA_B2B_REQUEST;
 			}
 			else Memory->mem_state = VMEM_DATA_FIRST_REQUEST;
-		
 		break;
 	}
 }
 }
+#endif
 
 void vmem_free(vmem_t * Memory){
 	if(Memory->log) fclose(Memory->log);

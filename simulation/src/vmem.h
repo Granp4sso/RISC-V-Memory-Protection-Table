@@ -4,8 +4,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
+#include "Vmpt_top.h"
 
-#include "Vmtt_top.h"
 #include "verilated.h"
 #include "verilated_vcd_c.h"
 
@@ -44,8 +44,8 @@ struct vmem_t{
 };
 
 void vmem_init(vmem_t * Memory, uint32_t size, uint32_t data_baddr, uint8_t log);
-void vmem_protocol(vmem_t * Memory, Vmtt_top *tb);
-void vmem_data_protocol(vmem_t * Memory, Vmtt_top *tb);
+void vmem_protocol(vmem_t * Memory, Vmpt_top *tb);
+void vmem_data_protocol(vmem_t * Memory, Vmpt_top *tb);
 void vmem_free(vmem_t * Memory);
 
 #endif 
