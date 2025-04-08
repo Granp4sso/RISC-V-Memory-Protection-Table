@@ -230,17 +230,7 @@ module mpt32_top #(
                                         next_state_d = ERROR;
                                     end else begin 
                                         // MPTL2 info field contains permissions
-                                        case (spa_q.PN1[9:7]) 
-                                            3'b000: permissions = mptl2_entry.INFO[1:0];
-                                            3'b001: permissions = mptl2_entry.INFO[3:2];
-                                            3'b010: permissions = mptl2_entry.INFO[5:4];
-                                            3'b011: permissions = mptl2_entry.INFO[7:6];
-                                            3'b100: permissions = mptl2_entry.INFO[9:8];
-                                            3'b101: permissions = mptl2_entry.INFO[11:10];
-                                            3'b110: permissions = mptl2_entry.INFO[13:12];
-                                            3'b111: permissions = mptl2_entry.INFO[15:14];
-                                        endcase
-
+                                        permissions = mptl2_entry.INFO[spa_q.PN1[9:7] * 2 +: 2];
                                         // Verify if the requested access type is allowed by the MPT permissions.
                                         // If permitted, proceed to COMMIT state and update the PLB entry.
                                         // Otherwise, transition to ERROR state and raise a page fault. 

@@ -258,25 +258,7 @@ module mpt64_top #(
                                         next_state_d = ERROR;
                                     end else begin 
                                         // MPTL2 info field contains permissions
-                                        case (spa_q.PN1[8:5]) 
-                                            4'b0000: permissions = mptl2_entry.INFO[1:0];
-                                            4'b0001: permissions = mptl2_entry.INFO[3:2];
-                                            4'b0010: permissions = mptl2_entry.INFO[5:4];
-                                            4'b0011: permissions = mptl2_entry.INFO[7:6];
-                                            4'b0100: permissions = mptl2_entry.INFO[9:8];
-                                            4'b0101: permissions = mptl2_entry.INFO[11:10];
-                                            4'b0110: permissions = mptl2_entry.INFO[13:12];
-                                            4'b0111: permissions = mptl2_entry.INFO[15:14];
-                                            4'b1000: permissions = mptl2_entry.INFO[17:16];
-                                            4'b1001: permissions = mptl2_entry.INFO[19:18];
-                                            4'b1010: permissions = mptl2_entry.INFO[21:20];
-                                            4'b1011: permissions = mptl2_entry.INFO[23:22];
-                                            4'b1100: permissions = mptl2_entry.INFO[25:24];
-                                            4'b1101: permissions = mptl2_entry.INFO[27:26];
-                                            4'b1110: permissions = mptl2_entry.INFO[29:28];
-                                            4'b1111: permissions = mptl2_entry.INFO[31:30];
-                                        endcase
-
+                                        permissions = mptl2_entry.INFO[spa_q.PN1[8:5] * 2 +: 2];
                                         // Verify if the requested access type is allowed by the MPT permissions.
                                         // If permitted, proceed to COMMIT state and update the PLB entry.
                                         // Otherwise, transition to ERROR state and raise a page fault. 
