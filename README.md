@@ -101,6 +101,7 @@ The MPT interacts with memory through a memory interface based on the mem protoc
 #### Input Signals
 - `spa_i`: The Supervisor Physical Address.
 - `access_type_i`: Specifies the type of access (read, write, execute).
+
 ####  Output Signals
 - `plb_entry_o`: Permission lookaside buffer entry.
 - `allow_o`: High if access is allowed.
