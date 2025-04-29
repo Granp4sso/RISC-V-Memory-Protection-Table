@@ -4,12 +4,6 @@
 #include <string.h>
 #include "sim.hpp"
 
-
-
-
-
-
-
 // test cases struct
 typedef struct {
     int access_type_i;
@@ -22,6 +16,7 @@ typedef struct {
     #elif defined(ARCH_rv64)
         uint64_t mmpt_reg;
         uint64_t spa_i;
+        uint64_t mptl3_entry;
         uint64_t mptl2_entry;
         uint64_t mptl1_entry;
     #endif
@@ -71,10 +66,10 @@ int read_test_cases(const char *input_file, test_case_t **test_cases) {
 
     int i = 0;
     while (fgets(buffer, sizeof(buffer), file)) {
-        char *tokens[9]; 
-        int num_tokens = split_line(buffer, tokens, 9);
+        char *tokens[10]; 
+        int num_tokens = split_line(buffer, tokens, 10);
 
-        if (num_tokens < 9) {
+        if (num_tokens < 10) {
             fprintf(stderr, "Error parsing CSV line: %s\n", buffer);
             continue;
         }
@@ -88,8 +83,9 @@ int read_test_cases(const char *input_file, test_case_t **test_cases) {
         #elif defined(ARCH_rv64)
             (*test_cases)[i].mmpt_reg = strtoull(tokens[0], NULL, 16);
             (*test_cases)[i].spa_i = strtoull(tokens[1], NULL, 16);
-            (*test_cases)[i].mptl2_entry = strtoull(tokens[7], NULL, 16);
-            (*test_cases)[i].mptl1_entry = strtoull(tokens[8], NULL, 16);
+            (*test_cases)[i].mptl3_entry = strtoull(tokens[7], NULL, 16);
+            (*test_cases)[i].mptl2_entry = strtoull(tokens[8], NULL, 16);
+            (*test_cases)[i].mptl1_entry = strtoull(tokens[9], NULL, 16);
         #endif
 
         (*test_cases)[i].access_type_i = atoi(tokens[2]);
@@ -109,10 +105,11 @@ int read_test_cases(const char *input_file, test_case_t **test_cases) {
         }
     }
 #elif defined(ARCH_rv64)
-    void vmem_insert_entry(vmem_t* Memory, uint64_t mptl2_entry, uint64_t mptl1_entry) {
+    void vmem_insert_entry(vmem_t* Memory, uint64_t mptl3_entry, uint64_t mptl2_entry, uint64_t mptl1_entry) {
         for (int i = 0; i < 8; i++) {
-                Memory->mem[i].cell = (mptl2_entry >> (i * 8)) & 0xFF;
-                Memory->mem[i + 8].cell = (mptl1_entry >> (i * 8)) & 0xFF;
+                Memory->mem[i].cell = (mptl3_entry >> (i * 8)) & 0xFF;
+                Memory->mem[i + 8].cell = (mptl2_entry >> (i * 8)) & 0xFF;
+                Memory->mem[i + 16].cell = (mptl1_entry >> (i * 8)) & 0xFF;
             }
         }
 #endif
@@ -133,7 +130,7 @@ void run_simulation_and_save_results(const char *input_file, const char *output_
     }
 
     // Output CSV header
-    fprintf(file, "mmpt_reg,spa_i,access_type_i,flush_i,allow_o,format_error_o,access_page_fault_o,mptl2_entry,mptl1_entry\n");
+    fprintf(file, "mmpt_reg,spa_i,access_type_i,flush_i,allow_o,format_error_o,access_page_fault_o,mptl3_entry,mptl2_entry,mptl1_entry\n");
 
     int test_index = 0;   // Current test case index
     int waiting_for_result = 0;  // Flag: waiting for a result?
@@ -168,11 +165,11 @@ void run_simulation_and_save_results(const char *input_file, const char *output_
                         allow_o, format_error_o, access_page_fault_o,
                         test_cases[test_index].mptl2_entry, test_cases[test_index].mptl1_entry);
                 #elif defined(ARCH_rv64)
-                    fprintf(file, "0x%016lx,0x%016lx,%d,%d,%d,%d,%d,0x%016lx,0x%016lx\n",
+                    fprintf(file, "0x%016lx,0x%016lx,%d,%d,%d,%d,%d,0x%016lx,0x%016lx,0x%016lx\n",
                         test_cases[test_index].mmpt_reg, test_cases[test_index].spa_i,
                         test_cases[test_index].access_type_i, test_cases[test_index].flush,
                         allow_o, format_error_o, access_page_fault_o,
-                        test_cases[test_index].mptl2_entry, test_cases[test_index].mptl1_entry);
+                        test_cases[test_index].mptl3_entry, test_cases[test_index].mptl2_entry, test_cases[test_index].mptl1_entry);
                 #endif
                     
                 // Reset signals after test completion
@@ -191,11 +188,12 @@ void run_simulation_and_save_results(const char *input_file, const char *output_
             uut->mod->addr_valid_i = 1;
 
             // Load the mptl2_entry value into memory
+            uint64_t mptl3_entry = test_cases[test_index].mptl3_entry;
             uint64_t mptl2_entry = test_cases[test_index].mptl2_entry;
             uint64_t mptl1_entry = test_cases[test_index].mptl1_entry;
 
             // Insert the entry into the memory at the correct location, for example:
-            vmem_insert_entry(&uut->vRAM, mptl2_entry, mptl1_entry);
+            vmem_insert_entry(&uut->vRAM, mptl3_entry, mptl2_entry, mptl1_entry);
 
             // If the test uses flush, save outputs immediately
             if (test_cases[test_index].flush) {
@@ -210,11 +208,11 @@ void run_simulation_and_save_results(const char *input_file, const char *output_
                         allow_o, format_error_o, access_page_fault_o,
                         test_cases[test_index].mptl2_entry, test_cases[test_index].mptl1_entry);
                 #elif defined(ARCH_rv64)
-                    fprintf(file, "0x%lx,0x%lx,%d,%d,%d,%d,%d,0x%lx,0x%lx\n",
+                    fprintf(file, "0x%lx,0x%lx,%d,%d,%d,%d,%d,0x%lx,0x%lx,0x%lx\n",
                         test_cases[test_index].mmpt_reg, test_cases[test_index].spa_i,
                         test_cases[test_index].access_type_i, 1,  // flush_i = 1
                         allow_o, format_error_o, access_page_fault_o,
-                        test_cases[test_index].mptl2_entry, test_cases[test_index].mptl1_entry);
+                        test_cases[test_index].mptl3_entry, test_cases[test_index].mptl2_entry, test_cases[test_index].mptl1_entry);
                 #endif
                 
 

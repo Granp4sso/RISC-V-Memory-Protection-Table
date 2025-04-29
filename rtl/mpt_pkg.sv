@@ -15,33 +15,31 @@
         
         // Define lengths for various fields based on XLEN
         localparam int MPTL2_INFO_LEN = (XLEN == 32) ? 22 : 44;
-        localparam int MMPT_PPN_LEN   = (XLEN == 32) ? 22: 44;
+        localparam int MMPT_PPN_LEN   = (XLEN == 32) ? 22: 52;
         localparam int MMPT_MODE_LEN  = (XLEN == 32) ? 2 : 4;
-        localparam int WPRI_BITS_LEN  = (XLEN == 32) ? 2 : 10;
+        localparam int WPRI_BITS_LEN  = (XLEN == 32) ? 2 : 2;
         localparam int PLB_ENTRY_LEN  = (XLEN == 32) ? 4 : 64;
         
         localparam int SDID_LEN = 6; 
 
-        localparam logic [MMPT_MODE_LEN-1:0] BARE_MODE  = 0; 
+        localparam logic [MMPT_MODE_LEN-1:0] BARE_MODE = 0; 
+
+        localparam int PAGESIZE     = 4096;
+        localparam int MPTSIZE      = (XLEN == 32) ? 4 : 8;
+        localparam int NUMPGINRANGE = (XLEN == 32) ? 3 : 4;
 
         // State machine states for MPT operations
-        typedef enum logic [2:0] {
-            IDLE             = 3'b000, // Waiting for ptw_enable and valid address 
-            VALIDATE_ADDRESS = 3'b001, // Validate the received physical address against the maximum addressable address for the current MPT mode. If the address is invalid, generate a format_fault error
-            WAIT_FOR_GRANT   = 3'b010, // Hold state until memory responds with grant signal
-            WAIT_FOR_RVALID  = 3'b011, // Hold state until memory responds with rvalid signal   
-            MPT_LOOKUP       = 3'b100, // Lookup process to obtain perissions associated with PA
-            FLUSH            = 3'b101, // If flush signal received 
-            ERROR            = 3'b110, // If a format_error or an access_fault occurrs 
-            COMMIT           = 3'b111  // Valid entry found
+        typedef enum logic [3:0] {
+            IDLE              = 4'b0000, // Waiting for ptw_enable and valid address 
+            VALIDATE_ADDRESS  = 4'b0001, // Validate the received physical address against the maximum addressable address for the current MPT mode. If the address is invalid, generate a format_fault error
+            WAIT_FOR_GRANT    = 4'b0010, // Hold state until memory responds with grant signal
+            WAIT_FOR_RVALID   = 4'b0011, // Hold state until memory responds with rvalid signal   
+            MPT_LOOKUP        = 4'b0100, // Lookup process to obtain perissions associated with PA
+            FLUSH             = 4'b0101, // If flush signal received 
+            ERROR             = 4'b0110, // If a format_error or an access_fault occurrs
+            CHECK_PERMISSIONS = 4'b0111, // Check permissions
+            COMMIT            = 4'b1000  // Valid entry found
         } mpt_state_e;
-
-        // Lookup levels for MPT
-        typedef enum logic [1:0] {
-                MPTL3_LOOKUP = 2'b00, // Used only in RV64 when physical address width is >= 46 bits
-                MPTL2_LOOKUP = 2'b01, // Used in RV32, or in RV64 when physical address width is <= 46 bits
-                MPTL1_LOOKUP = 2'b10  // Used to fetch permissions from MPTL1
-        } mpt_lookup_state_e;
 
         // MPT access types
         typedef enum logic [1:0] {
@@ -55,122 +53,150 @@
         typedef enum logic [2:0] {
             NO_ERROR                   = 3'b000, // No error 
             RESERVED_BITS_USED         = 3'b001, // Any of the reserved bits are used
-            `ifdef ARCH_rv64
-                NOT_VALID_MPTL3_ENTRY  = 3'b010, // MPTLE valid bit is set to 0 
-            `endif
-            NOT_VALID_ADDR             = 3'b011, // Validate the received physical address against the maximum addressable address for the current MPT mode
-            UNDEFINED_MPTL2_TYPE       = 3'b100, // Not valid MPTL2 info field
-            INVALID_MPTL2_INFO         = 3'b101, // Undefined mpt lookup state
-            UNDEFINED_MPT_LOOKUP_STATE = 3'b110  // Undefined mpt lookup state
+            NOT_VALID_ENTRY            = 3'b010, // MPTLE valid bit is set to 0 
+            NOT_VALID_ADDR             = 3'b011, // If the received physical address ais larger then the maximum addressable address for the current MPT mode
+            LEVEL_UNDERFLOW            = 3'b100, // If we arrived to the last MPT level and the entry is not a leaf
+            INVALID_LEVEL              = 3'b101, // Unsupported lookup level
+            UNSUPPORTED_MODE           = 3'b110  // Unsupported MPT reg MODE
         } page_format_fault_e;
 
-        // PLB entry permissions
-        typedef enum logic [1:0] {
-                    DISALLOWED = 2'b00, // Access not allowed
-                    ALLOW_RX   = 2'b01, // Read and execute (but no write) access allowed
-                    ALLOW_RW   = 2'b10, // Read and write (but no execute) access allowed
-                    ALLOW_RWX  = 2'b11  // Read, write and execute access is allowed
+        // MPT leaf-entry permissions
+        typedef enum logic [2:0] {
+            ALLOW_R    = 3'b001,
+            ALLOW_RW   = 3'b011,
+            ALLOW_X    = 3'b100,
+            ALLOW_RX   = 3'b101,
+            ALLOW_RWX  = 3'b111
         } mpt_permissions_e;
          
         // PLB entry structure
         typedef struct packed {
-                    logic [SDID_LEN-1:0]  SDID;        // Supervisor domain identifier
-                    logic [PLEN-1:0]      SPA;         // Supervisor physical address 
-                    mpt_permissions_e     PERMISSIONS; // Permissions associated with SPA
+            logic [SDID_LEN-1:0]  SDID;        // Supervisor domain identifier
+            logic [XLEN-1:0]      SPA;         // Supervisor physical address 
+            mpt_permissions_e     PERMISSIONS; // Permissions associated with SPA
         } plb_entry_t;
-       
-
-        typedef enum logic [2:0] {
-            TYPE_1G_DISALLOW  = 3'b000, // Read, write or execute is not allowed to this 1 GiB address range for the domain
-            TYPE_1G_ALLOW_RX  = 3'b001, // Read and execute (but no write) is allowed to this 1 GiB address range for the domain
-            TYPE_1G_ALLOW_RW  = 3'b010, // Read and write (but no execute) is allowed to this 1 GiB address range for the domain
-            TYPE_1G_ALLOW_RWX = 3'b011, // Read, write and execute is allowed to this 1 GiB address range for the domain
-            TYPE_MPT_L1_DIR   = 3'b100, // In this case the INFO field provides the PPN of the MPTL1 page
-            `ifdef ARCH_rv32
-                TYPE_4M_PAGES = 3'b101  // The 32 MiB range of address space is partitioned into 8 4 MiB pages where each page has read/write/execute access specified via the INFO field
-            `elsif ARCH_rv64
-                TYPE_2M_PAGES = 3'b101  // The 32 MiB range of address space is partitioned into 16 2 MiB pages where each page has read/write/execute access specified via the INFO field
-            `endif
-        } mptl2_type_e;
-
+    
         `ifdef ARCH_rv32
-            localparam int PLEN = 34;
             localparam int XLEN = 32;
             localparam logic [MMPT_MODE_LEN-1:0] SMMPT34_MODE = 2'b01;
             
+            // Supervisor physical addresses up to 34-bit 
             typedef struct packed {
-                logic [8:0]  PN2; 
-                logic [9:0]  PN1;
-                logic [2:0]  PN0;  
-                logic [11:0] PAGE_OFFSET;     
+                logic [8:0]  PN1; 
+                logic [9:0]  PN0;  
+                logic [14:0] RANGE_OFFSET;     
             } spa_t;
 
-            // MPTL2 entry structure for 32-bit systems
+            // MPT non-leaf entry
             typedef struct packed {
-                logic [6:0]                 RESERVED; // Reserved (must be zero)
-                mptl2_type_e                TYPE;     // Entry type field
-                logic [MPTL2_INFO_LEN-1:0]  INFO;     // Contains additional information: 0 if TYPE refers to 1G pages, PPN of MPTL1 if TYPE is TYPE_MPT_L1_DIR, or permissions for 4M pages otherwise                 
-            } mptl2_entry_t;
+                logic [21:0] PPN;       // Physical page number of the next level of the memory protection table
+                logic [8:0]  RESERVED;  // Reserved bits
+            } mpt_nl_entry_t;
 
-            // MPTL1 entry structure for 32-bit systems
-            // The mptl1_entry_t is XLEN bits wide and contains XLEN/4 number of 2-bit fields, 
-            // each specifying the access permissions for a 4 KiB page. The bits from XLEN-1 to XLEN/2 
-            // are reserved for future use. The entry is selected by page.pn[1], and the 2-bit field for 
-            // access permissions is selected using page.pn[0].
+            // MPT leaf entry
             typedef struct packed {
-                logic [15:0] RESERVED;
-                mpt_permissions_e [7:0] PAGE_PERM;                    
-            } mptl1_entry_t;
+                logic                   N;         // Naturally aligned power-of-two bit
+                mpt_permissions_e [7:0] PERMS;     // Page permissions
+                logic [4:0]             RESERVED;  // Reserved bits
+            } mpt_l_entry_t;
+            
+            // The MPT payload contains bits that differentiate between a leaf entry and a non-leaf entry
+            typedef union packed {
+                mpt_nl_entry_t non_leaf;
+                mpt_l_entry_t  leaf;
+            } mpt_payload_u;
+
+            // An mpt_entry_t mpt_entry could be a leaf entry or non-leaf entry depenging on mpt_payload
+            typedef struct packed {
+                mpt_payload_u mpt_payload;
+                logic         L;         // This bit is set to 1 if mpte is a leaf entry
+                logic         V;         // This bit is set to 0 if mpte is valid   
+            } mpt_entry_t;
 
             // MPT operational modes for 32-bit systems
             typedef enum logic [1:0] {
-                MPT_BARE        = 2'b00, // No supervisor domain protection
-                MPT_34          = 2'b01 // Page-based supervisor domain protection up to 34-bit physical addresses
+                MPT_BARE  = 2'b00, // No supervisor domain protection
+                MPT_34    = 2'b01  // Page-based supervisor domain protection up to 34-bit physical addresses
             } mpt_mode_e;
 
         `elsif ARCH_rv64
-            localparam int PLEN = 56;
             localparam int XLEN = 64;
-            localparam int MPTL2_PPN_LEN  = 44;
-            localparam logic [MMPT_MODE_LEN-1:0] SMMPT46_MODE = 4'b0001;
-            localparam logic [MMPT_MODE_LEN-1:0] SMMPT56_MODE = 4'b0010;
-            
+            localparam logic [MMPT_MODE_LEN-1:0] SMMPT43_MODE = 4'b0001;
+            localparam logic [MMPT_MODE_LEN-1:0] SMMPT52_MODE = 4'b0010;
+            localparam logic [MMPT_MODE_LEN-1:0] SMMPT64_MODE = 4'b0011;
+
+            // Supervisor physical addresses up to 43-bit 
             typedef struct packed {
-                logic [9:0]  PN3;
-                logic [20:0] PN2;
+                logic [20:0] ZERO_BITS; 
+                logic [8:0]  PN2;
                 logic [8:0]  PN1;
-                logic [3:0]  PN0;  
-                logic [11:0] PAGE_OFFSET;  
-            } spa_t;
+                logic [8:0]  PN0;  
+                logic [15:0] RANGE_OFFSET;  
+            } spa43_t;
 
+            // Supervisor physical addresses up to 52-bit 
             typedef struct packed {
-                logic [18:0]              RESERVED;  // Reserved (must be zero)
-                logic                     VALID;     // If the entry is valid thib bit is set to 1 and MPTL2_PPN holds the next level of the MPT
-                logic [MPTL2_PPN_LEN-1:0] MPTL2_PPN; // Holds the next level of the MPT                    
-            } mptl3_entry_t;
+                logic [11:0] ZERO_BITS;
+                logic [8:0]  PN3;
+                logic [8:0]  PN2;
+                logic [8:0]  PN1;
+                logic [8:0]  PN0;  
+                logic [15:0] RANGE_OFFSET;  
+            } spa52_t;
 
+            // Supervisor physical addresses up to 64-bit 
             typedef struct packed {
-                logic [16:0]               RESERVED; // Reserved (must be zero)
-                mptl2_type_e               TYPE;     // Entry type
-                logic [MPTL2_INFO_LEN-1:0] INFO;     // May be 0 if TYPE refers to 1G pages or may contain the PPN of MPTL1 if TYPE is TYPE_MPT_L1_DIR or may contain permissions associated to 4M pages
-            } mptl2_entry_t;
+                logic [11:0] PN4;
+                logic [8:0]  PN3;
+                logic [8:0]  PN2;
+                logic [8:0]  PN1;
+                logic [8:0]  PN0;  
+                logic [15:0] RANGE_OFFSET;  
+            } spa64_t;
 
-            // MPTL1 entry structure for 64-bit systems
-            // The mptl1_entry_t is XLEN bits wide and contains XLEN/4 number of 2-bit fields, 
-            // each specifying the access permissions for a 4 KiB page. The bits from XLEN-1 to XLEN/2 
-            // are reserved for future use. The entry is selected by page.pn[1], and the 2-bit field for 
-            // access permissions is selected using page.pn[0].
+            // Depending on the MPT MODE, a SPA could be a spa43, spa52 or spa64
+            typedef union packed {
+                logic [63:0] raw;
+                spa43_t      spa43;
+                spa52_t      spa52;
+                spa64_t      spa64;
+            } spa_t_u;
+            
+            // MPT non-leaf entry
             typedef struct packed {
-                logic [31:0] RESERVED;
-                mpt_permissions_e [15:0] PAGE_PERM;
-            } mptl1_entry_t;
+                logic        RESERVED; // Reserved bits
+                logic [51:0] PPN;      // Physical page number of the next level of the memory protection table
+            } mpt_nl_entry_t;
+            
+            // MPT leaf entry
+            typedef struct packed {
+                logic [4:0]              RESERVED; // Reserved bits
+                mpt_permissions_e [15:0] PERMS;    // Page permissions
+            } mpt_l_entry_t;
+
+            // The MPT payload contains bits that differentiate between a leaf entry and a non-leaf entry
+            typedef union packed {
+                mpt_nl_entry_t non_leaf;
+                mpt_l_entry_t  leaf;
+            } mpt_payload_u;
+
+            // An mpt_entry_t mpt_entry could be a leaf entry or non-leaf entry depenging on mpt_payload
+            typedef struct packed {
+                logic         N;           // Naturally aligned power-of-two bit  
+                mpt_payload_u mpt_payload;
+                logic [7:0]   RESERVED;    // Reserved bits
+                logic         L;           // This bit is set to 0 if mpte is a leaf entry
+                logic         V;           // This bit is set to 0 if mpte is valid   
+            } mpt_entry_t;
 
             // MPT operational modes for 64-bit systems
             typedef enum logic [3:0] {
-                MPT_BARE    = 4'b0000, // No supervisor domain protection
-                MPT_46      = 4'b0001, // Page-based supervisor domain protection up to 46-bit physical addresses
-                MPT_56      = 4'b0010  // Page-based supervisor domain protection up to 56-bit physical addresses
+                MPT_BARE = 4'b0000, // No supervisor domain protection
+                MPT_43   = 4'b0001, // Page-based supervisor domain protection up to 43-bit physical addresses
+                MPT_52   = 4'b0010, // Page-based supervisor domain protection up to 52-bit physical addresses
+                MPT_64   = 4'b0011  // Page-based supervisor domain protection up to 64-bit physical addresses
             } mpt_mode_e;
+            
         `endif
 
         typedef struct packed{

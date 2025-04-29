@@ -22,7 +22,8 @@ module mpt_top #(
     input logic rst_ni,
     input logic flush_i,                       // Flush signal to reset internal state
     input logic ptw_enable_i,                  // Page Table Walk enable signal
-    input spa_t spa_i,                         // Supervisor physical address input
+    // input spa_t spa_i,                         // Supervisor physical address input
+    input spa_t_u spa_i,
     input logic addr_valid_i,                  // Address validity signal
 
     // CSR Port
