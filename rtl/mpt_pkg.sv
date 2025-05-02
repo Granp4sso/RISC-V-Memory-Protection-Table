@@ -14,19 +14,14 @@
     package mpt_pkg;
         
         // Define lengths for various fields based on XLEN
-        localparam int MPTL2_INFO_LEN = (XLEN == 32) ? 22 : 44;
-        localparam int MMPT_PPN_LEN   = (XLEN == 32) ? 22: 52;
-        localparam int MMPT_MODE_LEN  = (XLEN == 32) ? 2 : 4;
-        localparam int WPRI_BITS_LEN  = (XLEN == 32) ? 2 : 2;
-        localparam int PLB_ENTRY_LEN  = (XLEN == 32) ? 4 : 64;
-        
-        localparam int SDID_LEN = 6; 
-
+        localparam int PPN_LEN       = (XLEN == 32) ? 22: 52;
+        localparam int MMPT_MODE_LEN = (XLEN == 32) ? 2 : 4;
+        localparam int MPTSIZE       = (XLEN == 32) ? 4 : 8;
+        localparam int NUMPGINRANGE  = (XLEN == 32) ? 3 : 4;
+        localparam int SDID_LEN      = 6;
+        localparam int WPRI_BITS_LEN = 2; 
+        localparam int PAGESIZE      = 4096;
         localparam logic [MMPT_MODE_LEN-1:0] BARE_MODE = 0; 
-
-        localparam int PAGESIZE     = 4096;
-        localparam int MPTSIZE      = (XLEN == 32) ? 4 : 8;
-        localparam int NUMPGINRANGE = (XLEN == 32) ? 3 : 4;
 
         // State machine states for MPT operations
         typedef enum logic [3:0] {
@@ -51,29 +46,29 @@
 
         // Format error that may occur in page table lookups
         typedef enum logic [2:0] {
-            NO_ERROR                   = 3'b000, // No error 
-            RESERVED_BITS_USED         = 3'b001, // Any of the reserved bits are used
-            NOT_VALID_ENTRY            = 3'b010, // MPTLE valid bit is set to 0 
-            NOT_VALID_ADDR             = 3'b011, // If the received physical address ais larger then the maximum addressable address for the current MPT mode
-            LEVEL_UNDERFLOW            = 3'b100, // If we arrived to the last MPT level and the entry is not a leaf
-            INVALID_LEVEL              = 3'b101, // Unsupported lookup level
-            UNSUPPORTED_MODE           = 3'b110  // Unsupported MPT reg MODE
+            NO_ERROR           = 3'b000, // No error 
+            RESERVED_BITS_USED = 3'b001, // Any of the reserved bits are used
+            NOT_VALID_ENTRY    = 3'b010, // MPTLE valid bit is set to 0 
+            NOT_VALID_ADDR     = 3'b011, // If the received physical address ais larger then the maximum addressable address for the current MPT mode
+            LEVEL_UNDERFLOW    = 3'b100, // If we arrived to the last MPT level and the entry is not a leaf
+            INVALID_LEVEL      = 3'b101, // Unsupported lookup level
+            UNSUPPORTED_MODE   = 3'b110  // Unsupported MPT reg MODE
         } page_format_fault_e;
 
         // MPT leaf-entry permissions
         typedef enum logic [2:0] {
-            ALLOW_R    = 3'b001,
-            ALLOW_RW   = 3'b011,
-            ALLOW_X    = 3'b100,
-            ALLOW_RX   = 3'b101,
-            ALLOW_RWX  = 3'b111
+            ALLOW_R   = 3'b001,
+            ALLOW_RW  = 3'b011,
+            ALLOW_X   = 3'b100,
+            ALLOW_RX  = 3'b101,
+            ALLOW_RWX = 3'b111
         } mpt_permissions_e;
          
         // PLB entry structure
         typedef struct packed {
-            logic [SDID_LEN-1:0]  SDID;        // Supervisor domain identifier
-            logic [XLEN-1:0]      SPA;         // Supervisor physical address 
-            mpt_permissions_e     PERMISSIONS; // Permissions associated with SPA
+            logic [SDID_LEN-1:0] SDID;  // Supervisor domain identifier
+            logic [XLEN-1:0]     SPA;   // Supervisor physical address 
+            mpt_permissions_e    PERMS; // Permissions associated with SPA
         } plb_entry_t;
     
         `ifdef ARCH_rv32
@@ -109,14 +104,14 @@
             // An mpt_entry_t mpt_entry could be a leaf entry or non-leaf entry depenging on mpt_payload
             typedef struct packed {
                 mpt_payload_u mpt_payload;
-                logic         L;         // This bit is set to 1 if mpte is a leaf entry
-                logic         V;         // This bit is set to 0 if mpte is valid   
+                logic         L;            // This bit is set to 1 if mpte is a leaf entry
+                logic         V;            // This bit is set to 0 if mpte is valid   
             } mpt_entry_t;
 
             // MPT operational modes for 32-bit systems
             typedef enum logic [1:0] {
-                MPT_BARE  = 2'b00, // No supervisor domain protection
-                MPT_34    = 2'b01  // Page-based supervisor domain protection up to 34-bit physical addresses
+                MPT_BARE = 2'b00, // No supervisor domain protection
+                MPT_34   = 2'b01  // Page-based supervisor domain protection up to 34-bit physical addresses
             } mpt_mode_e;
 
         `elsif ARCH_rv64
@@ -127,7 +122,7 @@
 
             // Supervisor physical addresses up to 43-bit 
             typedef struct packed {
-                logic [20:0] ZERO_BITS; 
+                logic [20:0] ZERO; 
                 logic [8:0]  PN2;
                 logic [8:0]  PN1;
                 logic [8:0]  PN0;  
@@ -136,7 +131,7 @@
 
             // Supervisor physical addresses up to 52-bit 
             typedef struct packed {
-                logic [11:0] ZERO_BITS;
+                logic [11:0] ZERO;
                 logic [8:0]  PN3;
                 logic [8:0]  PN2;
                 logic [8:0]  PN1;
@@ -180,7 +175,7 @@
                 mpt_l_entry_t  leaf;
             } mpt_payload_u;
 
-            // An mpt_entry_t mpt_entry could be a leaf entry or non-leaf entry depenging on mpt_payload
+            // An mpt_entry could be a leaf entry or non-leaf entry depenging on mpt_payload
             typedef struct packed {
                 logic         N;           // Naturally aligned power-of-two bit  
                 mpt_payload_u mpt_payload;
@@ -200,10 +195,10 @@
         `endif
 
         typedef struct packed{
-            mpt_mode_e                MODE;      // Address protection scheme (MPT Mode to be enforced) for physical addresses
-            logic [SDID_LEN-1:0]      SDID;      // Supervisor domain identifier. Must be set to 0 if mode = BARE
-            logic [WPRI_BITS_LEN-1:0] WPRI_BITS; // Write-preserved, read-ignored bits
-            logic [MMPT_PPN_LEN-1:0]  PPN;       // Physical page number (PPN) of the root page of the memory protection tables. Must be set to 0 if mode = BARE
+            mpt_mode_e                MODE; // Address protection scheme (MPT Mode to be enforced) for physical addresses
+            logic [SDID_LEN-1:0]      SDID; // Supervisor domain identifier. Must be set to 0 if mode = BARE
+            logic [WPRI_BITS_LEN-1:0] WPRI; // Write-preserved, read-ignored bits
+            logic [PPN_LEN-1:0]       PPN;  // Physical page number (PPN) of the root page of the memory protection tables. Must be set to 0 if mode = BARE
         } mmpt_reg_t;
         
     endpackage;

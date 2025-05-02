@@ -57,12 +57,12 @@ module mpt64_top #(
     page_format_fault_e format_error_cause_d, format_error_cause_q;
     
     // Address used to access the next level of the Memory Protection Table
-    logic [MMPT_PPN_LEN-1:0] next_lookup_addr_d, next_lookup_addr_q;
+    logic [PPN_LEN-1:0] next_lookup_addr_d, next_lookup_addr_q;
     
     // Lookup level counter
     logic [2:0] lookup_lvl_cnt_q, lookup_lvl_cnt_d;  
     
-    logic [MMPT_PPN_LEN-1:0] a;
+    logic [PPN_LEN-1:0] a;
     logic [NUMPGINRANGE-1:0] range_offset;
     spa_t_u spa_u_q;
 
@@ -105,7 +105,7 @@ module mpt64_top #(
 
                             // Check if spa_q width is within the allowed range; if valid, compute next MPT pointer, else generate error
                             SMMPT43_MODE: begin
-                                if (spa_u_q.spa43.ZERO_BITS != 0) begin
+                                if (spa_u_q.spa43.ZERO != 0) begin
                                     format_error_cause_d = NOT_VALID_ADDR; 
                                     next_state_d = ERROR;
                                 end else begin
@@ -117,7 +117,7 @@ module mpt64_top #(
                             end
 
                             SMMPT52_MODE: begin
-                                if (spa_u_q.spa52.ZERO_BITS != 0) begin
+                                if (spa_u_q.spa52.ZERO != 0) begin
                                     format_error_cause_d = NOT_VALID_ADDR; 
                                     next_state_d = ERROR;
                                 end else begin
@@ -384,5 +384,4 @@ module mpt64_top #(
             endcase
         end
     end
-
 endmodule
