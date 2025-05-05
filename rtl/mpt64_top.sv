@@ -23,7 +23,7 @@ module mpt64_top #(
     input logic rst_ni,
     input logic flush_i,                       // Flush signal to reset internal state
     input logic ptw_enable_i,                  // Page Table Walk enable signal
-    input spa_t spa_i,                         // Supervisor physical address input
+    input spa_t_u spa_i,                       // Supervisor physical address input
     input logic addr_valid_i,                  // Address validity signal
 
     // CSR Port
@@ -43,30 +43,31 @@ module mpt64_top #(
     input mpt_access_e access_type_i,          // Memory access type (read, write, execute)
 
     // Output Port
-    output plb_entry_t plb_entry_o,            // Output PLB entry (contains SDID, physical address, and permissions)
+    output plb_entry_t plb_entry_o,            // Output PLB entry (contains SDID, physical address, and MPT permissions)
     output logic allow_o                       // Access allowed output (indicates if access is allowed)
 );  
     // Registers
     mpt_state_e next_state_d, curr_state_q;
-    mpt_lookup_state_e next_lookup_state_d, curr_lookup_state_q;
-    spa_t spa_q;
     mmpt_reg_t mmpt_q;
     mpt_access_e access_type_q;
-    logic [XLEN-1:0] mptl_entry_q;
+    
+    mpt_entry_t mptl_entry_q;
     plb_entry_t plb_entry_d, plb_entry_q;
     logic access_page_fault_d, access_page_fault_q;
-    logic [2:0] format_error_cause_d, format_error_cause_q;
+    page_format_fault_e format_error_cause_d, format_error_cause_q;
     
     // Address used to access the next level of the Memory Protection Table
-    logic [MMPT_PPN_LEN-1:0] next_look_up_addr;
-
-    // MPT entries received from memory
-    mptl3_entry_t mptl3_entry;
-    mptl2_entry_t mptl2_entry;
-    mptl1_entry_t mptl1_entry;
+    logic [PPN_LEN-1:0] next_lookup_addr_d, next_lookup_addr_q;
+    
+    // Lookup level counter
+    logic [2:0] lookup_lvl_cnt_q, lookup_lvl_cnt_d;  
+    
+    logic [PPN_LEN-1:0] a;
+    logic [NUMPGINRANGE-1:0] range_offset;
+    spa_t_u spa_u_q;
 
     // This holds the permissions associated with the memory protection entries    
-    mpt_permissions_e permissions;
+    mpt_permissions_e mpt_permissions;
    
     always_comb begin 
         // Default values
@@ -82,14 +83,11 @@ module mpt64_top #(
         m_mem_we = 0;
         m_mem_be = 0;
         m_mem_req = 0;
-        //next_look_up_addr = 0;
 
         case (curr_state_q)
             IDLE: begin
                 ptw_busy_o = 0;
                 allow_o = 0;
-                //format_error_cause_d = 0;
-                //access_page_fault_d = 0;
                 if (ptw_enable_i && addr_valid_i) begin
                     next_state_d = VALIDATE_ADDRESS;
                 end
@@ -106,27 +104,40 @@ module mpt64_top #(
                             end
 
                             // Check if spa_q width is within the allowed range; if valid, compute next MPT pointer, else generate error
-                            SMMPT46_MODE: begin
-                                if (spa_q >= 56'h400000000000) begin
+                            SMMPT43_MODE: begin
+                                if (spa_u_q.spa43.ZERO != 0) begin
                                     format_error_cause_d = NOT_VALID_ADDR; 
                                     next_state_d = ERROR;
                                 end else begin
-                                    next_look_up_addr = mmpt_q.PPN + {23'b0, spa_q.PN2};
+                                    a = mmpt_q.PPN * PAGESIZE;
+                                    lookup_lvl_cnt_d = 2;
+                                    next_lookup_addr_d = a + {43'b0, spa_u_q.spa43.PN2} * MPTSIZE;
                                     next_state_d = WAIT_FOR_GRANT;
-                                    next_lookup_state_d = MPTL2_LOOKUP;
                                 end
                             end
-                            
-                            // Check if spa_q width is within the allowed range; if valid, compute next MPT pointer, else generate error
-                            SMMPT56_MODE: begin
-                                    next_look_up_addr = mmpt_q.PPN + {34'b0, spa_q.PN3};
-                                    next_state_d = WAIT_FOR_GRANT;
-                                    next_lookup_state_d = MPTL3_LOOKUP;
-                                end
 
+                            SMMPT52_MODE: begin
+                                if (spa_u_q.spa52.ZERO != 0) begin
+                                    format_error_cause_d = NOT_VALID_ADDR; 
+                                    next_state_d = ERROR;
+                                end else begin
+                                    a = mmpt_q.PPN * PAGESIZE;
+                                    lookup_lvl_cnt_d = 3;
+                                    next_lookup_addr_d = a + {43'b0, spa_u_q.spa52.PN3} * MPTSIZE;
+                                    next_state_d = WAIT_FOR_GRANT;
+                                end
+                            end
+
+                            SMMPT64_MODE: begin
+                                    a = mmpt_q.PPN * PAGESIZE;
+                                    lookup_lvl_cnt_d = 4;
+                                    next_lookup_addr_d = a + {40'b0, spa_u_q.spa64.PN4} * MPTSIZE;
+                                    next_state_d = WAIT_FOR_GRANT;
+                                end
+                            
                             // Generate error if reserved MODE bits are used 
                             default: begin
-                                format_error_cause_d = RESERVED_BITS_USED; 
+                                format_error_cause_d = UNSUPPORTED_MODE; 
                                 next_state_d = ERROR;
                             end
                         endcase
@@ -136,7 +147,7 @@ module mpt64_top #(
             WAIT_FOR_GRANT: begin
                 ptw_busy_o = 1;
                 m_mem_req = 1;
-                m_mem_addr = {20'b0, next_look_up_addr};
+                m_mem_addr = {12'b0, next_lookup_addr_q};
                 if (m_mem_gnt) begin
                     next_state_d = WAIT_FOR_RVALID;
                 end
@@ -152,192 +163,137 @@ module mpt64_top #(
             
             // Perform MPT lookup
             MPT_LOOKUP: begin
+                logic [8:0] pn; // Physical page number extracted during mpt lookup process
                 ptw_busy_o = 1;
-                case (curr_lookup_state_q)
-                    // Perform L3 lookup
-                    MPTL3_LOOKUP: begin
-                        mptl3_entry = mptl_entry_q;
-                            if (!mptl3_entry.VALID) begin  // Check valid bit 
-                                format_error_cause_d = NOT_VALID_MPTL3_ENTRY;
-                                next_state_d = ERROR;
-                            end else if (mptl3_entry.RESERVED != 0) begin   // Reserved bit used
+                   if ( !mptl_entry_q.V ) begin  // Check valid bit 
+                    format_error_cause_d = NOT_VALID_ENTRY;
+                    next_state_d = ERROR;
+                end else if (mptl_entry_q.L) begin
+                    if ( mptl_entry_q.mpt_payload.leaf.RESERVED != 0 || mptl_entry_q.RESERVED != 0 ) begin
+                        format_error_cause_d = RESERVED_BITS_USED;
+                        next_state_d = ERROR;
+                    end else begin
+                        next_state_d = CHECK_PERMISSIONS;
+                    end
+                end else begin 
+                    lookup_lvl_cnt_d = lookup_lvl_cnt_q -1; 
+                    if (lookup_lvl_cnt_q == 0) begin
+                        format_error_cause_d = LEVEL_UNDERFLOW;
+                        next_state_d = ERROR;
+                    end else begin
+                        case (mmpt_q.MODE)
+                            SMMPT43_MODE: begin
+                                case (lookup_lvl_cnt_q)
+                                    // Depending on the lookup level we are in, PN1 or PN0 will be extracted
+                                    3'd2 : pn = spa_u_q.spa43.PN1;
+                                    3'd1 : pn = spa_u_q.spa43.PN0;
+                                    default : begin
+                                        format_error_cause_d = INVALID_LEVEL;
+                                        next_state_d = ERROR;
+                                    end
+                                endcase
+                            end
+
+                            SMMPT52_MODE: begin
+                                case (lookup_lvl_cnt_q)
+                                    // Depending on the lookup level we are in, PN2, PN1 or PN0 will be extracted
+                                    3'd3 : pn = spa_u_q.spa52.PN2;
+                                    3'd2 : pn = spa_u_q.spa52.PN1;
+                                    3'd1 : pn = spa_u_q.spa52.PN0;
+                                    default : begin
+                                        format_error_cause_d = INVALID_LEVEL;
+                                        next_state_d = ERROR;
+                                    end
+                                endcase
+                            end
+
+                            SMMPT64_MODE: begin
+                                case (lookup_lvl_cnt_q)
+                                    // Depending on the lookup level we are in, PN3, PN2, PN1 or PN0 will be extracted
+                                    3'd4 : pn = spa_u_q.spa64.PN3;
+                                    3'd3 : pn = spa_u_q.spa64.PN2;
+                                    3'd2 : pn = spa_u_q.spa64.PN1;
+                                    3'd1 : pn = spa_u_q.spa64.PN0;
+                                    default : begin
+                                        format_error_cause_d = INVALID_LEVEL;
+                                        next_state_d = ERROR;
+                                    end
+                                endcase
+                            end
+
+                            default: begin
                                 format_error_cause_d = RESERVED_BITS_USED; 
                                 next_state_d = ERROR;
-                            end else begin
-                                //Compute next MPT pointer
-                                next_look_up_addr = {23'b0, spa_q.PN2} + mptl3_entry.MPTL2_PPN;
-                                next_state_d = WAIT_FOR_GRANT;
-                                next_lookup_state_d = MPTL2_LOOKUP; 
                             end
-                        end
+                        endcase
 
-                    // Perform L2 lookup
-                    MPTL2_LOOKUP: begin
-                        mptl2_entry = mptl_entry_q;
-                        if (mptl2_entry.RESERVED != 0) begin // Check reserved bit
-                            format_error_cause_d = RESERVED_BITS_USED;
-                            next_state_d = ERROR;
-                        end else begin
-                            case (mptl2_entry.TYPE) 
-                                
-                                // Read, write or execute is not allowed to this 1 GiB address range for the domain
-                                TYPE_1G_DISALLOW : begin
-                                    if (mptl2_entry.INFO != 0) begin
-                                        format_error_cause_d = INVALID_MPTL2_INFO;
-                                        next_state_d = ERROR;
-                                    end else begin
-                                        permissions = DISALLOWED;
-                                        next_state_d = ERROR;
-                                        access_page_fault_d = 1;
-                                    end
-                                end
+                         //Compute next MPT pointer
+                        a = ((mptl_entry_q.mpt_payload.non_leaf.PPN) * PAGESIZE);
+                        next_lookup_addr_d = a + pn * MPTSIZE;
+                        next_state_d = WAIT_FOR_GRANT;
+                    end
+                end
+            end
 
-                                // Read and execute (but no write) is allowed to this 1 GiB address range for the domain
-                                TYPE_1G_ALLOW_RX: begin
-                                    if (mptl2_entry.INFO != 0) begin
-                                        format_error_cause_d = INVALID_MPTL2_INFO;
-                                        next_state_d = ERROR;                                        
-                                    end else begin
-                                        if (access_type_q inside {ACCESS_READ, ACCESS_EXEC}) begin
-                                            next_state_d = COMMIT;
-                                            permissions = ALLOW_RX;
-                                            plb_entry_d = {mmpt_q.SDID, spa_q, permissions};
-                                        end else begin
-                                            next_state_d = ERROR;
-                                            access_page_fault_d = 1;
-                                        end
-                                    end
-                                end
+            CHECK_PERMISSIONS: begin
+                ptw_busy_o = 1;
+                case (mmpt_q.MODE)
 
-                                // Read and write (but no execute) is allowed to this 1 GiB address range for the domain
-                                TYPE_1G_ALLOW_RW: begin 
-                                    if (mptl2_entry.INFO != 0) begin
-                                        format_error_cause_d = INVALID_MPTL2_INFO;                                        
-                                        next_state_d = ERROR;
-                                    end else begin
-                                        if (access_type_q inside {ACCESS_READ, ACCESS_WRITE}) begin
-                                            next_state_d = COMMIT;
-                                            permissions = ALLOW_RW;
-                                            plb_entry_d = {mmpt_q.SDID, spa_q, permissions};
-                                        end else begin
-                                            next_state_d = ERROR;
-                                            access_page_fault_d = 1;
-                                        end
-                                    end
-                                end
-
-                                // Read, write and execute is allowed to this 1 GiB address range for the domain
-                                TYPE_1G_ALLOW_RWX: begin
-                                    if (mptl2_entry.INFO != 0) begin
-                                        format_error_cause_d = INVALID_MPTL2_INFO;                                        
-                                        next_state_d = ERROR;
-                                    end else begin
-                                        if (access_type_q inside {ACCESS_READ,  ACCESS_WRITE,  ACCESS_EXEC}) begin
-                                            next_state_d = COMMIT;
-                                            permissions = ALLOW_RWX;
-                                            plb_entry_d = {mmpt_q.SDID, spa_q, permissions};
-                                        end else begin
-                                            next_state_d = ERROR;
-                                            access_page_fault_d = 1;
-                                        end
-                                    end
-                                end
-
-                                // INFO field provides the PPN of the MPTL1 page
-                                TYPE_MPT_L1_DIR: begin
-                                    //Compute next MPT pointer
-                                    next_look_up_addr = {34'b0, spa_q.PN1} + mptl2_entry.INFO; 
-                                    next_state_d = WAIT_FOR_GRANT;
-                                    next_lookup_state_d = MPTL1_LOOKUP; 
-                                end
-
-                                // The 32 MiB range of address space is partitioned into 16 2 MiB pages where each page has read/write/execute access specified via the INFO field
-                                TYPE_2M_PAGES: begin
-                                    if (mptl2_entry.INFO[43:32] != 0) begin
-                                        format_error_cause_d = RESERVED_BITS_USED;                                        
-                                        next_state_d = ERROR;
-                                    end else begin 
-                                        // MPTL2 info field contains permissions
-                                        case (spa_q.PN1[8:5]) 
-                                            4'b0000: permissions = mptl2_entry.INFO[1:0];
-                                            4'b0001: permissions = mptl2_entry.INFO[3:2];
-                                            4'b0010: permissions = mptl2_entry.INFO[5:4];
-                                            4'b0011: permissions = mptl2_entry.INFO[7:6];
-                                            4'b0100: permissions = mptl2_entry.INFO[9:8];
-                                            4'b0101: permissions = mptl2_entry.INFO[11:10];
-                                            4'b0110: permissions = mptl2_entry.INFO[13:12];
-                                            4'b0111: permissions = mptl2_entry.INFO[15:14];
-                                            4'b1000: permissions = mptl2_entry.INFO[17:16];
-                                            4'b1001: permissions = mptl2_entry.INFO[19:18];
-                                            4'b1010: permissions = mptl2_entry.INFO[21:20];
-                                            4'b1011: permissions = mptl2_entry.INFO[23:22];
-                                            4'b1100: permissions = mptl2_entry.INFO[25:24];
-                                            4'b1101: permissions = mptl2_entry.INFO[27:26];
-                                            4'b1110: permissions = mptl2_entry.INFO[29:28];
-                                            4'b1111: permissions = mptl2_entry.INFO[31:30];
-                                        endcase
-
-                                        // Verify if the requested access type is allowed by the MPT permissions.
-                                        // If permitted, proceed to COMMIT state and update the PLB entry.
-                                        // Otherwise, transition to ERROR state and raise a page fault. 
-                                        if ((access_type_q == ACCESS_READ  && (permissions inside {ALLOW_RX, ALLOW_RW, ALLOW_RWX})) ||
-                                            (access_type_q == ACCESS_WRITE && (permissions inside {ALLOW_RW, ALLOW_RWX})) ||
-                                            (access_type_q == ACCESS_EXEC  && (permissions inside {ALLOW_RX, ALLOW_RWX}))) 
-                                        begin
-                                            next_state_d = COMMIT;
-                                            plb_entry_d = {mmpt_q.SDID, spa_q, permissions};
-                                            
-                                        end else begin
-                                        // ACCESS_NONE: This case should never occur in normal operation.
-                                        // If it does, a page fault is raised
-                                            access_page_fault_d = 1;                             
-                                            next_state_d = ERROR;
-                                        end
-                                    end
-                                end                                
-                                // Type field undefined
-                                default: begin
-                                    format_error_cause_d = UNDEFINED_MPTL2_TYPE;
-                                    next_state_d = ERROR;
-                                end
-                            endcase
-                        end
+                    SMMPT43_MODE: begin
+                        if (lookup_lvl_cnt_q > 0) begin
+                            if (lookup_lvl_cnt_q == 2) begin
+                                range_offset = spa_u_q.spa43.PN1[8:9-NUMPGINRANGE];
+                            end else
+                                range_offset = spa_u_q.spa43.PN0[8:9-NUMPGINRANGE];
+                        end else 
+                            range_offset = spa_u_q.spa43.RANGE_OFFSET[15:16-NUMPGINRANGE];
                     end
 
-                    // Perform L1 lookup
-                    MPTL1_LOOKUP:begin
-                        mptl1_entry = mptl_entry_q;
-                        if (mptl1_entry.RESERVED != 0) begin   // Check reserved bit
-                            format_error_cause_d = RESERVED_BITS_USED;                              
-                            next_state_d = ERROR;
-                        end else begin
-                            // Directly index into the PAGE_PERM array using spa_q.PN0
-                            permissions = mptl1_entry.PAGE_PERM[spa_q.PN0];
+                    SMMPT52_MODE: begin
+                        if (lookup_lvl_cnt_q > 0) begin
+                            if (lookup_lvl_cnt_q == 3) begin
+                                range_offset = spa_u_q.spa52.PN2[8:9-NUMPGINRANGE];
+                            end else if (lookup_lvl_cnt_q == 2) begin 
+                                range_offset = spa_u_q.spa52.PN1[8:9-NUMPGINRANGE];
+                            end else
+                                range_offset = spa_u_q.spa52.PN0[8:9-NUMPGINRANGE];
+                        end else
+                            range_offset = spa_u_q.spa52.RANGE_OFFSET[15:16-NUMPGINRANGE];
+                    end
 
-                            // Verify if the requested access type is allowed by the MPT permissions.
-                            // If permitted, proceed to COMMIT state and update the PLB entry.
-                            // Otherwise, transition to ERROR state and raise a page fault. 
-                            if ((access_type_q == ACCESS_READ  && (permissions inside {ALLOW_RX, ALLOW_RW, ALLOW_RWX})) ||
-                                (access_type_q == ACCESS_WRITE && (permissions inside {ALLOW_RW, ALLOW_RWX})) ||
-                                (access_type_q == ACCESS_EXEC  && (permissions inside {ALLOW_RX, ALLOW_RWX}))) 
-                            begin
-                                next_state_d = COMMIT;
-                                plb_entry_d = {mmpt_q.SDID, spa_q, permissions};
-                            end else begin
-                                // ACCESS_NONE: This case should never occur in normal operation.
-                                // If it does, a page fault is raised
-                                access_page_fault_d = 1;                             
-                                next_state_d = ERROR;
-                            end     
-                        end
+                    SMMPT64_MODE: begin
+                        if (lookup_lvl_cnt_q > 0) begin    
+                            if (lookup_lvl_cnt_q == 4) begin
+                                range_offset = spa_u_q.spa64.PN3[8:9-NUMPGINRANGE];
+                            end else if (lookup_lvl_cnt_q == 3) begin
+                                range_offset = spa_u_q.spa64.PN2[8:9-NUMPGINRANGE];
+                            end else if (lookup_lvl_cnt_q == 2) begin
+                                range_offset = spa_u_q.spa64.PN1[8:9-NUMPGINRANGE];
+                            end else
+                                range_offset = spa_u_q.spa64.PN0[8:9-NUMPGINRANGE];    
+                        end else
+                            range_offset = spa_u_q.spa64.RANGE_OFFSET[15:16-NUMPGINRANGE];
                     end
 
                     default: begin
-                        // Invalid look_up_state
-                        format_error_cause_d = UNDEFINED_MPT_LOOKUP_STATE;
+                        format_error_cause_d = UNSUPPORTED_MODE; 
                         next_state_d = ERROR;
                     end
-            endcase
+                endcase
+
+                mpt_permissions = mptl_entry_q.mpt_payload.leaf.PERMS[range_offset];
+
+                // Check permissions
+                if ((access_type_q == ACCESS_READ  && (mpt_permissions inside {ALLOW_R, ALLOW_RW, ALLOW_RX, ALLOW_RWX})) ||
+                    (access_type_q == ACCESS_WRITE && (mpt_permissions inside {ALLOW_RW, ALLOW_RWX})) ||
+                    (access_type_q == ACCESS_EXEC  && (mpt_permissions inside {ALLOW_X, ALLOW_RX, ALLOW_RWX}))) 
+                begin
+                    next_state_d = COMMIT;
+                    plb_entry_d = {mmpt_q.SDID, spa_u_q.spa64, mpt_permissions};
+                end else begin
+                    access_page_fault_d = 1;
+                    next_state_d = ERROR;
+                end
             end
 
             // Wait for the mem_valid signal before transitioning to the IDLE state
@@ -380,7 +336,7 @@ module mpt64_top #(
             if ((curr_state_q inside {WAIT_FOR_RVALID, FLUSH} && !m_mem_valid) || (curr_state_q == WAIT_FOR_GRANT && m_mem_gnt)) begin
                 next_state_d = FLUSH;
             end else begin
-                next_state_d = IDLE; // Otherwise, transition directly to IDLE
+                next_state_d = IDLE; // Otherwise, go to IDLE state
             end
         end
     end
@@ -389,23 +345,25 @@ module mpt64_top #(
     always_ff @(posedge clk_i) begin
         if (!rst_ni) begin
             curr_state_q <= IDLE;
-            curr_lookup_state_q <= MPTL3_LOOKUP;
-            spa_q <= 0;
+            spa_u_q <= 0;
             mmpt_q <= 0;
             mptl_entry_q <= 0;
             format_error_cause_q <= 0;
             access_type_q <= 0;
             plb_entry_q <= 0;
             access_page_fault_q <= 0;
+            lookup_lvl_cnt_q <= 0;
+            next_lookup_addr_q <= 0; 
         end else begin
             curr_state_q <= next_state_d;
-            curr_lookup_state_q <= next_lookup_state_d;
             format_error_cause_q <= format_error_cause_d;
             access_page_fault_q <= 0;
+            lookup_lvl_cnt_q <= lookup_lvl_cnt_d; 
+            next_lookup_addr_q <= next_lookup_addr_d;
             case (curr_state_q) 
                 IDLE: begin
                     if(addr_valid_i) begin
-                        spa_q <= spa_i;                 
+                        spa_u_q <= spa_i;                 
                         mmpt_q <= mmpt_reg_i;           
                         access_type_q <= access_type_i; 
                     end
@@ -415,18 +373,15 @@ module mpt64_top #(
                         mptl_entry_q <= m_mem_rdata[XLEN-1:0];
                     end
                 end
-                
-                MPT_LOOKUP: begin
+                CHECK_PERMISSIONS: begin
                     plb_entry_q <= plb_entry_d;
                     access_page_fault_q <= access_page_fault_d;
                 end
                 
                 default: begin
                     curr_state_q <= next_state_d;
-                    curr_lookup_state_q <= next_lookup_state_d;
                 end
             endcase
         end
     end
-
 endmodule
