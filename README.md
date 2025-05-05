@@ -18,9 +18,14 @@ Run the following command from the root directory:
 $ source settings.sh rv32   # For 32-bit systems
 $ source settings.sh rv64   # For 64-bit systems
 ```
+If no argument is provided (i.e., if the script is executed as `source settings.sh`), the environment will be configured by default for the RV64 architecture.
 ## Simulation Flow
 Follow these steps to generate test cases, build, run, and verify the MPT simulation:
 1. #### Generate Test Cases
+> ⚠️ **Important:** The current version of the simulation test flow in this branch is **not compatible** with the `generate_test_cases.py` and `check_test_cases.py` scripts.  
+> To use the test generation and checking functionalities, you must **revert to commit `d42df3d`**.  
+> For more details, refer to the following issue: https://github.com/Granp4sso/RISC-V-Memory-Protection-Table/issues/7#issue-3039046262.
+
 Navigate to the `simulation` directory and run the `generate_test_cases.py` script to generate the test cases. Specify the number of test cases as an argument:
 
 ```bash
@@ -56,6 +61,10 @@ $ ./mpt_top.elf
 The simulation will take the generated test cases as input and produce an output file named `simulation_output_rv64.csv` (or `simulation_output_rv32.csv` depending on your architecture). This output file will contain the actual values for the same fields generated in the test cases.
 
 4. #### Check Results
+> ⚠️ **Important:** The current version of the simulation test flow in this branch is **not compatible** with the `generate_test_cases.py` and `check_test_cases.py` scripts.  
+> To use the test generation and checking functionalities, you must **revert to commit `d42df3d`**.  
+> For more details, refer to the following issue: https://github.com/Granp4sso/RISC-V-Memory-Protection-Table/issues/7#issue-3039046262.
+
 To compare the actual simulation output with the expected results (the "oracle" from the generated test cases), use the `check_test_cases.py` script:
 
 ```bash
