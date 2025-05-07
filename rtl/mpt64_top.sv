@@ -73,8 +73,8 @@ module mpt64_top #(
         // Default values
         access_page_fault_d = 0;
         access_page_fault_o = 0;
-        format_error_cause_d = 0;
-        format_error_o = 0;
+        format_error_cause_d = NO_ERROR;
+        format_error_o = NO_ERROR;
         ptw_busy_o = 0;
         ptw_valid_o = 0;
         allow_o = 0;
@@ -348,8 +348,8 @@ module mpt64_top #(
             spa_u_q <= 0;
             mmpt_q <= 0;
             mptl_entry_q <= 0;
-            format_error_cause_q <= 0;
-            access_type_q <= 0;
+            format_error_cause_q <= NO_ERROR;
+            access_type_q <= ACCESS_NONE;
             plb_entry_q <= 0;
             access_page_fault_q <= 0;
             lookup_lvl_cnt_q <= 0;

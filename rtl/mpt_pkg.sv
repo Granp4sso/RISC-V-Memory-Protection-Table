@@ -11,6 +11,9 @@
 `ifndef MPT_PKG
 `define MPT_PKG
 
+`ifndef ARCH_rv64
+`define ARCH_rv64
+
     package mpt_pkg;
         
         // Define lengths for various fields based on XLEN
@@ -37,11 +40,11 @@
         } mpt_state_e;
 
         // MPT access types
-        typedef enum logic [1:0] {
-            ACCESS_NONE  = 2'b00,
-            ACCESS_READ  = 2'b01,
-            ACCESS_WRITE = 2'b10,
-            ACCESS_EXEC  = 2'b11
+        typedef enum logic [2:0] {
+            ACCESS_NONE  = 3'b000,
+            ACCESS_READ  = 3'b001,
+            ACCESS_WRITE = 3'b010,
+            ACCESS_EXEC  = 3'b100
         } mpt_access_e;
 
         // Format error that may occur in page table lookups
@@ -202,4 +205,5 @@
         } mmpt_reg_t;
         
     endpackage;
+`endif
 `endif
