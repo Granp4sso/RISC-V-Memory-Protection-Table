@@ -7,7 +7,7 @@
 // TODO: add support for more than 1 input/output ports
 
 // Import headers
-`include "include/pipelining.svh" 
+`include "pipelining.svh" 
 
 module pipeline_register #(
     parameter unsigned DATA_WIDTH = 32
@@ -17,8 +17,8 @@ module pipeline_register #(
     input  logic                rst_ni,
 
     // Master Port
-    `DEFINE_SLAVE_DATA_PORT(s_data, DATA_WIDTH)
-    `DEFINE_MASTER_DATA_PORT(m_data, DATA_WIDTH)
+    `DEFINE_SLAVE_DATA_PORT(s_data, DATA_WIDTH),
+    `DEFINE_MASTER_DATA_PORT(m_data, DATA_WIDTH),
 
     // Slave Port       
     `DEFINE_SLAVE_CTRL_PORT(s_ctrl)
@@ -58,14 +58,14 @@ module pipeline_register #(
     // Data is produced by the previous pipeline stage
 
     always_comb begin
-        reg_data_d = (~flushed) ? s_data_rdata : '0;
+        reg_data_d = (~flush) ? s_data_rdata : '0;
     end
 
     always_ff @(posedge clk_i) begin
         if (~rst_ni) begin
             reg_data_q <= '0;
         end else begin
-            if (~stalled && s_data_valid) begin
+            if (~stall && s_data_valid) begin
                 // The pipeline is not stalled and
                 // the previous stage produced a valid data
                 reg_data_q <= reg_data_d;
@@ -74,24 +74,26 @@ module pipeline_register #(
     end
 
     // The pipeline is ready to accept a new data if it is not stalled
-    assign s_data_ready = ~stalled;
+    assign s_data_ready = ~stall;
 
     //////////////////
     // Master Logic //
     //////////////////
 
     // The Pipeline is producing a valid value every clock cycle
-    // if it is not stalled
+    // if it is not stalled. No assmuptions are made on the valid signal.
+    // Once the ready signal is high and the valid is high as well, the data
+    // is fetched by the consumer.
 
     always_comb begin
-        valid_d = (~flushed) ? ~stalled : '0;
+        valid_d = (~flush) ? ~stall : '0;
     end
 
     always_ff @(posedge clk_i) begin
         if (~rst_ni || s_ctrl_flush) begin
             valid_q <= '0;
         end else begin
-            if (~stalled && m_data_ready) begin
+            if (~stall && m_data_ready) begin
                 // The consumer is ready to accept a new data
                 valid_q <= valid_d;
             end
@@ -100,7 +102,7 @@ module pipeline_register #(
 
     // The pipeline register is producing no data if a flush
     // has occurred
-    assign m_data_rdata = (~flushed) ? reg_data_q : '0;
-    assign m_data_valid = (~flushed) ? valid_q : '0;
+    assign m_data_rdata = (~flush) ? reg_data_q : '0;
+    assign m_data_valid = (~flush) ? valid_q : '0;
     
 endmodule : pipeline_register

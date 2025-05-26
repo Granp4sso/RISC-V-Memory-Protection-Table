@@ -2,7 +2,8 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
-#include "sim.hpp"
+//#include "sim.hpp"
+
 
 // test cases struct
 typedef struct {
@@ -243,12 +244,7 @@ int main(int argc, char **argv) {
 
     printf("\n[Sim::Cycle::00000000] Starting Simulation\n");
 
-    // Call the function that runs the simulation and saves results
-    #ifdef ARCH_rv32
-        run_simulation_and_save_results("test_cases_rv32.csv", "simulation_output_rv32.csv", &uut);
-	#elif defined(ARCH_rv64)
-        run_simulation_and_save_results("test_cases_rv64.csv", "simulation_output_rv64.csv", &uut);
-	#endif
+    // 
 
     // Stop Simulation
     printf("\n[Sim::Cycle::%08lu] Simulation completed\n", uut.clkcnt);

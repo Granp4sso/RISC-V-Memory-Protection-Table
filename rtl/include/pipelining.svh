@@ -60,35 +60,35 @@
 // Master Ports
 `define DEFINE_MASTER_CTRL_PORT(port_name)  \
                                             \
-    output logic       ``port_name``_flush; \
-    output logic       ``port_name``_stall;         
+    output logic       ``port_name``_flush, \
+    output logic       ``port_name``_stall         
 
 `define DEFINE_MASTER_DATA_PORT(port_name, size)        \
                                                         \
-    output logic [``size`` -1 : 0] ``port_name``_rdata; \
-    output logic                   ``port_name``_valid; \
-    input  logic                   ``port_name``_ready;     
+    output logic [``size`` -1 : 0] ``port_name``_rdata, \
+    output logic                   ``port_name``_valid, \
+    input  logic                   ``port_name``_ready     
 
 `define DEFINE_MASTER_PIPELINE_PORT(pipe_name, size)    \
                                                         \
-    `DEFINE_MASTER_CTRL_PORT(``pipe_name``_ctrl)        \
+    `DEFINE_MASTER_CTRL_PORT(``pipe_name``_ctrl),       \
     `DEFINE_MASTER_DATA_PORT(``pipe_name``_data)    
 
 // Slave Ports
 `define DEFINE_SLAVE_CTRL_PORT(port_name)   \
                                             \
-    input  logic       ``port_name``_flush; \
-    input  logic       ``port_name``_stall;         
+    input  logic       ``port_name``_flush, \
+    input  logic       ``port_name``_stall         
 
 `define DEFINE_SLAVE_DATA_PORT(port_name, size)         \
                                                         \
-    input  logic [``size`` -1 : 0] ``port_name``_rdata; \
-    input  logic                   ``port_name``_valid; \
-    output logic                   ``port_name``_ready;     
+    input  logic [``size`` -1 : 0] ``port_name``_rdata, \
+    input  logic                   ``port_name``_valid, \
+    output logic                   ``port_name``_ready     
 
 `define DEFINE_SLAVE_PIPELINE_PORT(pipe_name, size)     \
                                                         \
-    `DEFINE_SLAVE_CTRL_PORT(``pipe_name``_ctrl)         \
+    `DEFINE_SLAVE_CTRL_PORT(``pipe_name``_ctrl),        \
     `DEFINE_SLAVE_DATA_PORT(``pipe_name``_data)    
 
 ////////////////

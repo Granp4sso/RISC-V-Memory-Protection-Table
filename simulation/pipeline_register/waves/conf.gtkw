@@ -1,0 +1,37 @@
+[*]
+[*] GTKWave Analyzer v3.3.104 (w)1999-2020 BSI
+[*] Mon May 26 12:41:54 2025
+[*]
+[dumpfile] "/home/stefano/Desktop/Work/Projects/smmtt/b_pipelining/simulation/pipeline_register/waves/trace.vcd"
+[dumpfile_mtime] "Mon May 26 12:41:19 2025"
+[dumpfile_size] 10020
+[savefile] "/home/stefano/Desktop/Work/Projects/smmtt/b_pipelining/simulation/pipeline_register/waves/conf.gtkw"
+[timestart] 9
+[size] 1850 1016
+[pos] 1920 20
+*-6.000000 265 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[treeopen] TOP.
+[sst_width] 233
+[signals_width] 403
+[sst_expanded] 1
+[sst_vpaned_height] 350
+@28
+TOP.clk_i
+TOP.rst_ni
+@22
+TOP.m_data_rdata[31:0]
+@28
+TOP.m_data_ready
+TOP.m_data_valid
+TOP.s_ctrl_flush
+TOP.s_ctrl_stall
+@22
+TOP.s_data_rdata[31:0]
+@28
+TOP.s_data_ready
+TOP.s_data_valid
+TOP.pipeline_register.stall
+@23
+TOP.pipeline_register.reg_data_q[31:0]
+[pattern_trace] 1
+[pattern_trace] 0
