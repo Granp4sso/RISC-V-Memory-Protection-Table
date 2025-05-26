@@ -2,11 +2,11 @@
 // Author: Valerio Di Domenico <didomenico.valerio@virgilio.it>
 
 // Description: 
-// This package defines structures, parameters, and state machines for managing 
-// Memory Protection Tables (MPT) in systems with 64-bit architectures. 
-// It includes types for MPT entries, access permissions, error handling, and PLB entries.
-// The package supports different memory protection modes and lookup levels, 
-// adapting to various system configurations based on the XLEN (architecture width).
+//  This package defines structures, parameters, and state machines for managing 
+//  Memory Protection Tables (MPT) in systems with 64-bit architectures. 
+//  It includes types for MPT entries, access permissions, error handling, and PLB entries.
+//  The package supports different memory protection modes and lookup levels, 
+//  adapting to various system configurations based on the XLEN (architecture width).
 
 `ifndef MPT_PKG
 `define MPT_PKG
@@ -202,4 +202,5 @@
         } mmpt_reg_t;
         
     endpackage;
+    
 `endif
