@@ -200,6 +200,19 @@
             logic [WPRI_BITS_LEN-1:0] WPRI; // Write-preserved, read-ignored bits
             logic [PPN_LEN-1:0]       PPN;  // Physical page number (PPN) of the root page of the memory protection tables. Must be set to 0 if mode = BARE
         } mmpt_reg_t;
+
+        ////////////////////////////////////////////////////
+
+        // Transaction type is used as input for the MPT Walker
+        // And propagated throughout the pipeline
+
+        typedef struct packed {
+            mmpt_reg_t      mmpt;
+            spa_t_u         spa;
+            mpt_access_e    access_type;
+        } mptw_transaction_t;
+
+        
         
     endpackage;
     

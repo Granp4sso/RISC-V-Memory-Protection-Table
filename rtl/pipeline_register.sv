@@ -16,19 +16,17 @@ module pipeline_register #(
     input  logic                clk_i,
     input  logic                rst_ni,
 
-    // Master Port
+    // Pipeline Ports
     `DEFINE_SLAVE_DATA_PORT(s_data, DATA_WIDTH),
     `DEFINE_MASTER_DATA_PORT(m_data, DATA_WIDTH),
 
-    // Slave Port       
+    // Control Ports    
     `DEFINE_SLAVE_CTRL_PORT(s_ctrl)
 
 ); 
     // Internal Signals
     logic [DATA_WIDTH - 1 : 0] reg_data_d, reg_data_q;
-    logic ready_d, ready_q;
     logic valid_d, valid_q;
-
     logic stall, flush;
 
     ///////////////////

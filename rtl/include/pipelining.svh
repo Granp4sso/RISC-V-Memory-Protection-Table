@@ -46,7 +46,7 @@
 
 `define ASSIGN_DATA_BUS(dest, src)              \
     assign ``dest``_data    = ``src``_rdata ;   \
-    assign ``dest``_valid   = ``src``_stall ;   \
+    assign ``dest``_valid   = ``src``_valid ;   \
     assign ``dest``_ready   = ``src``_ready ;   
 
 `define ASSIGN_PIPELINE_BUS(dest, src)              \
@@ -91,41 +91,6 @@
     `DEFINE_SLAVE_CTRL_PORT(``pipe_name``_ctrl),        \
     `DEFINE_SLAVE_DATA_PORT(``pipe_name``_data)    
 
-////////////////
-// Sink Ports //
-////////////////
-
-// These macros are meant to emulate a stub master or slave,
-// never really doing anything. This way, we avoid to leave
-// floating signals around.
-
-// Master Ports
-`define SINK_MASTER_CTRL_PORT(port_name)  \
-
-`define SINK_MASTER_DATA_PORT(port_name)  \
-    assign ``port_name``_ready = '0;     
-
-`define SINK_MASTER_PIPELINE_PORT(pipe_name)        \
-                                                    \
-    `SINK_MASTER_CTRL_PORT(``pipe_name``_ctrl)      \
-    `SINK_MASTER_DATA_PORT(``pipe_name``_data)    
-
-// Slave Ports
-`define SINK_SLAVE_CTRL_PORT(port_name) \
-                                        \
-    assign ``port_name``_flush = '0;    \
-    assign ``port_name``_stall = '0;         
-
-`define SINK_SLAVE_DATA_PORT(port_name)         \
-                                                \
-    assign ``port_name``_rdata = '0;            \
-    assign ``port_name``_valid = '0;   
-
-`define SINK_SLAVE_PIPELINE_PORT(pipe_name)         \
-                                                    \
-    `SINK_SLAVE_CTRL_PORT(``pipe_name``_ctrl)       \
-    `SINK_SLAVE_DATA_PORT(``pipe_name``_data)    
-
 //////////////////
 // Port Mapping //
 //////////////////
@@ -133,7 +98,7 @@
 `define MAP_CTRL_PORT(unit_port, coming_bus)        \
                                                     \
     .``unit_port``_flush ( ``coming_bus``_flush ),  \
-    .``unit_port``_flush ( ``coming_bus``_stall ), 
+    .``unit_port``_stall ( ``coming_bus``_stall ), 
 
 `define MAP_DATA_PORT(unit_port, coming_bus)        \
                                                     \
@@ -145,5 +110,48 @@
                                                             \
     `MAP_CTRL_PORT(``unit_port``_ctrl, ``coming_bus``_ctrl) \
     `MAP_DATA_PORT(``unit_port``_data, ``coming_bus``_data) 
+
+//////////////////////////
+// Sink Buses and Ports //
+//////////////////////////
+
+// These macros are meant to emulate a stub master or slave,
+// never really doing anything. This way, we avoid to leave
+// floating signals around.
+
+// Master Ports
+`define SINK_MASTER_CTRL_BUS(port_name)  \
+
+`define SINK_MASTER_DATA_BUS(port_name)  \
+    assign ``port_name``_ready = '0;     
+
+`define SINK_MASTER_PIPELINE_BUS(pipe_name)        \
+                                                    \
+    `SINK_MASTER_CTRL_BUS(``pipe_name``_ctrl)      \
+    `SINK_MASTER_DATA_BUS(``pipe_name``_data)    
+
+`define SINK_MASTER_CTRL_PORT(unit_port)  \
+    .``unit_port``_flush ( '0 ),
+    .``unit_port``_stall ( '0 ),
+
+// Slave Ports
+`define SINK_SLAVE_CTRL_BUS(port_name) \
+                                        \
+    assign ``port_name``_flush = '0;    \
+    assign ``port_name``_stall = '0;         
+
+`define SINK_SLAVE_DATA_BUS(port_name)         \
+                                                \
+    assign ``port_name``_rdata = '0;            \
+    assign ``port_name``_valid = '0;   
+
+`define SINK_SLAVE_PIPELINE_BUS(pipe_name)         \
+                                                    \
+    `SINK_SLAVE_CTRL_BUS(``pipe_name``_ctrl)       \
+    `SINK_SLAVE_DATA_BUS(``pipe_name``_data)    
+
+`define SINK_SLAVE_CTRL_PORT(unit_port)  \
+    .``unit_port``_flush ( ),
+    .``unit_port``_stall ( ),
 
 `endif // _PIPELINING_SVH__
