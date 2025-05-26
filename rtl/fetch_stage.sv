@@ -111,6 +111,6 @@ module fetch_stage #(
     // Pipeline Master Port Packing //
     //////////////////////////////////
 
-    `ASSIGN_DATA_BUS(fetch_master, slave_master)
+    `ASSIGN_DATA_BUS(fetch_master, fetch_slave)
     
 endmodule : fetch_stage

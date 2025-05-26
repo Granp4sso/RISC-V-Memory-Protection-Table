@@ -9,7 +9,8 @@ import mpt_pkg::*;
 /* verilator lint_on IMPORTSTAR */
 
 // Import headers
-include "pipelining.svh" 
+`include "pipelining.svh"
+`include "uninasoc_mem.svh"
 
 module mptw_top #(
 ) (
@@ -41,8 +42,8 @@ module mptw_top #(
     // Localparam Declaration //
     ////////////////////////////
 
-    localparam fetch_stage_datawidth = $bits(mptw_transaction_t);
-    localparam plb_lookup_stage_datawidth = $bits(mptw_transaction_t);
+    localparam fetch_stage_datawidth        = $bits(mptw_transaction_t);
+    localparam plb_lookup_stage_datawidth   = $bits(mptw_transaction_t);
 
     /////////////////////////
     // Signals Declaration //
@@ -61,7 +62,7 @@ module mptw_top #(
     // Input Handling logic
     //      TBD
 
-    // Fetch Stage
+    // Fetch Stage 
     fetch_stage # (
 
         .PIPELINE_SLAVE_DATA_WIDTH      ( fetch_stage_datawidth         ),
@@ -84,13 +85,14 @@ module mptw_top #(
 
         .DATA_WIDTH             ( plb_lookup_stage_datawidth    )
 
-    ) (
+    ) fetch_to_plb_lookup_reg_u (
+
         .clk_i                  ( clk_i                         ),
         .rst_ni                 ( rst_ni                        ),
 
         `MAP_DATA_PORT          ( s_data, fetch_to_pipe         ),
         `MAP_DATA_PORT          ( m_data, fetch_to_plb_lookup   ),
-        `SINK_SLAVE_CTRL_PORT   ( s_ctrl                        ),
+        `SINK_SLAVE_CTRL_PORT   ( s_ctrl                        )
 
     ); 
 
@@ -98,10 +100,18 @@ module mptw_top #(
     // PLB Lookup Stage //
     //////////////////////
 
-    
-
     ////////////////////
     // Walking Stages //
     ////////////////////
+
+    //////////////////
+    // Retire Stage //
+    //////////////////
+
+    // Optional if OoO is not supported
+
+    //////////////////
+    // Commit Stage //
+    //////////////////
 
 endmodule : mptw_top

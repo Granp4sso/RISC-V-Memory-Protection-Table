@@ -203,6 +203,11 @@
 
         ////////////////////////////////////////////////////
 
+        typedef enum logic [1:0] {
+            MPT_WALKING_DO      = 2'b00,
+            MPT_WALKING_SKIP    = 2'b11
+        } mpt_walking_e;
+
         // Transaction type is used as input for the MPT Walker
         // And propagated throughout the pipeline
 
@@ -210,9 +215,16 @@
             mmpt_reg_t      mmpt;
             spa_t_u         spa;
             mpt_access_e    access_type;
+            mpt_walking_e   walking;
         } mptw_transaction_t;
 
-        
+        typedef struct packed {
+            logic [SDID_LEN-1:0]    SDID;
+            spa_t_u                 spa;
+            mpt_access_e            access_type;
+        } plb_lookup_req_t;
+
+
         
     endpackage;
     
