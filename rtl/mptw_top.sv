@@ -8,14 +8,20 @@
 import mpt_pkg::*;
 /* verilator lint_on IMPORTSTAR */
 
+/* verilator lint_off UNDRIVEN */
+
 // Import headers
 `include "pipelining.svh"
 `include "uninasoc_mem.svh"
 
+
+// TODO: Check READY LOGIC IN THE PIPELINE
+// TODO: MEM REQ must be high until MEM GRNT is high
+
 module mptw_top #(
 
-    localparam unsigned PLB_TRANSACTION_DATA_WIDTH  = 1;                        // Only interested in the hit response 
-    localparam unsigned PLB_TRANSACTION_ADDR_WIDTH  = $bits(plb_lookup_req_t); 
+    localparam unsigned PLB_TRANSACTION_DATA_WIDTH  = 8,                        // Only interested in the hit response 
+    localparam unsigned PLB_TRANSACTION_ADDR_WIDTH  = $bits(plb_lookup_req_t) 
 ) (
     //////////////////
     // Control Port //
@@ -99,6 +105,9 @@ module mptw_top #(
     `DECLARE_DATA_BUS( plb_lookup_to_pipe   , walking_stage_datawidth       );
     `DECLARE_DATA_BUS( pipe_to_walking      , walking_stage_datawidth       );
 
+    `DECLARE_STATUS_BUS( fetch_pipe_status      );
+    `DECLARE_STATUS_BUS( plb_lookup_pipe_status );
+
     //////////////////////////////////////////////////////
     //    ___    _      _      ___ _                    //
     //   | __|__| |_ __| |_   / __| |_ __ _ __ _ ___    //
@@ -132,7 +141,7 @@ module mptw_top #(
     // Fetch Stage Instance //
     //////////////////////////
 
-    .fetch_stage # (
+    fetch_stage # (
 
         .PIPELINE_SLAVE_DATA_WIDTH      ( fetch_stage_datawidth         ),
         .PIPELINE_MASTER_DATA_WIDTH     ( plb_lookup_stage_datawidth    )
@@ -153,7 +162,7 @@ module mptw_top #(
     // Fetch to PLB Lookup Pipeline Register //
     ///////////////////////////////////////////
 
-    .pipeline_register # ( 
+    pipeline_register # ( 
 
         .DATA_WIDTH             ( plb_lookup_stage_datawidth    )
 
@@ -163,8 +172,9 @@ module mptw_top #(
         .rst_ni                 ( rst_ni                        ),
 
         `MAP_DATA_PORT          ( s_data, fetch_to_pipe         ),
-        `MAP_DATA_PORT          ( m_data, pipe_to_plb_lookup   ),
-        `SINK_SLAVE_CTRL_PORT   ( s_ctrl                        )
+        `MAP_DATA_PORT          ( m_data, pipe_to_plb_lookup    ),
+        `SINK_SLAVE_CTRL_PORT   ( s_ctrl                        ),
+        `MAP_STATUS_PORT        ( s_status, fetch_pipe_status   )
 
     ); 
 
@@ -176,7 +186,7 @@ module mptw_top #(
     //                                         |_|                 |___/        //
     //////////////////////////////////////////////////////////////////////////////
 
-    .plb_lookup_stage #(
+    plb_lookup_stage #(
 
         .PIPELINE_SLAVE_DATA_WIDTH  ( plb_lookup_stage_datawidth ),
         .PIPELINE_MASTER_DATA_WIDTH ( walking_stage_datawidth    )
@@ -208,18 +218,19 @@ module mptw_top #(
     //PLB Lookup to Walking Stages Pipeline Register //
     ///////////////////////////////////////////////////
 
-    .pipeline_register # ( 
+    pipeline_register # ( 
 
         .DATA_WIDTH             ( plb_lookup_stage_datawidth    )
 
-    ) fetch_to_plb_lookup_reg_u (
+    ) plb_lookup_to_walking_reg_u (
 
-        .clk_i                  ( clk_i                         ),
-        .rst_ni                 ( rst_ni                        ),
+        .clk_i                  ( clk_i                             ),
+        .rst_ni                 ( rst_ni                            ),
 
-        `MAP_DATA_PORT          ( s_data, plb_lookup_to_pipe    ),
-        `MAP_DATA_PORT          ( m_data, pipe_to_walking       ),
-        `SINK_SLAVE_CTRL_PORT   ( s_ctrl                        )
+        `MAP_DATA_PORT          ( s_data, plb_lookup_to_pipe        ),
+        `MAP_DATA_PORT          ( m_data, pipe_to_walking           ),
+        `SINK_SLAVE_CTRL_PORT   ( s_ctrl                            ),
+        `MAP_STATUS_PORT        ( s_status, plb_lookup_pipe_status  )
 
     ); 
 

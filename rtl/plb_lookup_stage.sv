@@ -19,10 +19,10 @@ import mpt_pkg::*;
 `include "uninasoc_mem.svh"
 
 module plb_lookup_stage #(
-    parameter unsigned  PIPELINE_SLAVE_DATA_WIDTH   = 32;
-    parameter unsigned  PIPELINE_MASTER_DATA_WIDTH  = 32;
-    localparam unsigned PLB_TRANSACTION_DATA_WIDTH  = 1;                        // Only interested in the hit response 
-    localparam unsigned PLB_TRANSACTION_ADDR_WIDTH  = $bits(plb_lookup_req_t); 
+    parameter unsigned  PIPELINE_SLAVE_DATA_WIDTH   = 32,
+    parameter unsigned  PIPELINE_MASTER_DATA_WIDTH  = 32,
+    localparam unsigned PLB_TRANSACTION_DATA_WIDTH  = 8,                        // Only interested in the hit response 
+    localparam unsigned PLB_TRANSACTION_ADDR_WIDTH  = $bits(plb_lookup_req_t) 
 ) (
     // Generic Signals
     input  logic                clk_i,
@@ -35,7 +35,7 @@ module plb_lookup_stage #(
     `DEFINE_MASTER_DATA_PORT(plb_lookup_master, PIPELINE_MASTER_DATA_WIDTH),
 
     // PLB Lookup Control Port (Unused atm)
-    `DEFINE_SLAVE_CTRL_PORT(plb_lookup_control),
+    `DEFINE_SLAVE_CTRL_PORT(plb_lookup_ctrl),
 
     // Cache memory interface
     `DEFINE_MEM_MASTER_PORTS(plb_cache, PLB_TRANSACTION_DATA_WIDTH, PLB_TRANSACTION_ADDR_WIDTH)
@@ -69,6 +69,9 @@ module plb_lookup_stage #(
 
     // Data bus from Valid Stage to the outside (next pipeline reg)
     `DECLARE_DATA_BUS(valid_stage, PIPELINE_SLAVE_DATA_WIDTH)
+    `DECLARE_CTRL_BUS(valid_ctrl)
+
+    `DECLARE_STATUS_BUS( grant_status );
 
     ///////////////////////
     // Bus Concatenation //
@@ -89,7 +92,7 @@ module plb_lookup_stage #(
     //////////////////////////////////////////////////////
 
     // Unpack data into grant_stage_transaction
-    assign grant_stage_transaction = plb_lookup_slave_rdata;
+    assign grant_stage_transaction = plb_lookup_slave_data;
 
     //////////////////////////////////////////////////////////
     //     ___              _     ___ _                     //
@@ -112,10 +115,13 @@ module plb_lookup_stage #(
     // This is fundamental as when a grant is provided by the memory, in t he
     // next clock cycles[s] an answer will come regardless of the Valid Stage status.
     always_comb begin
-        // Deault values
+        // Deault values for the cache port
         plb_cache_mem_req   = '0;
         plb_cache_mem_addr  = '0;
         plb_cache_mem_we    = '0;
+        plb_cache_mem_wdata = '0;   // Unused (Write Port)
+        plb_cache_mem_be    = '0;   // Unused (Write Port)
+
         // If Valid Stage is ready, send out a read request.
         // The request is high as long as the pipeline is working.
         // Once the grant signal is asserted by the memory, the result
@@ -128,14 +134,15 @@ module plb_lookup_stage #(
             if ( plb_cache_mem_gnt ) begin
                 // We can write on the pipeline register
                 grant_to_valid_valid    = 1'b1;
-                // Next clock cycle, we can have a new request coming in
-                plb_lookup_slave_ready  = 1'b1;
             end else begin
                 grant_to_valid_valid    = 1'b0;
-                plb_lookup_slave_ready  = 1'b0;
             end
         end 
     end
+
+    // If the next stage is NOT busy, then we are ready for a new request
+    // if the grant is asserted by the memory
+    assign plb_lookup_slave_ready  = ( ~grant_status_busy ) ? 1'b1 : plb_cache_mem_gnt;
 
     // The transaction value will be forwarded to the valid stage
     assign grant_to_valid_data = grant_stage_transaction;
@@ -154,7 +161,8 @@ module plb_lookup_stage #(
         .rst_ni                 ( rst_ni                        ),
         `MAP_DATA_PORT          ( s_data, grant_to_valid        ),
         `MAP_DATA_PORT          ( m_data, valid_stage           ),
-        `MAP_CTRL_PORT          ( s_ctrl, grant_ctrl            )
+        `MAP_CTRL_PORT          ( s_ctrl, grant_ctrl            ),
+        `MAP_STATUS_PORT        ( s_status, grant_status        )
     ); 
 
     //////////////////////////////////////////////////////
@@ -171,7 +179,7 @@ module plb_lookup_stage #(
 
     // Hit value is encoded in the read data transaction ( which is 1 bit wide )
     // By default, the hit signal is non-valid, and the git depends on the data response.
-    assign plb_hit_d        = ( plb_cache_mem_data ) ? 1'b1 : 1'b0 ;
+    assign plb_hit_d        = ( plb_cache_mem_rdata[0] ) ? 1'b1 : 1'b0 ;
     assign plb_hit_valid_d  = plb_cache_mem_valid; 
 
     // Once the `plb_cache_mem_valid` signal is asserted, the hit value is correctly retrieved.
@@ -190,7 +198,7 @@ module plb_lookup_stage #(
                 // Therefore, buffer the data
                 plb_hit_q       <= plb_hit_d;
                 plb_hit_valid_q <= plb_hit_valid_d;
-            else if ( plb_hit_valid_q ) begin 
+            end else if ( plb_hit_valid_q ) begin 
                 // If the produced response was buffered, we need to wait for the consumer
                 plb_hit_q       <= ( plb_lookup_master_ready ) ? '0 : plb_hit_q ;
                 plb_hit_valid_q <= ( plb_lookup_master_ready ) ? '0 : plb_hit_valid_q ;

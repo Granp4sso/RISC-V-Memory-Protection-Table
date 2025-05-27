@@ -16,18 +16,22 @@ module pipeline_register #(
     input  logic                clk_i,
     input  logic                rst_ni,
 
-    // Pipeline Ports
+    // Data Ports
     `DEFINE_SLAVE_DATA_PORT(s_data, DATA_WIDTH),
     `DEFINE_MASTER_DATA_PORT(m_data, DATA_WIDTH),
 
     // Control Ports    
-    `DEFINE_SLAVE_CTRL_PORT(s_ctrl)
+    `DEFINE_SLAVE_CTRL_PORT(s_ctrl),
+
+    // Status Ports
+    `DEFINE_MASTER_STATUS_PORT(s_status)
 
 ); 
     // Internal Signals
     logic [DATA_WIDTH - 1 : 0] reg_data_d, reg_data_q;
     logic valid_d, valid_q;
-    logic stall, flush;
+    logic first_valid_d, first_valid_q;
+    logic stall, flush, busy;
 
     ///////////////////
     // Control Logic //
@@ -37,7 +41,10 @@ module pipeline_register #(
     //      1 - An external stall is requestd
     //      2 - The next stage is not ready
 
-    assign stall = s_ctrl_stall || ~m_data_ready;
+    // Note: if the pipe is not busy ( meaning no transaction is occupying it )
+    // It can receive a new transaction even if the next stage is not ready
+
+    assign stall = s_ctrl_stall || ( busy && ~m_data_ready );
 
     // The pipeline is flushed when the signal is asserted from the outside
     // NOTE:
@@ -48,6 +55,35 @@ module pipeline_register #(
 
     assign flush = s_ctrl_flush;
 
+    //////////////////
+    // Status Logic //
+    //////////////////
+
+    // The pipeline register propagates its status to the functional units and control units.
+    // A pipeline stage is NOT `busy` in the following scenarios:
+    //      1 - A flush occurred
+    //      2 - No valid transaction has arrived yet after a flush or a reset
+
+    always_comb begin
+        first_valid_d = s_data_valid;
+    end
+
+    always_ff @(posedge clk_i) begin
+        if (~rst_ni || s_ctrl_flush) begin
+            first_valid_q <= '0;
+        end else begin
+            if ( ~first_valid_q ) begin
+                // First valid is updated only if it's 0
+                // The only way to reset it to zero is to 
+                // receive a flush or a reset
+                first_valid_q <= first_valid_d;
+            end
+        end
+    end
+
+    assign busy = first_valid_q;
+    assign s_status_busy = busy;
+
     /////////////////
     // Slave Logic //
     /////////////////
@@ -56,7 +92,7 @@ module pipeline_register #(
     // Data is produced by the previous pipeline stage
 
     always_comb begin
-        reg_data_d = (~flush) ? s_data_rdata : '0;
+        reg_data_d = (~flush) ? s_data_data : '0;
     end
 
     always_ff @(posedge clk_i) begin
@@ -71,7 +107,8 @@ module pipeline_register #(
         end
     end
 
-    // The pipeline is ready to accept a new data if it is not stalled
+    // The pipeline is ready to accept a new data if it is not stalled.
+    //
     assign s_data_ready = ~stall;
 
     //////////////////
@@ -84,7 +121,7 @@ module pipeline_register #(
     // is fetched by the consumer.
 
     always_comb begin
-        valid_d = (~flush) ? ~stall : '0;
+        valid_d = (~flush && ~stall) ? s_data_valid : '0;
     end
 
     always_ff @(posedge clk_i) begin
@@ -100,7 +137,7 @@ module pipeline_register #(
 
     // The pipeline register is producing no data if a flush
     // has occurred
-    assign m_data_rdata = (~flush) ? reg_data_q : '0;
+    assign m_data_data = (~flush) ? reg_data_q : '0;
     assign m_data_valid = (~flush) ? valid_q : '0;
     
 endmodule : pipeline_register

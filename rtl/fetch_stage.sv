@@ -6,16 +6,18 @@
 //  It performs a check on the transaction format. If it is valid, it forwards it
 //  Towards the PLB lookup stage.
 
+// TODO: Handle exception/flush/stall logic
+
 /* verilator lint_off IMPORTSTAR */
 import mpt_pkg::*;
 /* verilator lint_on IMPORTSTAR */
 
 // Import headers
-include "pipelining.svh" 
+`include "pipelining.svh" 
 
 module fetch_stage #(
-    parameter unsigned PIPELINE_SLAVE_DATA_WIDTH = 32;
-    parameter unsigned PIPELINE_MASTER_DATA_WIDTH = 32;
+    parameter unsigned PIPELINE_SLAVE_DATA_WIDTH = 32,
+    parameter unsigned PIPELINE_MASTER_DATA_WIDTH = 32
 ) (
     // Generic Signals
     input  logic                clk_i,
@@ -28,7 +30,7 @@ module fetch_stage #(
     `DEFINE_MASTER_DATA_PORT(fetch_master, PIPELINE_MASTER_DATA_WIDTH),
 
     // Control Port (Unused atm)
-    `DEFINE_SLAVE_CTRL_PORT(fetch_control),
+    `DEFINE_SLAVE_CTRL_PORT(fetch_ctrl),
 
     // Extra Logics
     output page_format_fault_e  exception_cause_o
@@ -48,7 +50,7 @@ module fetch_stage #(
     // to perform format checking. The actual content of the
     // transaction is not changed.
 
-    assign transaction_i = fetch_slave_rdata;
+    assign transaction_i = fetch_slave_data;
 
     // The stage is active if the slave port is forwarding
     // valid data. This is important especially in the case
@@ -59,8 +61,8 @@ module fetch_stage #(
     // Logics //
     ////////////
 
-    assign mmpt = transaction.mmpt;
-    assign spa = transaction.spa;
+    assign mmpt = transaction_i.mmpt;
+    assign spa = transaction_i.spa;
 
     // Checking Supervisor Phyisical Address format
     always_comb begin
