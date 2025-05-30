@@ -18,6 +18,8 @@ import mpt_pkg::*;
 `include "pipelining.svh"
 `include "uninasoc_mem.svh"
 
+// verilator lint_off UNOPTFLAT
+
 module plb_lookup_stage #(
     parameter unsigned  PIPELINE_SLAVE_DATA_WIDTH   = 32,
     parameter unsigned  PIPELINE_MASTER_DATA_WIDTH  = 32,
@@ -126,8 +128,8 @@ module plb_lookup_stage #(
         // The request is high as long as the pipeline is working.
         // Once the grant signal is asserted by the memory, the result
         // Will come regardless of the MPT walker status (it will be ignored though)
-        if ( grant_to_valid_ready ) begin 
-            plb_cache_mem_req   = plb_lookup_slave_valid;
+        if ( grant_to_valid_ready && plb_lookup_slave_valid ) begin 
+            plb_cache_mem_req   = 1'b1;
             plb_cache_mem_addr  = plb_tag_req;  
             // If the grant is received, the memory will return a value
             // in the next clock cycle[s]
@@ -137,12 +139,16 @@ module plb_lookup_stage #(
             end else begin
                 grant_to_valid_valid    = 1'b0;
             end
-        end 
+        end else begin
+            plb_cache_mem_req = '0;
+            plb_cache_mem_addr = '0;
+            grant_to_valid_valid = '0;
+        end
     end
 
     // If the next stage is NOT busy, then we are ready for a new request
     // if the grant is asserted by the memory
-    assign plb_lookup_slave_ready  = ( ~grant_status_busy ) ? 1'b1 : plb_cache_mem_gnt;
+    assign plb_lookup_slave_ready  = ( ~grant_status_busy ) ? 1'b1 : ( plb_cache_mem_gnt && grant_to_valid_ready );
 
     // The transaction value will be forwarded to the valid stage
     assign grant_to_valid_data = grant_stage_transaction;
@@ -248,3 +254,4 @@ module plb_lookup_stage #(
     
 endmodule : plb_lookup_stage
 
+// verilator lint_on UNOPTFLAT

@@ -48,25 +48,33 @@ VL_MODULE(Vmptw_top) {
     // LOCAL SIGNALS
     // Internals; generally not touched by application code
     CData/*2:0*/ mptw_top__DOT__fetch_exception_cause;
+    CData/*0:0*/ mptw_top__DOT__fetch_to_pipe_ready;
+    CData/*0:0*/ mptw_top__DOT__pipe_to_plb_lookup_valid;
     CData/*0:0*/ mptw_top__DOT__pipe_to_plb_lookup_ready;
-    CData/*0:0*/ mptw_top__DOT__pipe_to_walking_ready;
-    CData/*0:0*/ mptw_top__DOT__fetch_to_plb_lookup_reg_u__DOT__valid_q;
-    CData/*0:0*/ mptw_top__DOT__fetch_to_plb_lookup_reg_u__DOT__first_valid_q;
-    CData/*0:0*/ mptw_top__DOT__fetch_to_plb_lookup_reg_u__DOT__stall;
+    CData/*0:0*/ mptw_top__DOT__plb_lookup_to_pipe_ready;
+    CData/*0:0*/ mptw_top__DOT__pipe_to_walking_valid;
+    CData/*0:0*/ mptw_top__DOT__fetch_to_plb_lookup_reg_u__DOT__current_state;
+    CData/*0:0*/ mptw_top__DOT__fetch_to_plb_lookup_reg_u__DOT__next_state;
+    CData/*0:0*/ mptw_top__DOT__fetch_to_plb_lookup_reg_u__DOT__dummy;
     CData/*0:0*/ mptw_top__DOT__plb_lookup_stage_u__DOT__plb_hit_q;
     CData/*0:0*/ mptw_top__DOT__plb_lookup_stage_u__DOT__plb_hit_valid_q;
     CData/*0:0*/ mptw_top__DOT__plb_lookup_stage_u__DOT__hit_produced;
     CData/*0:0*/ mptw_top__DOT__plb_lookup_stage_u__DOT__grant_to_valid_valid;
+    CData/*0:0*/ mptw_top__DOT__plb_lookup_stage_u__DOT__grant_to_valid_ready;
+    CData/*0:0*/ mptw_top__DOT__plb_lookup_stage_u__DOT__valid_stage_valid;
     CData/*0:0*/ mptw_top__DOT__plb_lookup_stage_u__DOT__valid_stage_ready;
-    CData/*0:0*/ mptw_top__DOT__plb_lookup_stage_u__DOT__grant_to_valid_reg__DOT__valid_q;
-    CData/*0:0*/ mptw_top__DOT__plb_lookup_stage_u__DOT__grant_to_valid_reg__DOT__first_valid_q;
-    CData/*0:0*/ mptw_top__DOT__plb_lookup_stage_u__DOT__grant_to_valid_reg__DOT__stall;
-    CData/*0:0*/ mptw_top__DOT__plb_lookup_to_walking_reg_u__DOT__valid_q;
-    CData/*0:0*/ mptw_top__DOT__plb_lookup_to_walking_reg_u__DOT__first_valid_q;
-    CData/*0:0*/ mptw_top__DOT__plb_lookup_to_walking_reg_u__DOT__stall;
+    CData/*0:0*/ mptw_top__DOT__plb_lookup_stage_u__DOT__grant_to_valid_reg__DOT__current_state;
+    CData/*0:0*/ mptw_top__DOT__plb_lookup_stage_u__DOT__grant_to_valid_reg__DOT__next_state;
+    CData/*0:0*/ mptw_top__DOT__plb_lookup_stage_u__DOT__grant_to_valid_reg__DOT__dummy;
+    CData/*0:0*/ mptw_top__DOT__plb_lookup_to_walking_reg_u__DOT__current_state;
+    CData/*0:0*/ mptw_top__DOT__plb_lookup_to_walking_reg_u__DOT__next_state;
+    CData/*0:0*/ mptw_top__DOT__plb_lookup_to_walking_reg_u__DOT__dummy;
     WData/*131:0*/ mptw_top__DOT__fetch_to_plb_lookup_reg_u__DOT__reg_data_q[5];
+    WData/*131:0*/ mptw_top__DOT__fetch_to_plb_lookup_reg_u__DOT__reg_data_d[5];
     WData/*131:0*/ mptw_top__DOT__plb_lookup_stage_u__DOT__grant_to_valid_reg__DOT__reg_data_q[5];
+    WData/*131:0*/ mptw_top__DOT__plb_lookup_stage_u__DOT__grant_to_valid_reg__DOT__reg_data_d[5];
     WData/*131:0*/ mptw_top__DOT__plb_lookup_to_walking_reg_u__DOT__reg_data_q[5];
+    WData/*131:0*/ mptw_top__DOT__plb_lookup_to_walking_reg_u__DOT__reg_data_d[5];
     WData/*131:0*/ mptw_top__DOT__input_transaction[5];
     WData/*131:0*/ mptw_top__DOT__fetch_stage_u__DOT__transaction_o[5];
     WData/*71:0*/ mptw_top__DOT__plb_lookup_stage_u__DOT__plb_tag_req[3];
@@ -75,6 +83,7 @@ VL_MODULE(Vmptw_top) {
     // LOCAL VARIABLES
     // Internals; generally not touched by application code
     CData/*0:0*/ __Vclklast__TOP__clk_i;
+    CData/*0:0*/ __Vchglast__TOP__mptw_top__DOT__plb_lookup_stage_u__DOT__grant_to_valid_valid;
     CData/*0:0*/ __Vm_traceActivity[3];
     
     // INTERNAL VARIABLES
@@ -114,7 +123,8 @@ VL_MODULE(Vmptw_top) {
     static QData _change_request(Vmptw_top__Syms* __restrict vlSymsp);
     static QData _change_request_1(Vmptw_top__Syms* __restrict vlSymsp);
   public:
-    static void _combo__TOP__3(Vmptw_top__Syms* __restrict vlSymsp);
+    static void _combo__TOP__2(Vmptw_top__Syms* __restrict vlSymsp);
+    static void _combo__TOP__4(Vmptw_top__Syms* __restrict vlSymsp);
   private:
     void _ctor_var_reset() VL_ATTR_COLD;
   public:
@@ -126,7 +136,7 @@ VL_MODULE(Vmptw_top) {
   public:
     static void _eval_initial(Vmptw_top__Syms* __restrict vlSymsp) VL_ATTR_COLD;
     static void _eval_settle(Vmptw_top__Syms* __restrict vlSymsp) VL_ATTR_COLD;
-    static void _sequent__TOP__2(Vmptw_top__Syms* __restrict vlSymsp);
+    static void _sequent__TOP__3(Vmptw_top__Syms* __restrict vlSymsp);
     static void _settle__TOP__1(Vmptw_top__Syms* __restrict vlSymsp) VL_ATTR_COLD;
   private:
     static void traceChgSub0(void* userp, VerilatedVcd* tracep);

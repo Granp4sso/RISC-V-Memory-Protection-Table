@@ -1,32 +1,33 @@
 [*]
 [*] GTKWave Analyzer v3.3.104 (w)1999-2020 BSI
-[*] Tue May 27 10:59:00 2025
+[*] Fri May 30 13:48:35 2025
 [*]
 [dumpfile] "/home/stefano/Desktop/Work/Projects/smmtt/b_pipelining/simulation/mptw_top/waves/trace.vcd"
-[dumpfile_mtime] "Tue May 27 10:57:38 2025"
-[dumpfile_size] 18999
+[dumpfile_mtime] "Fri May 30 13:46:50 2025"
+[dumpfile_size] 17871
 [savefile] "/home/stefano/Desktop/Work/Projects/smmtt/b_pipelining/simulation/mptw_top/waves/conf.gtkw"
-[timestart] 9
+[timestart] 51
 [size] 1850 1016
-[pos] 1920 20
-*-6.000000 125 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[pos] 70 47
+*-4.000000 70 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
 [treeopen] TOP.
 [treeopen] TOP.mptw_top.
-[sst_width] 270
+[sst_width] 299
 [signals_width] 403
 [sst_expanded] 1
-[sst_vpaned_height] 350
+[sst_vpaned_height] 349
 @28
 TOP.clk_i
 TOP.rst_ni
 TOP.mptw_transaction_valid_i
-@29
 TOP.mptw_ready_o
 @22
 TOP.mmpt_reg_i[63:0]
 TOP.spa_i[63:0]
 @28
 TOP.access_type_i[1:0]
+TOP.mptw_top.plb_cache_mem_req
+TOP.mptw_top.plb_cache_mem_valid
 @22
 [color] 2
 TOP.mptw_top.fetch_stage_u.fetch_slave_data[131:0]
@@ -46,28 +47,24 @@ TOP.mptw_top.fetch_stage_u.fetch_master_valid
 [color] 2
 TOP.mptw_top.fetch_to_plb_lookup_reg_u.s_status_busy
 @22
-[color] 6
-TOP.mptw_top.plb_lookup_stage_u.plb_lookup_slave_data[131:0]
+[color] 3
+TOP.mptw_top.pipe_to_walking_data[131:0]
 @28
-[color] 6
-TOP.mptw_top.plb_lookup_stage_u.plb_lookup_slave_valid
-[color] 6
-TOP.mptw_top.plb_lookup_stage_u.plb_lookup_slave_ready
+[color] 3
+TOP.mptw_top.pipe_to_walking_valid
+[color] 3
+TOP.mptw_top.pipe_to_plb_lookup_ready
+[color] 7
+TOP.mptw_top.pipe_to_walking_ready
 @22
-[color] 6
-TOP.mptw_top.plb_lookup_stage_u.grant_to_valid_data[131:0]
+TOP.mptw_top.fetch_to_plb_lookup_reg_u.s_data_data[131:0]
 @28
-[color] 6
-TOP.mptw_top.plb_lookup_stage_u.grant_to_valid_valid
-[color] 6
-TOP.mptw_top.plb_lookup_stage_u.grant_to_valid_ready
-@22
-[color] 6
-TOP.mptw_top.plb_lookup_stage_u.plb_lookup_master_data[131:0]
+TOP.mptw_top.fetch_to_plb_lookup_reg_u.s_data_valid
+TOP.mptw_top.fetch_to_plb_lookup_reg_u.s_data_ready
+@23
+TOP.mptw_top.fetch_to_plb_lookup_reg_u.m_data_data[131:0]
 @28
-[color] 6
-TOP.mptw_top.plb_lookup_stage_u.plb_lookup_master_valid
-[color] 6
-TOP.mptw_top.plb_lookup_stage_u.plb_lookup_master_ready
+TOP.mptw_top.fetch_to_plb_lookup_reg_u.m_data_ready
+TOP.mptw_top.fetch_to_plb_lookup_reg_u.m_data_valid
 [pattern_trace] 1
 [pattern_trace] 0

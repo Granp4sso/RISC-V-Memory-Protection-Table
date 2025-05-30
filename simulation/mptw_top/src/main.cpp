@@ -15,12 +15,32 @@ int main(int argc, char **argv) {
     // Run Simulation
     for (int i = 0; i < SIM_CYCLES; i++) {
         uut_eval(&uut);
+        // Cache memory is always active
+        uut.mod->plb_cache_mem_gnt = 1;
         switch (i) {
-            case 4:
+            case 2:
+                // First Transaction
                 uut.mod->mptw_transaction_valid_i = 1;
-                uut.mod->mmpt_reg_i = 0xffffffffffffffff;
-                uut.mod->spa_i = 0xaaaaaaaaaaaaaaaa;
+                uut.mod->mmpt_reg_i = 0x1111111111111111;
+                uut.mod->spa_i = 0x1111111111111111;
                 uut.mod->access_type_i = 0x7;   
+            break;
+
+            case 3:
+                // Second Transaction
+                uut.mod->mptw_transaction_valid_i = 1;
+                uut.mod->mmpt_reg_i = 0x2222222222222222;
+                uut.mod->spa_i = 0x2222222222222222;
+                uut.mod->access_type_i = 0x7;     
+            break;
+
+            case 4:
+                uut.mod->mptw_transaction_valid_i = 0;
+                uut.mod->mmpt_reg_i = 0;
+                uut.mod->spa_i = 0;
+                uut.mod->access_type_i = 0;   
+                uut.mod->plb_cache_mem_valid = 1;
+                uut.mod->plb_cache_mem_rdata = 1;
             break;
 
             case 5:
@@ -28,6 +48,59 @@ int main(int argc, char **argv) {
                 uut.mod->mmpt_reg_i = 0;
                 uut.mod->spa_i = 0;
                 uut.mod->access_type_i = 0;   
+
+                uut.mod->plb_cache_mem_valid = 1;
+                uut.mod->plb_cache_mem_rdata = 1;
+            break;
+
+            case 6:
+                uut.mod->mptw_transaction_valid_i = 1;
+                uut.mod->mmpt_reg_i = 0x3333333333333333;
+                uut.mod->spa_i = 0x3333333333333333;
+                uut.mod->access_type_i = 0x7;     
+
+                uut.mod->plb_cache_mem_valid = 0;
+                uut.mod->plb_cache_mem_rdata = 0;
+            break;
+
+            case 7:
+                uut.mod->mptw_transaction_valid_i = 0;
+                uut.mod->mmpt_reg_i = 0;
+                uut.mod->spa_i = 0;
+                uut.mod->access_type_i = 0;   
+
+                uut.mod->plb_cache_mem_valid = 0;
+                uut.mod->plb_cache_mem_rdata = 0;
+            break;
+
+            case 8:
+                uut.mod->mptw_transaction_valid_i = 0;
+                uut.mod->mmpt_reg_i = 0;
+                uut.mod->spa_i = 0;
+                uut.mod->access_type_i = 0;   
+
+                uut.mod->plb_cache_mem_valid = 1;
+                uut.mod->plb_cache_mem_rdata = 1;
+            break;
+
+            case 9:
+                uut.mod->mptw_transaction_valid_i = 0;
+                uut.mod->mmpt_reg_i = 0;
+                uut.mod->spa_i = 0;
+                uut.mod->access_type_i = 0;   
+
+                uut.mod->plb_cache_mem_valid = 0;
+                uut.mod->plb_cache_mem_rdata = 0;
+            break;
+
+            case 10:
+                uut.mod->mptw_transaction_valid_i = 0;
+                uut.mod->mmpt_reg_i = 0;
+                uut.mod->spa_i = 0;
+                uut.mod->access_type_i = 0;   
+
+                uut.mod->plb_cache_mem_valid = 0;
+                uut.mod->plb_cache_mem_rdata = 0;
             break;
             
         }

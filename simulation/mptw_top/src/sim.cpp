@@ -33,9 +33,10 @@ void uut_tick(uut_t * uut){
     uut->clkcnt++;
     uint64_t tickcount = uut->clkcnt++;
 
+
 	uut->mod->eval();
 	if(uut->trace) //dump 2ns before the tick
-		uut->trace->dump(tickcount*CLK_HALF_PERIOD - CLK_HALF_PERIOD/2);
+		uut->trace->dump(tickcount*CLK_HALF_PERIOD - CLK_HALF_PERIOD*0.90);
 	uut->mod->clk_i = 1;
 
 	uut->mod->eval();
