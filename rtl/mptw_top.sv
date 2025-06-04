@@ -20,8 +20,11 @@ import mpt_pkg::*;
 
 module mptw_top #(
 
-    localparam unsigned PLB_TRANSACTION_DATA_WIDTH  = 8,                        // Only interested in the hit response 
-    localparam unsigned PLB_TRANSACTION_ADDR_WIDTH  = $bits(plb_lookup_req_t) 
+    localparam unsigned NUM_STAGES                  = 3,                        // This depends on system mmpt
+    localparam unsigned DATA_WIDTH                  = 64,
+    localparam unsigned ADDR_WIDTH                  = 64,
+    localparam unsigned PLB_TRANSACTION_DATA_WIDTH  = 64,                        // 8
+    localparam unsigned PLB_TRANSACTION_ADDR_WIDTH  = 64                         // $bits(plb_lookup_req_t)
 ) (
     //////////////////
     // Control Port //
@@ -54,7 +57,7 @@ module mptw_top #(
     //////////////////
 
     // PLB Cache Port
-    `DEFINE_MEM_MASTER_PORTS(plb_cache, PLB_TRANSACTION_DATA_WIDTH, PLB_TRANSACTION_ADDR_WIDTH)
+    `DEFINE_MEM_MASTER_PORTS(plb_master, PLB_TRANSACTION_DATA_WIDTH, PLB_TRANSACTION_ADDR_WIDTH)
 
 
     //`DEFINE_MEM_MASTER_PORTS(m),
@@ -197,26 +200,26 @@ module mptw_top #(
         .rst_ni                 ( rst_ni                                    ),
 
         // Pipeline Ports
-        `MAP_DATA_PORT          ( plb_lookup_slave  , pipe_to_plb_lookup    ),
-        `MAP_DATA_PORT          ( plb_lookup_master , plb_lookup_to_pipe    ),
+        `MAP_DATA_PORT          ( stage_slave  , pipe_to_plb_lookup         ),
+        `MAP_DATA_PORT          ( stage_master , plb_lookup_to_pipe         ),
         `SINK_SLAVE_CTRL_PORT   ( plb_lookup_ctrl                           ),
 
         // PLB Cache Port
-        .plb_cache_mem_req      ,
-        .plb_cache_mem_gnt      ,
-        .plb_cache_mem_valid    ,
-        .plb_cache_mem_addr     ,
-        .plb_cache_mem_rdata    ,
-        .plb_cache_mem_wdata    ,
-        .plb_cache_mem_we       ,
-        .plb_cache_mem_be       ,
-        .plb_cache_mem_error    
+        .plb_master_mem_req      ,
+        .plb_master_mem_gnt      ,
+        .plb_master_mem_valid    ,
+        .plb_master_mem_addr     ,
+        .plb_master_mem_rdata    ,
+        .plb_master_mem_wdata    ,
+        .plb_master_mem_we       ,
+        .plb_master_mem_be       ,
+        .plb_master_mem_error    
 
     ); 
 
-    ///////////////////////////////////////////////////
-    //PLB Lookup to Walking Stages Pipeline Register //
-    ///////////////////////////////////////////////////
+    ////////////////////////////////////////////////////
+    // PLB Lookup to Walking Stages Pipeline Register //
+    ////////////////////////////////////////////////////
 
     pipeline_register # ( 
 
@@ -234,8 +237,6 @@ module mptw_top #(
 
     ); 
 
-    assign pipe_to_walking_ready = 1;
-
     //////////////////////////////////////////////////////////////////////
     //   __      __    _ _   _             ___ _                        //
     //   \ \    / /_ _| | |_(_)_ _  __ _  / __| |_ __ _ __ _ ___ ___    //
@@ -244,11 +245,34 @@ module mptw_top #(
     //                             |___/               |___/            //
     //////////////////////////////////////////////////////////////////////
 
-    //////////////////
-    // Retire Stage //
-    //////////////////
+    // verilator lint_off PINCONNECTEMPTY
+    // verilator lint_off UNOPTFLAT
+    `DECLARE_DATA_BUS_ARRAY(walking_stage, NUM_STAGES + 1, walking_stage_datawidth);
 
-    // Optional if OoO is not supported
+    `ASSIGN_DATA_BUS_SCALAR_TO_ARRAY(walking_stage, 0, pipe_to_walking);
+
+    generate
+        for (genvar i = 0; i < NUM_STAGES; i = i + 1) begin : gen_walking_stages
+
+            // Replace this with the walking stages
+            pipeline_register # ( 
+                .DATA_WIDTH             ( walking_stage_datawidth           )
+            ) walking_reg (
+                .clk_i                  ( clk_i                             ),
+                .rst_ni                 ( rst_ni                            ),
+                `MAP_DATA_INDEX_PORT    ( s_data, walking_stage, i          ),
+                `MAP_DATA_INDEX_PORT    ( m_data, walking_stage, i+1        ),
+                `SINK_SLAVE_CTRL_PORT   ( s_ctrl                            ),
+                `SINK_MASTER_STATUS_PORT        ( s_status  )
+            ); 
+
+        end
+    endgenerate
+    // verilator lint_on UNOPTFLAT
+    // verilator lint_on PINCONNECTEMPTY
+
+    assign walking_stage_ready[NUM_STAGES] = 1;
+    
 
     //////////////////////////////////////////////////////////////
     //     ___                 _ _     ___ _                    //

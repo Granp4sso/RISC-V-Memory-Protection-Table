@@ -33,58 +33,106 @@ VL_MODULE(Vmptw_top) {
     VL_OUT8(mptw_ready_o,0,0);
     VL_OUT8(access_page_fault_o,0,0);
     VL_OUT8(format_error_o,2,0);
-    VL_OUT8(plb_cache_mem_req,0,0);
-    VL_IN8(plb_cache_mem_gnt,0,0);
-    VL_IN8(plb_cache_mem_valid,0,0);
-    VL_IN8(plb_cache_mem_rdata,7,0);
-    VL_OUT8(plb_cache_mem_wdata,7,0);
-    VL_OUT8(plb_cache_mem_we,0,0);
-    VL_OUT8(plb_cache_mem_be,0,0);
-    VL_IN8(plb_cache_mem_error,0,0);
-    VL_OUTW(plb_cache_mem_addr,71,0,3);
+    VL_OUT8(plb_master_mem_req,0,0);
+    VL_IN8(plb_master_mem_gnt,0,0);
+    VL_IN8(plb_master_mem_valid,0,0);
+    VL_OUT8(plb_master_mem_we,0,0);
+    VL_OUT8(plb_master_mem_be,7,0);
+    VL_IN8(plb_master_mem_error,0,0);
     VL_IN64(spa_i,63,0);
     VL_IN64(mmpt_reg_i,63,0);
+    VL_OUT64(plb_master_mem_addr,63,0);
+    VL_IN64(plb_master_mem_rdata,63,0);
+    VL_OUT64(plb_master_mem_wdata,63,0);
     
     // LOCAL SIGNALS
     // Internals; generally not touched by application code
-    CData/*2:0*/ mptw_top__DOT__fetch_exception_cause;
-    CData/*0:0*/ mptw_top__DOT__fetch_to_pipe_ready;
-    CData/*0:0*/ mptw_top__DOT__pipe_to_plb_lookup_valid;
-    CData/*0:0*/ mptw_top__DOT__pipe_to_plb_lookup_ready;
-    CData/*0:0*/ mptw_top__DOT__plb_lookup_to_pipe_ready;
-    CData/*0:0*/ mptw_top__DOT__pipe_to_walking_valid;
-    CData/*0:0*/ mptw_top__DOT__fetch_to_plb_lookup_reg_u__DOT__current_state;
-    CData/*0:0*/ mptw_top__DOT__fetch_to_plb_lookup_reg_u__DOT__next_state;
-    CData/*0:0*/ mptw_top__DOT__fetch_to_plb_lookup_reg_u__DOT__dummy;
-    CData/*0:0*/ mptw_top__DOT__plb_lookup_stage_u__DOT__plb_hit_q;
-    CData/*0:0*/ mptw_top__DOT__plb_lookup_stage_u__DOT__plb_hit_valid_q;
-    CData/*0:0*/ mptw_top__DOT__plb_lookup_stage_u__DOT__hit_produced;
-    CData/*0:0*/ mptw_top__DOT__plb_lookup_stage_u__DOT__grant_to_valid_valid;
-    CData/*0:0*/ mptw_top__DOT__plb_lookup_stage_u__DOT__grant_to_valid_ready;
-    CData/*0:0*/ mptw_top__DOT__plb_lookup_stage_u__DOT__valid_stage_valid;
-    CData/*0:0*/ mptw_top__DOT__plb_lookup_stage_u__DOT__valid_stage_ready;
-    CData/*0:0*/ mptw_top__DOT__plb_lookup_stage_u__DOT__grant_to_valid_reg__DOT__current_state;
-    CData/*0:0*/ mptw_top__DOT__plb_lookup_stage_u__DOT__grant_to_valid_reg__DOT__next_state;
-    CData/*0:0*/ mptw_top__DOT__plb_lookup_stage_u__DOT__grant_to_valid_reg__DOT__dummy;
-    CData/*0:0*/ mptw_top__DOT__plb_lookup_to_walking_reg_u__DOT__current_state;
-    CData/*0:0*/ mptw_top__DOT__plb_lookup_to_walking_reg_u__DOT__next_state;
-    CData/*0:0*/ mptw_top__DOT__plb_lookup_to_walking_reg_u__DOT__dummy;
-    WData/*131:0*/ mptw_top__DOT__fetch_to_plb_lookup_reg_u__DOT__reg_data_q[5];
-    WData/*131:0*/ mptw_top__DOT__fetch_to_plb_lookup_reg_u__DOT__reg_data_d[5];
-    WData/*131:0*/ mptw_top__DOT__plb_lookup_stage_u__DOT__grant_to_valid_reg__DOT__reg_data_q[5];
-    WData/*131:0*/ mptw_top__DOT__plb_lookup_stage_u__DOT__grant_to_valid_reg__DOT__reg_data_d[5];
-    WData/*131:0*/ mptw_top__DOT__plb_lookup_to_walking_reg_u__DOT__reg_data_q[5];
-    WData/*131:0*/ mptw_top__DOT__plb_lookup_to_walking_reg_u__DOT__reg_data_d[5];
-    WData/*131:0*/ mptw_top__DOT__input_transaction[5];
-    WData/*131:0*/ mptw_top__DOT__fetch_stage_u__DOT__transaction_o[5];
-    WData/*71:0*/ mptw_top__DOT__plb_lookup_stage_u__DOT__plb_tag_req[3];
-    WData/*131:0*/ mptw_top__DOT__plb_lookup_stage_u__DOT__valid_stage_post_hit_transaction[5];
+    // Anonymous structures to workaround compiler member-count bugs
+    struct {
+        CData/*2:0*/ mptw_top__DOT__fetch_exception_cause;
+        CData/*0:0*/ mptw_top__DOT__fetch_to_pipe_ready;
+        CData/*0:0*/ mptw_top__DOT__pipe_to_plb_lookup_valid;
+        CData/*0:0*/ mptw_top__DOT__pipe_to_plb_lookup_ready;
+        CData/*0:0*/ mptw_top__DOT__plb_lookup_to_pipe_ready;
+        CData/*0:0*/ mptw_top__DOT__pipe_to_walking_valid;
+        CData/*3:0*/ mptw_top__DOT__walking_stage_valid;
+        CData/*3:0*/ mptw_top__DOT__walking_stage_ready;
+        CData/*0:0*/ mptw_top__DOT__fetch_to_plb_lookup_reg_u__DOT__current_state;
+        CData/*0:0*/ mptw_top__DOT__fetch_to_plb_lookup_reg_u__DOT__next_state;
+        CData/*0:0*/ mptw_top__DOT__fetch_to_plb_lookup_reg_u__DOT__dummy;
+        CData/*0:0*/ mptw_top__DOT__plb_lookup_stage_u__DOT__mem_to_local_bus_valid;
+        CData/*0:0*/ mptw_top__DOT__plb_lookup_stage_u__DOT__mem_stage_u__DOT__grant_fifo_push;
+        CData/*0:0*/ mptw_top__DOT__plb_lookup_stage_u__DOT__mem_stage_u__DOT__grant_fifo_pop;
+        CData/*0:0*/ mptw_top__DOT__plb_lookup_stage_u__DOT__mem_stage_u__DOT__valid_fifo_push;
+        CData/*0:0*/ mptw_top__DOT__plb_lookup_stage_u__DOT__mem_stage_u__DOT__valid_fifo_pop;
+        CData/*0:0*/ mptw_top__DOT__plb_lookup_stage_u__DOT__mem_stage_u__DOT__grant_fifo_u__DOT__gate_clock;
+        CData/*1:0*/ mptw_top__DOT__plb_lookup_stage_u__DOT__mem_stage_u__DOT__grant_fifo_u__DOT__read_pointer_n;
+        CData/*1:0*/ mptw_top__DOT__plb_lookup_stage_u__DOT__mem_stage_u__DOT__grant_fifo_u__DOT__read_pointer_q;
+        CData/*1:0*/ mptw_top__DOT__plb_lookup_stage_u__DOT__mem_stage_u__DOT__grant_fifo_u__DOT__write_pointer_n;
+        CData/*1:0*/ mptw_top__DOT__plb_lookup_stage_u__DOT__mem_stage_u__DOT__grant_fifo_u__DOT__write_pointer_q;
+        CData/*2:0*/ mptw_top__DOT__plb_lookup_stage_u__DOT__mem_stage_u__DOT__grant_fifo_u__DOT__status_cnt_n;
+        CData/*2:0*/ mptw_top__DOT__plb_lookup_stage_u__DOT__mem_stage_u__DOT__grant_fifo_u__DOT__status_cnt_q;
+        CData/*0:0*/ mptw_top__DOT__plb_lookup_stage_u__DOT__mem_stage_u__DOT__valid_fifo_u__DOT__gate_clock;
+        CData/*1:0*/ mptw_top__DOT__plb_lookup_stage_u__DOT__mem_stage_u__DOT__valid_fifo_u__DOT__read_pointer_n;
+        CData/*1:0*/ mptw_top__DOT__plb_lookup_stage_u__DOT__mem_stage_u__DOT__valid_fifo_u__DOT__read_pointer_q;
+        CData/*1:0*/ mptw_top__DOT__plb_lookup_stage_u__DOT__mem_stage_u__DOT__valid_fifo_u__DOT__write_pointer_n;
+        CData/*1:0*/ mptw_top__DOT__plb_lookup_stage_u__DOT__mem_stage_u__DOT__valid_fifo_u__DOT__write_pointer_q;
+        CData/*2:0*/ mptw_top__DOT__plb_lookup_stage_u__DOT__mem_stage_u__DOT__valid_fifo_u__DOT__status_cnt_n;
+        CData/*2:0*/ mptw_top__DOT__plb_lookup_stage_u__DOT__mem_stage_u__DOT__valid_fifo_u__DOT__status_cnt_q;
+        CData/*0:0*/ mptw_top__DOT__plb_lookup_to_walking_reg_u__DOT__current_state;
+        CData/*0:0*/ mptw_top__DOT__plb_lookup_to_walking_reg_u__DOT__next_state;
+        CData/*0:0*/ mptw_top__DOT__plb_lookup_to_walking_reg_u__DOT__dummy;
+        CData/*0:0*/ mptw_top__DOT__gen_walking_stages__BRA__0__KET____DOT__walking_reg__DOT__current_state;
+        CData/*0:0*/ mptw_top__DOT__gen_walking_stages__BRA__0__KET____DOT__walking_reg__DOT__next_state;
+        CData/*0:0*/ mptw_top__DOT__gen_walking_stages__BRA__0__KET____DOT__walking_reg__DOT__dummy;
+        CData/*0:0*/ mptw_top__DOT__gen_walking_stages__BRA__1__KET____DOT__walking_reg__DOT__current_state;
+        CData/*0:0*/ mptw_top__DOT__gen_walking_stages__BRA__1__KET____DOT__walking_reg__DOT__next_state;
+        CData/*0:0*/ mptw_top__DOT__gen_walking_stages__BRA__1__KET____DOT__walking_reg__DOT__dummy;
+        CData/*0:0*/ mptw_top__DOT__gen_walking_stages__BRA__2__KET____DOT__walking_reg__DOT__current_state;
+        CData/*0:0*/ mptw_top__DOT__gen_walking_stages__BRA__2__KET____DOT__walking_reg__DOT__next_state;
+        CData/*0:0*/ mptw_top__DOT__gen_walking_stages__BRA__2__KET____DOT__walking_reg__DOT__dummy;
+        WData/*783:0*/ mptw_top__DOT__walking_stage_data[25];
+        WData/*195:0*/ mptw_top__DOT__fetch_to_plb_lookup_reg_u__DOT__reg_data_q[7];
+        WData/*195:0*/ mptw_top__DOT__fetch_to_plb_lookup_reg_u__DOT__reg_data_d[7];
+        WData/*195:0*/ mptw_top__DOT__plb_lookup_stage_u__DOT__local_to_master_bus_data[7];
+        WData/*195:0*/ mptw_top__DOT__plb_lookup_to_walking_reg_u__DOT__reg_data_q[7];
+        WData/*195:0*/ mptw_top__DOT__plb_lookup_to_walking_reg_u__DOT__reg_data_d[7];
+        WData/*195:0*/ mptw_top__DOT__gen_walking_stages__BRA__0__KET____DOT__walking_reg__DOT__reg_data_q[7];
+        WData/*195:0*/ mptw_top__DOT__gen_walking_stages__BRA__0__KET____DOT__walking_reg__DOT__reg_data_d[7];
+        WData/*195:0*/ mptw_top__DOT__gen_walking_stages__BRA__1__KET____DOT__walking_reg__DOT__reg_data_q[7];
+        WData/*195:0*/ mptw_top__DOT__gen_walking_stages__BRA__1__KET____DOT__walking_reg__DOT__reg_data_d[7];
+        WData/*195:0*/ mptw_top__DOT__gen_walking_stages__BRA__2__KET____DOT__walking_reg__DOT__reg_data_q[7];
+        WData/*195:0*/ mptw_top__DOT__gen_walking_stages__BRA__2__KET____DOT__walking_reg__DOT__reg_data_d[7];
+        WData/*195:0*/ mptw_top__DOT__input_transaction[7];
+        WData/*195:0*/ mptw_top__DOT__fetch_stage_u__DOT__transaction_o[7];
+        WData/*195:0*/ mptw_top__DOT__plb_lookup_stage_u__DOT__post_local_transaction[7];
+        WData/*71:0*/ mptw_top__DOT__plb_lookup_stage_u__DOT__plb_tag_req[3];
+        WData/*195:0*/ mptw_top__DOT__plb_lookup_stage_u__DOT__mem_stage_u__DOT__grant_fifo_to_valid_fifo[7];
+        WData/*195:0*/ mptw_top__DOT__plb_lookup_stage_u__DOT__mem_stage_u__DOT__valid_fifo_to_master[7];
+        WData/*195:0*/ mptw_top__DOT__plb_lookup_stage_u__DOT__mem_stage_u__DOT__valid_fifo_data_in[7];
+        WData/*783:0*/ mptw_top__DOT__plb_lookup_stage_u__DOT__mem_stage_u__DOT__grant_fifo_u__DOT__mem_n[25];
+        WData/*783:0*/ mptw_top__DOT__plb_lookup_stage_u__DOT__mem_stage_u__DOT__grant_fifo_u__DOT__mem_q[25];
+        WData/*783:0*/ mptw_top__DOT__plb_lookup_stage_u__DOT__mem_stage_u__DOT__valid_fifo_u__DOT__mem_n[25];
+    };
+    struct {
+        WData/*783:0*/ mptw_top__DOT__plb_lookup_stage_u__DOT__mem_stage_u__DOT__valid_fifo_u__DOT__mem_q[25];
+    };
     
     // LOCAL VARIABLES
     // Internals; generally not touched by application code
+    CData/*0:0*/ mptw_top__DOT____Vcellout__gen_walking_stages__BRA__0__KET____DOT__walking_reg__m_data_valid;
+    CData/*0:0*/ mptw_top__DOT____Vcellout__gen_walking_stages__BRA__0__KET____DOT__walking_reg__s_data_ready;
+    CData/*0:0*/ mptw_top__DOT____Vcellout__gen_walking_stages__BRA__1__KET____DOT__walking_reg__m_data_valid;
+    CData/*0:0*/ mptw_top__DOT____Vcellout__gen_walking_stages__BRA__1__KET____DOT__walking_reg__s_data_ready;
+    CData/*0:0*/ mptw_top__DOT____Vcellout__gen_walking_stages__BRA__2__KET____DOT__walking_reg__m_data_valid;
+    CData/*0:0*/ mptw_top__DOT____Vcellout__gen_walking_stages__BRA__2__KET____DOT__walking_reg__s_data_ready;
     CData/*0:0*/ __Vclklast__TOP__clk_i;
-    CData/*0:0*/ __Vchglast__TOP__mptw_top__DOT__plb_lookup_stage_u__DOT__grant_to_valid_valid;
-    CData/*0:0*/ __Vm_traceActivity[3];
+    CData/*0:0*/ __Vclklast__TOP__rst_ni;
+    CData/*3:0*/ __Vchglast__TOP__mptw_top__DOT__walking_stage_ready;
+    CData/*0:0*/ __Vchglast__TOP__mptw_top__DOT__plb_lookup_stage_u__DOT__mem_to_local_bus_valid;
+    WData/*195:0*/ mptw_top__DOT__plb_lookup_stage_u__DOT__mem_stage_u__DOT__grant_fifo_u__DOT____Vlvbound1[7];
+    WData/*195:0*/ mptw_top__DOT__plb_lookup_stage_u__DOT__mem_stage_u__DOT__valid_fifo_u__DOT____Vlvbound1[7];
+    CData/*0:0*/ __Vm_traceActivity[4];
     
     // INTERNAL VARIABLES
     // Internals; generally not touched by application code
@@ -123,8 +171,8 @@ VL_MODULE(Vmptw_top) {
     static QData _change_request(Vmptw_top__Syms* __restrict vlSymsp);
     static QData _change_request_1(Vmptw_top__Syms* __restrict vlSymsp);
   public:
-    static void _combo__TOP__2(Vmptw_top__Syms* __restrict vlSymsp);
-    static void _combo__TOP__4(Vmptw_top__Syms* __restrict vlSymsp);
+    static void _combo__TOP__3(Vmptw_top__Syms* __restrict vlSymsp);
+    static void _combo__TOP__6(Vmptw_top__Syms* __restrict vlSymsp);
   private:
     void _ctor_var_reset() VL_ATTR_COLD;
   public:
@@ -136,8 +184,11 @@ VL_MODULE(Vmptw_top) {
   public:
     static void _eval_initial(Vmptw_top__Syms* __restrict vlSymsp) VL_ATTR_COLD;
     static void _eval_settle(Vmptw_top__Syms* __restrict vlSymsp) VL_ATTR_COLD;
-    static void _sequent__TOP__3(Vmptw_top__Syms* __restrict vlSymsp);
-    static void _settle__TOP__1(Vmptw_top__Syms* __restrict vlSymsp) VL_ATTR_COLD;
+    static void _initial__TOP__1(Vmptw_top__Syms* __restrict vlSymsp) VL_ATTR_COLD;
+    static void _sequent__TOP__4(Vmptw_top__Syms* __restrict vlSymsp);
+    static void _sequent__TOP__5(Vmptw_top__Syms* __restrict vlSymsp);
+    static void _sequent__TOP__7(Vmptw_top__Syms* __restrict vlSymsp);
+    static void _settle__TOP__2(Vmptw_top__Syms* __restrict vlSymsp) VL_ATTR_COLD;
   private:
     static void traceChgSub0(void* userp, VerilatedVcd* tracep);
     static void traceChgTop0(void* userp, VerilatedVcd* tracep);

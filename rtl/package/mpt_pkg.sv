@@ -212,10 +212,11 @@
         // And propagated throughout the pipeline
 
         typedef struct packed {
-            mmpt_reg_t      mmpt;
-            spa_t_u         spa;
-            mpt_access_e    access_type;
-            mpt_walking_e   walking;
+            mmpt_reg_t          mmpt;
+            spa_t_u             spa;
+            mpt_access_e        access_type;
+            mpt_walking_e       walking;
+            logic [XLEN-1:0]    rpa;    // Response Phyisical Address
         } mptw_transaction_t;
 
         typedef struct packed {

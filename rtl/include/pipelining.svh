@@ -35,6 +35,19 @@
                                                 \
     logic                   ``bus_name``_busy;    
 
+// Declare Data Array
+`define DECLARE_DATA_BUS_ARRAY(bus_name, size, DATA_WIDTH)   \
+    logic                       [``size`` -1 : 0][DATA_WIDTH-1     : 0] ``bus_name``_data;     \
+    logic                       [``size`` -1 : 0]                       ``bus_name``_valid;     \
+    logic                       [``size`` -1 : 0]                       ``bus_name``_ready;    
+
+// Assign to Data Array
+`define ASSIGN_DATA_BUS_SCALAR_TO_ARRAY(dest, index, src) \
+    assign ``dest``_data[``index``]    = ``src``_data ;    \
+    assign ``dest``_valid[``index``]   = ``src``_valid ;   \
+    assign ``src``_ready               = ``dest``_ready[``index``] ;   
+
+
 ///////////////////////
 //  Bus Assignment   //
 ///////////////////////
@@ -107,6 +120,12 @@
     .``unit_port``_valid ( ``coming_bus``_valid ),  \
     .``unit_port``_ready ( ``coming_bus``_ready ) 
 
+`define MAP_DATA_INDEX_PORT(unit_port, coming_bus, index)        \
+                                                    \
+    .``unit_port``_data ( ``coming_bus``_data[``index``] ),    \
+    .``unit_port``_valid ( ``coming_bus``_valid[``index``] ),  \
+    .``unit_port``_ready ( ``coming_bus``_ready[``index``] ) 
+
 
 //////////////////////////
 // Sink Buses and Ports //
@@ -130,6 +149,11 @@
 `define SINK_MASTER_STATUS_PORT(unit_port)    \
     .``unit_port``_busy ( )            \
 
+`define SINK_MASTER_DATA_PORT(unit_port)    \
+    .``unit_port``_data ( ),            \
+    .``unit_port``_valid ( ),           \
+    .``unit_port``_ready ( '0 )
+
 // Slave Ports
 `define SINK_SLAVE_CTRL_BUS(port_name) \
                                         \
@@ -144,5 +168,10 @@
 `define SINK_SLAVE_CTRL_PORT(unit_port)     \
     .``unit_port``_flush ( '0 ),               \
     .``unit_port``_stall ( '0 )
+
+`define SINK_SLAVE_DATA_PORT(unit_port)    \
+    .``unit_port``_data ( '0 ),            \
+    .``unit_port``_valid ( '0 ),            \
+    .``unit_port``_ready ( )
 
 `endif // _PIPELINING_SVH__

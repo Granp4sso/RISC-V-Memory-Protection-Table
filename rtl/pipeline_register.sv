@@ -29,7 +29,6 @@ module pipeline_register #(
 
 );
 
-    // Protocol "Product Available - Ready to Consume"
     typedef enum logic { 
         EMPTY,
         FULL
