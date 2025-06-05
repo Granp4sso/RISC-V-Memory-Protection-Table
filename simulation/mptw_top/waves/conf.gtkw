@@ -1,21 +1,22 @@
 [*]
 [*] GTKWave Analyzer v3.3.104 (w)1999-2020 BSI
-[*] Wed Jun  4 12:21:21 2025
+[*] Thu Jun  5 13:36:34 2025
 [*]
 [dumpfile] "/home/stefano/Desktop/Work/Projects/smmtt/b_pipelining/simulation/mptw_top/waves/trace.vcd"
-[dumpfile_mtime] "Wed Jun  4 12:19:35 2025"
-[dumpfile_size] 53730
+[dumpfile_mtime] "Thu Jun  5 13:26:47 2025"
+[dumpfile_size] 308201
 [savefile] "/home/stefano/Desktop/Work/Projects/smmtt/b_pipelining/simulation/mptw_top/waves/conf.gtkw"
 [timestart] 1
 [size] 1850 1016
 [pos] 70 47
-*-6.000000 130 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+*-6.000000 90 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
 [treeopen] TOP.
 [treeopen] TOP.mptw_top.
-[treeopen] TOP.mptw_top.gen_walking_stages(0).
-[treeopen] TOP.mptw_top.gen_walking_stages(1).
-[treeopen] TOP.mptw_top.gen_walking_stages(2).
+[treeopen] TOP.mptw_top.gen_walking_stages(0).walking_stage_u.mem_stage_u.
+[treeopen] TOP.mptw_top.gen_walking_stages(2).walking_stage_u.
+[treeopen] TOP.mptw_top.gen_walking_stages(2).walking_stage_u.mem_stage_u.
 [treeopen] TOP.mptw_top.plb_lookup_stage_u.
+[treeopen] TOP.mptw_top.plb_lookup_stage_u.mem_stage_u.
 [sst_width] 299
 [signals_width] 403
 [sst_expanded] 1
@@ -30,10 +31,11 @@ TOP.mmpt_reg_i[63:0]
 TOP.spa_i[63:0]
 @28
 TOP.access_type_i[1:0]
-@29
-TOP.mptw_top.plb_master_mem_gnt
+@23
+TOP.plb_master_mem_addr[63:0]
 @28
 TOP.mptw_top.plb_master_mem_req
+TOP.mptw_top.plb_master_mem_gnt
 TOP.mptw_top.plb_master_mem_valid
 @22
 [color] 5
@@ -49,6 +51,9 @@ TOP.mptw_top.plb_lookup_stage_u.stage_master_data[195:0]
 @28
 [color] 5
 TOP.mptw_top.plb_lookup_stage_u.stage_master_ready
+TOP.mptw_top.plb_lookup_stage_u.mem_stage_u.stage_usage[2:0]
+TOP.mptw_top.plb_lookup_stage_u.mem_stage_u.valid_fifo_full
+TOP.mptw_top.plb_lookup_stage_u.mem_stage_u.grant_fifo_full
 [color] 5
 TOP.mptw_top.plb_lookup_stage_u.stage_master_valid
 @22
@@ -60,11 +65,52 @@ TOP.mptw_top.plb_lookup_to_walking_reg_u.m_data_ready
 [color] 5
 TOP.mptw_top.plb_lookup_to_walking_reg_u.m_data_valid
 @22
-[color] 2
-TOP.mptw_top.gen_walking_stages(0).walking_reg.reg_data_q[195:0]
 [color] 3
-TOP.mptw_top.gen_walking_stages(1).walking_reg.reg_data_q[195:0]
+TOP.mptw_top.gen_walking_stages(0).walking_stage_u.stage_slave_data[195:0]
+@28
+[color] 3
+TOP.mptw_top.gen_walking_stages(0).walking_stage_u.stage_slave_ready
+[color] 3
+TOP.mptw_top.gen_walking_stages(0).walking_stage_u.stage_slave_valid
+@22
+[color] 3
+TOP.mptw_top.gen_walking_stages(0).walking_stage_u.stage_master_data[195:0]
+@28
+[color] 3
+TOP.mptw_top.gen_walking_stages(0).walking_stage_u.stage_master_valid
+[color] 3
+TOP.mptw_top.gen_walking_stages(0).walking_stage_u.stage_master_ready
+@22
+[color] 1
+TOP.mptw_top.gen_walking_stages(1).walking_stage_u.stage_slave_data[195:0]
+@28
+[color] 1
+TOP.mptw_top.gen_walking_stages(1).walking_stage_u.stage_slave_valid
+[color] 1
+TOP.mptw_top.gen_walking_stages(1).walking_stage_u.stage_slave_ready
+@22
+[color] 1
+TOP.mptw_top.gen_walking_stages(1).walking_stage_u.stage_master_data[195:0]
+@28
+[color] 1
+TOP.mptw_top.gen_walking_stages(1).walking_stage_u.stage_master_valid
+[color] 1
+TOP.mptw_top.gen_walking_stages(1).walking_stage_u.stage_master_ready
+@22
 [color] 6
-TOP.mptw_top.gen_walking_stages(2).walking_reg.reg_data_q[195:0]
+TOP.mptw_top.gen_walking_stages(2).walking_stage_u.stage_slave_data[195:0]
+@28
+[color] 6
+TOP.mptw_top.gen_walking_stages(2).walking_stage_u.stage_slave_valid
+[color] 6
+TOP.mptw_top.gen_walking_stages(2).walking_stage_u.stage_slave_ready
+@22
+[color] 6
+TOP.mptw_top.gen_walking_stages(2).walking_stage_u.stage_master_data[195:0]
+@28
+[color] 6
+TOP.mptw_top.gen_walking_stages(2).walking_stage_u.stage_master_valid
+[color] 6
+TOP.mptw_top.gen_walking_stages(2).walking_stage_u.stage_master_ready
 [pattern_trace] 1
 [pattern_trace] 0

@@ -16,6 +16,10 @@ import mpt_pkg::*;
 `include "pipelining.svh"
 `include "uninasoc_mem.svh"
 
+// verilator lint_off UNOPTFLAT
+// verilator lint_off PINCONNECTEMPTY
+// verilator lint_off UNDRIVEN
+
 module memory_read_stage #(
     parameter unsigned  PIPELINE_SLAVE_DATA_WIDTH   = 32,
     parameter unsigned  PIPELINE_MASTER_DATA_WIDTH  = 32,
@@ -50,8 +54,11 @@ module memory_read_stage #(
     // Signals Declaration //
     /////////////////////////
 
+    `DECLARE_DATA_BUS( req_bus , PIPELINE_SLAVE_DATA_WIDTH );
+    `DECLARE_DATA_BUS( req_to_mem_bus , PIPELINE_SLAVE_DATA_WIDTH );
+
     // Data bus unpacking signal
-    mptw_transaction_t slave_to_grant_fifo;
+    mptw_transaction_t req_to_grant_fifo;
     mptw_transaction_t grant_fifo_to_valid_fifo;
     mptw_transaction_t valid_fifo_to_master;
 
@@ -59,6 +66,7 @@ module memory_read_stage #(
     logic grant_fifo_empty;
     logic grant_fifo_push;
     logic grant_fifo_pop;
+    logic [1:0] grant_fifo_usage;
     mptw_transaction_t grant_fifo_data_in;
     mptw_transaction_t grant_fifo_data_out;
 
@@ -66,8 +74,11 @@ module memory_read_stage #(
     logic valid_fifo_empty;
     logic valid_fifo_push;
     logic valid_fifo_pop;
+    logic [1:0] valid_fifo_usage;
     mptw_transaction_t valid_fifo_data_in;
     mptw_transaction_t valid_fifo_data_out;
+
+    logic [2:0] stage_usage;
 
     ///////////////////////
     // Bus Concatenation //
@@ -81,14 +92,14 @@ module memory_read_stage #(
     //              |_|                      |___/      //
     //////////////////////////////////////////////////////
 
-    assign slave_to_grant_fifo = stage_slave_data;
+    assign req_to_grant_fifo = req_bus_data;
 
     //////////////////////////////////////////
-    //    ___         _               _     //
-    //   | _ \_ _ ___| |_ ___  __ ___| |    //
-    //   |  _/ '_/ _ \  _/ _ \/ _/ _ \ |    //
-    //   |_| |_| \___/\__\___/\__\___/_|    //
-    //                                      //
+    //    ___                      _        //
+    //   | _ \___ __ _ _  _ ___ __| |_      //
+    //   |   / -_) _` | || / -_|_-<  _|     //
+    //   |_|_\___\__, |\_,_\___/__/\__|     //
+    //              |_|                     //
     //////////////////////////////////////////
 
     // The memory read stage implements only read transactions
@@ -96,100 +107,35 @@ module memory_read_stage #(
     assign memory_master_mem_we     = '0;
     assign memory_master_mem_be     = '0;
 
-    ////////////////////////////
-    // Wait for Grant Process //
-    ////////////////////////////
+    pipeline_register # ( 
+        .DATA_WIDTH             ( PIPELINE_SLAVE_DATA_WIDTH         )
+    ) req_reg (
+        .clk_i                  ( clk_i                             ),
+        .rst_ni                 ( rst_ni                            ),
+        `MAP_DATA_PORT          ( s_data, stage_slave               ),
+        `MAP_DATA_PORT          ( m_data, req_bus                   ),
+        `SINK_SLAVE_CTRL_PORT   ( s_ctrl                            ),
+        `SINK_MASTER_STATUS_PORT( s_status  )
+    );
 
-    always_comb begin: wait_for_grant_process
-        // Default assignments
-        memory_master_mem_req = '0;
-        memory_master_mem_addr = '0;
-        grant_fifo_push = '0;
+    assign stage_usage = ( {1'b0, grant_fifo_usage} + {2'b0, grant_fifo_push} /* - {2'b0, grant_fifo_pop}*/ ) 
+                       + ( {1'b0, valid_fifo_usage} /*+ {2'b0, valid_fifo_push} - {2'b0, valid_fifo_pop}*/ );
 
-        // If a transaction is coming in, and the fifos are not full
-        // We can send a new request to the memory
-        if( stage_slave_valid && ~grant_fifo_full && ~valid_fifo_full ) begin
+    assign memory_master_mem_req = ( stage_usage < 3'b100 && ~grant_fifo_full && ~valid_fifo_full ) ? req_bus_valid : 1'b0 ;
+    assign memory_master_mem_addr = req_to_grant_fifo.spa;
+    assign req_bus_ready = memory_master_mem_gnt;
 
-            memory_master_mem_req = 1'b1;
-            memory_master_mem_addr = slave_to_grant_fifo.spa;
+    //////////////////////////////////////////////////////
+    //     ___              _     ___ ___ ___ ___       //
+    //    / __|_ _ __ _ _ _| |_  | __|_ _| __/ _ \      //
+    //   | (_ | '_/ _` | ' \  _| | _| | || _| (_) |     //
+    //    \___|_| \__,_|_||_\__| |_| |___|_| \___/      //
+    //                                                  //
+    //////////////////////////////////////////////////////        
 
-            // Once a new request is sent to memory, we need to wait
-            // For the grant signal
-            if ( memory_master_mem_gnt ) begin
-                // At this point, push the data transaction fifo
-                grant_fifo_push = 1'b1;
-            end 
-        end
-    end
+    assign grant_fifo_data_in = req_to_grant_fifo;
+    assign grant_fifo_push = memory_master_mem_gnt;
 
-    ////////////////////////////
-    // Wait for Valid Process //
-    ////////////////////////////
-
-    // In this process, we wait for the valid signal to come from memory.
-    always_comb begin: wait_for_valid_process
-        // Default assignments
-        grant_fifo_pop = '0;
-        grant_fifo_to_valid_fifo = '0;
-
-        // When a memory valid is coming from the memory,
-        // It means that a previous queued request has been served
-        // We can pop from gran fifo only if the valid fifo is not full
-        // NOTE: conditions of fifo states should be redundant, as such situations
-        // shall never occur
-        if( memory_master_mem_valid && ~grant_fifo_empty && ~valid_fifo_full ) begin
-            // Pop from the grant fifo
-            grant_fifo_pop = 1'b1;
-            // The response data can be saved into the current transaction
-            grant_fifo_to_valid_fifo.rpa         = memory_master_mem_rdata;
-            grant_fifo_to_valid_fifo.mmpt        = grant_fifo_data_out.mmpt;
-            grant_fifo_to_valid_fifo.spa         = grant_fifo_data_out.spa;
-            grant_fifo_to_valid_fifo.access_type = grant_fifo_data_out.access_type;
-            grant_fifo_to_valid_fifo.walking     = grant_fifo_data_out.walking;
-        end
-    end
-
-    ////////////////////////////
-    // Move to the Next Stage //
-    ////////////////////////////
-
-    always_comb begin: move_to_next_stage_process
-        // Default assignments
-        valid_fifo_push     = '0;
-        valid_fifo_data_in  = '0;
-        valid_fifo_pop      = '0;
-
-        // When a memory valid data is forwarded
-        if( memory_master_mem_valid ) begin
-            // we need to store the transaction If the next stage is not ready
-            // Or if the valid fifo is not empty ( meaning older transactions are yet to retire )
-            if( ( ~stage_master_ready || ~valid_fifo_empty ) && ~valid_fifo_full ) begin
-                // Push the transaction to the valid queue
-                valid_fifo_push = 1'b1;
-            end
-            // At the same time, if the fifo is not empty, and the next stage is ready, pop
-            if( stage_master_ready && ~valid_fifo_empty ) begin
-                valid_fifo_pop = 1'b1;
-            end
-        end
-
-    end
-
-    ///////////////////////
-    // Transaction FIFOs //
-    ///////////////////////
-
-    /* verilator lint_off PINCONNECTEMPTY */
-    
-    // We must ensure that we do not issue more memory transactions
-    // that we can handle. We use two fifos, one for outstanding
-    // memory transactions, and one for the valid responses that couldn't
-    // be immediately forwarded.
-
-    // The grant fifo stores all the transactions that 
-    // received a grant, but not yet a ready
-    assign grant_fifo_data_in = slave_to_grant_fifo;
-    
     fifo_v3 #(
         .FALL_THROUGH   ( 1'b0                      ),  
         .DATA_WIDTH     ( $bits(mptw_transaction_t) ),
@@ -209,15 +155,31 @@ module memory_read_stage #(
         .data_o         ( grant_fifo_data_out ),
         .pop_i          ( grant_fifo_pop      ),
         // Unused
-        .usage_o        (                           ),  // fill pointer
+        .usage_o        ( grant_fifo_usage          ),  // fill pointer
         .testmode_i     ( '0                        )   // test_mode to bypass clock gating
     );
 
-    // The Valid fifo stores all memory requests that received the
-    // Valid signal, but couldn't be moved forward since the next
-    // stage was not ready yet.
+    // Pop from the grant fifo
+    assign grant_fifo_pop = memory_master_mem_valid;
+    // The response data can be saved into the current transaction
+    assign grant_fifo_to_valid_fifo.rpa         = memory_master_mem_rdata;
+    assign grant_fifo_to_valid_fifo.mmpt        = grant_fifo_data_out.mmpt;
+    assign grant_fifo_to_valid_fifo.spa         = grant_fifo_data_out.spa;
+    assign grant_fifo_to_valid_fifo.access_type = grant_fifo_data_out.access_type;
+    assign grant_fifo_to_valid_fifo.walking     = grant_fifo_data_out.walking;
+
+    //////////////////////////////////////////////////
+    //   __   __    _ _    _   ___ ___ ___ ___      //
+    //   \ \ / /_ _| (_)__| | | __|_ _| __/ _ \     //
+    //    \ V / _` | | / _` | | _| | || _| (_) |    //
+    //     \_/\__,_|_|_\__,_| |_| |___|_| \___/     //
+    //                                              //
+    //////////////////////////////////////////////////
 
     assign valid_fifo_data_in = grant_fifo_to_valid_fifo;
+    // A data is pushed in the valid fifo when popped from grant
+    // And the next stage is not ready
+    assign valid_fifo_push = ( ~stage_master_ready || ~valid_fifo_empty ) ? grant_fifo_pop : 1'b0 ;
     
     fifo_v3 #(
         .FALL_THROUGH   ( 1'b0                      ),  
@@ -238,14 +200,13 @@ module memory_read_stage #(
         .data_o         ( valid_fifo_data_out ),
         .pop_i          ( valid_fifo_pop      ),
         // Unused
-        .usage_o        (                           ),  // fill pointer
+        .usage_o        ( valid_fifo_usage                          ),  // fill pointer
         .testmode_i     ( '0                        )   // test_mode to bypass clock gating
     );
 
     // Depending on the valid fifo status, the output is driven from one queue or another
     assign valid_fifo_to_master = ( valid_fifo_empty ) ? grant_fifo_to_valid_fifo : valid_fifo_data_out ;
-
-    /* verilator lint_off PINCONNECTEMPTY */
+    assign valid_fifo_pop = ( stage_master_ready && ~valid_fifo_empty ) ? 1'b1 : 1'b0 ;
 
     //////////////////////////////////////////////////
     //    ___                   _   _               //
@@ -256,15 +217,10 @@ module memory_read_stage #(
     //////////////////////////////////////////////////
 
     assign stage_master_data    = valid_fifo_to_master;
-
-    // The stage is ready to receive a new data if 
-    // The grant fifo and the valid fifo are not full
-    // assign stage_slave_ready    = ~grant_fifo_full && ~valid_fifo_full;
-    // A new data is valid if a pop request is made
     assign stage_master_valid   = ( stage_master_ready && valid_fifo_empty ) ? grant_fifo_pop : valid_fifo_pop ;
 
-    assign stage_slave_ready    = ~valid_fifo_full && ( ~grant_fifo_full && memory_master_mem_gnt );
-    
 endmodule : memory_read_stage
 
 // verilator lint_on UNOPTFLAT
+// verilator lint_on PINCONNECTEMPTY
+// verilator lint_on UNDRIVEN

@@ -121,6 +121,20 @@
     input  logic [(DATA_WIDTH)/8-1 : 0] ``bus_name``_mem_be,         \
     output logic                        ``bus_name``_mem_error
 
+// MEM MASTER PORTS ARRAY
+`define DECLARE_MEM_PORT_ARRAY(array_name, size, DATA_WIDTH, ADDR_WIDTH)   \
+    output logic                       ``array_name``_mem_req   [``size`` -1 : 0],       \
+    input  logic                       ``array_name``_mem_gnt   [``size`` -1 : 0],       \
+    input  logic                       ``array_name``_mem_valid [``size`` -1 : 0],     \
+    output logic [ADDR_WIDTH-1     : 0] ``array_name``_mem_addr [``size`` -1 : 0],     \
+    input  logic [DATA_WIDTH-1     : 0] ``array_name``_mem_rdata[``size`` -1 : 0],     \
+    output logic [DATA_WIDTH-1     : 0] ``array_name``_mem_wdata[``size`` -1 : 0],     \
+    output logic                        ``array_name``_mem_we   [``size`` -1 : 0],        \
+    output logic [(DATA_WIDTH)/8-1 : 0] ``array_name``_mem_be   [``size`` -1 : 0],        \
+    input  logic                        ``array_name``_mem_error[``size`` -1 : 0]
+
+
+
 /////////////////////
 // Sink interfaces //
 /////////////////////
