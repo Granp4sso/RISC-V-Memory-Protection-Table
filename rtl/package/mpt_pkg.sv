@@ -16,12 +16,17 @@
         // Define lengths for various fields based on XLEN
         localparam int PPN_LEN       = (XLEN == 32) ? 22: 52;
         localparam int MMPT_MODE_LEN = (XLEN == 32) ? 2 : 4;
-        localparam int MPTSIZE       = (XLEN == 32) ? 4 : 8;
+        localparam int MPTESIZE      = (XLEN == 32) ? 4 : 8;
         localparam int NUMPGINRANGE  = (XLEN == 32) ? 3 : 4;
         localparam int SDID_LEN      = 6;
         localparam int WPRI_BITS_LEN = 2; 
         localparam int PAGESIZE      = 4096;
         localparam logic [MMPT_MODE_LEN-1:0] BARE_MODE = 0; 
+
+        localparam int SMMPT43_WALKING_LEVELS = 3;
+        localparam int SMMPT52_WALKING_LEVELS = 4;
+        localparam int SMMPT64_WALKING_LEVELS = 5;
+
 
         // State machine states for MPT operations
         typedef enum logic [3:0] {
@@ -212,11 +217,16 @@
         // And propagated throughout the pipeline
 
         typedef struct packed {
-            mmpt_reg_t          mmpt;
-            spa_t_u             spa;
-            mpt_access_e        access_type;
+            logic               valid;
+            logic               access_error;
+            page_format_fault_e format_error; 
+            logic               plb_hit;
+            logic [XLEN-1:0]    rpa;    
+            mpt_entry_t         mpte;
             mpt_walking_e       walking;
-            logic [XLEN-1:0]    rpa;    // Response Phyisical Address
+            mpt_access_e        access_type;
+            spa_t_u             spa;
+            mmpt_reg_t          mmpt;
         } mptw_transaction_t;
 
         typedef struct packed {

@@ -19,7 +19,8 @@ module walking_stage #(
     parameter unsigned  PIPELINE_MASTER_DATA_WIDTH      = 32,
     parameter unsigned  TRANSACTION_FIFO_DEPTH          = 4,
     parameter unsigned  MEMORY_TRANSACTION_DATA_WIDTH   = 64,                       
-    parameter unsigned  MEMORY_TRANSACTION_ADDR_WIDTH   = 64
+    parameter unsigned  MEMORY_TRANSACTION_ADDR_WIDTH   = 64,
+    parameter unsigned  WALKING_LEVEL                   = 0
 ) (
     // Generic Signals
     input  logic                clk_i,
@@ -32,7 +33,11 @@ module walking_stage #(
     `DEFINE_MASTER_DATA_PORT(stage_master, PIPELINE_MASTER_DATA_WIDTH),
 
     // Walking memory interface
-    `DEFINE_MEM_MASTER_PORTS(memory_master, MEMORY_TRANSACTION_DATA_WIDTH, MEMORY_TRANSACTION_ADDR_WIDTH)
+    `DEFINE_MEM_MASTER_PORTS(memory_master, MEMORY_TRANSACTION_DATA_WIDTH, MEMORY_TRANSACTION_ADDR_WIDTH),
+
+    // Error Port
+    output logic                access_page_fault_o,
+    output page_format_fault_e  format_error_cause_o
 
 ); 
 
@@ -48,8 +53,8 @@ module walking_stage #(
     // Signals Declaration //
     /////////////////////////
 
+    `DECLARE_DATA_BUS( parsing_to_walking, PIPELINE_SLAVE_DATA_WIDTH );
     `DECLARE_DATA_BUS( walking_to_pipe, PIPELINE_SLAVE_DATA_WIDTH );
-    `DECLARE_DATA_BUS( pipe_to_output , PIPELINE_SLAVE_DATA_WIDTH );
 
     ///////////////////////
     // Bus Concatenation //
@@ -62,6 +67,32 @@ module walking_stage #(
     //    \___/|_||_| .__/\__,_\__|_\_\_|_||_\__, |     //
     //              |_|                      |___/      //
     //////////////////////////////////////////////////////
+
+    //////////////////////////////////////////////////////////////////////////////////////
+    //    __  __ ___ _____ ___   ___             _             ___ _                    //
+    //   |  \/  | _ \_   _| __| | _ \__ _ _ _ __(_)_ _  __ _  / __| |_ __ _ __ _ ___    //
+    //   | |\/| |  _/ | | | _|  |  _/ _` | '_(_-< | ' \/ _` | \__ \  _/ _` / _` / -_)   //
+    //   |_|  |_|_|   |_| |___| |_| \__,_|_| /__/_|_||_\__, | |___/\__\__,_\__, \___|   //  
+    //                                                 |___/               |___/        //
+    //////////////////////////////////////////////////////////////////////////////////////
+
+    parsing_stage #(
+        .PIPELINE_SLAVE_DATA_WIDTH   ( PIPELINE_SLAVE_DATA_WIDTH    ),
+        .PIPELINE_MASTER_DATA_WIDTH  ( PIPELINE_MASTER_DATA_WIDTH   ),
+        .WALKING_LEVEL               ( WALKING_LEVEL                )
+    ) parsing_stage_u (
+        .clk_i                      ( clk_i                         ),
+        .rst_ni                     ( rst_ni                        ),
+
+        // Pipeline Ports
+        `MAP_DATA_PORT              ( stage_slave  , stage_slave        ),
+        `MAP_DATA_PORT              ( stage_master , parsing_to_walking ),
+
+        // Error Port
+        .access_page_fault_o,
+        .format_error_cause_o
+
+    ); 
 
     //////////////////////////////////////////////////////////////////
     //    __  __                          ___ _                     //
@@ -84,8 +115,8 @@ module walking_stage #(
         .rst_ni                 ( rst_ni                                    ),
 
         // Pipeline Ports
-        `MAP_DATA_PORT          ( stage_slave  , stage_slave    ),
-        `MAP_DATA_PORT          ( stage_master , walking_to_pipe   ),
+        `MAP_DATA_PORT          ( stage_slave  , parsing_to_walking ),
+        `MAP_DATA_PORT          ( stage_master , walking_to_pipe    ),
 
         // PLB Cache Port
         .memory_master_mem_req      ( memory_master_mem_req     ),
@@ -104,35 +135,11 @@ module walking_stage #(
     ) walking_reg (
         .clk_i                  ( clk_i                             ),
         .rst_ni                 ( rst_ni                            ),
-        `MAP_DATA_PORT          ( s_data, walking_to_pipe               ),
+        `MAP_DATA_PORT          ( s_data, walking_to_pipe           ),
         `MAP_DATA_PORT          ( m_data, stage_master              ),
         `SINK_SLAVE_CTRL_PORT   ( s_ctrl                            ),
         `SINK_MASTER_STATUS_PORT( s_status  )
     );
-
-
-    //////////////////////////////////////////////////////////////////////////////////////
-    //    __  __ ___ _____ ___   ___             _             ___ _                    //
-    //   |  \/  | _ \_   _| __| | _ \__ _ _ _ __(_)_ _  __ _  / __| |_ __ _ __ _ ___    //
-    //   | |\/| |  _/ | | | _|  |  _/ _` | '_(_-< | ' \/ _` | \__ \  _/ _` / _` / -_)   //
-    //   |_|  |_|_|   |_| |___| |_| \__,_|_| /__/_|_||_\__, | |___/\__\__,_\__, \___|   //  
-    //                                                 |___/               |___/        //
-    //////////////////////////////////////////////////////////////////////////////////////
-
-    // Parsing Stage Here
-
-    // Reg
-
-    /*pipeline_register # ( 
-        .DATA_WIDTH             ( PIPELINE_SLAVE_DATA_WIDTH         )
-    ) walking_reg (
-        .clk_i                  ( clk_i                             ),
-        .rst_ni                 ( rst_ni                            ),
-        `MAP_DATA_PORT          ( s_data, stage_slave               ),
-        `MAP_DATA_PORT          ( m_data, stage_master              ),
-        `SINK_SLAVE_CTRL_PORT   ( s_ctrl                            ),
-        `SINK_MASTER_STATUS_PORT( s_status  )
-    );*/
 
     //////////////////////////////////////////////////
     //    ___                   _   _               //

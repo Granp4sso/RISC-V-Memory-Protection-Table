@@ -107,13 +107,13 @@ module mptw_top #(
     /////////////////////
 
     `DECLARE_DATA_BUS( input_to_fetch       , fetch_stage_datawidth         );
-    `DECLARE_DATA_BUS( fetch_to_pipe        , plb_lookup_stage_datawidth    );
-    `DECLARE_DATA_BUS( pipe_to_plb_lookup   , plb_lookup_stage_datawidth    );
-    `DECLARE_DATA_BUS( plb_lookup_to_pipe   , walking_stage_datawidth       );
-    `DECLARE_DATA_BUS( pipe_to_walking      , walking_stage_datawidth       );
+    `DECLARE_DATA_BUS( fetch_to_plb_lookup  , plb_lookup_stage_datawidth    );
+    `DECLARE_DATA_BUS( plb_lookup_to_walking   , walking_stage_datawidth    );
+    `DECLARE_DATA_BUS_ARRAY(walking_stage, NUM_STAGES + 1, walking_stage_datawidth);
+    `DECLARE_DATA_BUS( commit_to_output     , walking_stage_datawidth       );
 
     // Here declare the number of walking stages
-    `DECLARE_DATA_BUS_ARRAY(walking_stage, NUM_STAGES + 1, walking_stage_datawidth);
+
 
     `DECLARE_STATUS_BUS( fetch_pipe_status      );
     `DECLARE_STATUS_BUS( plb_lookup_pipe_status );
@@ -140,6 +140,12 @@ module mptw_top #(
     assign input_transaction.access_type    = access_type_i;
     assign input_transaction.walking        = MPT_WALKING_DO;
 
+    assign input_transaction.rpa = '0;
+    assign input_transaction.valid = mptw_transaction_valid_i; 
+    assign input_transaction.mpte = '0;
+    assign input_transaction.format_error = NO_ERROR ;
+    assign input_transaction.access_error = '0 ;
+
     // Build `input_to_fetch` signal
     assign input_to_fetch_data  = input_transaction;
     assign input_to_fetch_valid = mptw_transaction_valid_i;
@@ -161,32 +167,12 @@ module mptw_top #(
         .clk_i                  ( clk_i                             ),
         .rst_ni                 ( rst_ni                            ),
 
-        `MAP_DATA_PORT          ( fetch_slave, input_to_fetch       ),
-        `MAP_DATA_PORT          ( fetch_master, fetch_to_pipe       ),
-        `SINK_SLAVE_CTRL_PORT   ( fetch_ctrl                        ),
+        `MAP_DATA_PORT          ( stage_slave,  input_to_fetch      ),
+        `MAP_DATA_PORT          ( stage_master, fetch_to_plb_lookup ),
+        `SINK_SLAVE_CTRL_PORT   ( stage_ctrl                        ),
 
         .exception_cause_o      ( fetch_exception_cause             )
     );
-
-    ///////////////////////////////////////////
-    // Fetch to PLB Lookup Pipeline Register //
-    ///////////////////////////////////////////
-
-    pipeline_register # ( 
-
-        .DATA_WIDTH             ( plb_lookup_stage_datawidth    )
-
-    ) fetch_to_plb_lookup_reg_u (
-
-        .clk_i                  ( clk_i                         ),
-        .rst_ni                 ( rst_ni                        ),
-
-        `MAP_DATA_PORT          ( s_data, fetch_to_pipe         ),
-        `MAP_DATA_PORT          ( m_data, pipe_to_plb_lookup    ),
-        `SINK_SLAVE_CTRL_PORT   ( s_ctrl                        ),
-        `MAP_STATUS_PORT        ( s_status, fetch_pipe_status   )
-
-    ); 
 
     //////////////////////////////////////////////////////////////////////////////
     //    ___ _    ___   _             _               ___ _                    //
@@ -208,8 +194,8 @@ module mptw_top #(
         .rst_ni                 ( rst_ni                                    ),
 
         // Pipeline Ports
-        `MAP_DATA_PORT          ( stage_slave  , pipe_to_plb_lookup         ),
-        `MAP_DATA_PORT          ( stage_master , plb_lookup_to_pipe         ),
+        `MAP_DATA_PORT          ( stage_slave  , fetch_to_plb_lookup        ),
+        `MAP_DATA_PORT          ( stage_master , plb_lookup_to_walking      ),
         `SINK_SLAVE_CTRL_PORT   ( plb_lookup_ctrl                           ),
 
         // PLB Cache Port
@@ -225,26 +211,6 @@ module mptw_top #(
 
     ); 
 
-    ////////////////////////////////////////////////////
-    // PLB Lookup to Walking Stages Pipeline Register //
-    ////////////////////////////////////////////////////
-
-    pipeline_register # ( 
-
-        .DATA_WIDTH             ( plb_lookup_stage_datawidth    )
-
-    ) plb_lookup_to_walking_reg_u (
-
-        .clk_i                  ( clk_i                             ),
-        .rst_ni                 ( rst_ni                            ),
-
-        `MAP_DATA_PORT          ( s_data, plb_lookup_to_pipe        ),
-        `MAP_DATA_PORT          ( m_data, pipe_to_walking           ),
-        `SINK_SLAVE_CTRL_PORT   ( s_ctrl                            ),
-        `MAP_STATUS_PORT        ( s_status, plb_lookup_pipe_status  )
-
-    ); 
-
     //////////////////////////////////////////////////////////////////////
     //   __      __    _ _   _             ___ _                        //
     //   \ \    / /_ _| | |_(_)_ _  __ _  / __| |_ __ _ __ _ ___ ___    //
@@ -254,7 +220,7 @@ module mptw_top #(
     //////////////////////////////////////////////////////////////////////
 
     // We assign the output of the plb lookup stage to the first walking stage
-    `ASSIGN_DATA_BUS_SCALAR_TO_ARRAY(walking_stage, 0, pipe_to_walking);
+    `ASSIGN_DATA_BUS_SCALAR_TO_ARRAY(walking_stage, 0, plb_lookup_to_walking);
 
     generate
         for (genvar i = 0; i < NUM_STAGES; i = i + 1) begin : gen_walking_stages
@@ -262,9 +228,12 @@ module mptw_top #(
             // Replace this with the walking stages
             walking_stage #(
 
-                .PIPELINE_SLAVE_DATA_WIDTH  ( walking_stage_datawidth    ),
-                .PIPELINE_MASTER_DATA_WIDTH ( walking_stage_datawidth    ),
-                .TRANSACTION_FIFO_DEPTH     ( WALKING_STAGE_MEM_DEPTH    )
+                .PIPELINE_SLAVE_DATA_WIDTH      ( walking_stage_datawidth   ),
+                .PIPELINE_MASTER_DATA_WIDTH     ( walking_stage_datawidth   ),
+                .TRANSACTION_FIFO_DEPTH         ( WALKING_STAGE_MEM_DEPTH   ),
+                .MEMORY_TRANSACTION_DATA_WIDTH  ( DATA_WIDTH                ),           
+                .MEMORY_TRANSACTION_ADDR_WIDTH  ( ADDR_WIDTH                ),
+                .WALKING_LEVEL                  ( NUM_STAGES - i            )
 
             ) walking_stage_u (
                 
@@ -284,17 +253,17 @@ module mptw_top #(
                 .memory_master_mem_wdata    ( walking_mem_master_mem_wdata[i]   ),
                 .memory_master_mem_we       ( walking_mem_master_mem_we[i]      ),
                 .memory_master_mem_be       ( walking_mem_master_mem_be[i]      ),
-                .memory_master_mem_error    ( walking_mem_master_mem_error[i]   )    
+                .memory_master_mem_error    ( walking_mem_master_mem_error[i]   ),
+
+                // Error ports
+                .access_page_fault_o        (),
+                .format_error_cause_o       ()
 
             ); 
 
         end
     endgenerate
-
-
-    assign walking_stage_ready[NUM_STAGES] = 1;
     
-
     //////////////////////////////////////////////////////////////
     //     ___                 _ _     ___ _                    //
     //    / __|___ _ __  _ __ (_) |_  / __| |_ __ _ __ _ ___    //
@@ -302,6 +271,27 @@ module mptw_top #(
     //    \___\___/_|_|_|_|_|_|_|\__| |___/\__\__,_\__, \___|   //
     //                                             |___/        //
     //////////////////////////////////////////////////////////////
+
+    // This is the last parsing stage
+    parsing_stage #(
+        .PIPELINE_SLAVE_DATA_WIDTH   ( walking_stage_datawidth      ),
+        .PIPELINE_MASTER_DATA_WIDTH  ( walking_stage_datawidth      ),
+        .WALKING_LEVEL               ( 0                            )
+    ) commit_stage_u (
+        .clk_i                      ( clk_i                         ),
+        .rst_ni                     ( rst_ni                        ),
+
+        // Pipeline Ports
+        `MAP_DATA_INDEX_PORT        ( stage_slave  , walking_stage, NUM_STAGES ),
+        `MAP_DATA_PORT              ( stage_master , commit_to_output          ),
+
+        // Error Port
+        .access_page_fault_o        ( ),
+        .format_error_cause_o       ( )
+
+    ); 
+
+    assign commit_to_output_ready = 1;
 
 endmodule : mptw_top
 

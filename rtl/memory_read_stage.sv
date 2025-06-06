@@ -177,9 +177,12 @@ module memory_read_stage #(
     //////////////////////////////////////////////////
 
     assign valid_fifo_data_in = grant_fifo_to_valid_fifo;
-    // A data is pushed in the valid fifo when popped from grant
-    // And the next stage is not ready
-    assign valid_fifo_push = ( ~stage_master_ready || ~valid_fifo_empty ) ? grant_fifo_pop : 1'b0 ;
+    // A data is pushed in the valid fifo right from the grant fifo
+    // This can happen in two scenarios:
+    //      1 - The next stage is not ready
+    //      2 - The next stage is ready, and the valid fifo is not empty
+
+    assign valid_fifo_push = ( ~stage_master_ready || ( stage_master_ready && ~valid_fifo_empty ) ) ? grant_fifo_pop : 1'b0 ;
     
     fifo_v3 #(
         .FALL_THROUGH   ( 1'b0                      ),  

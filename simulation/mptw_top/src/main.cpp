@@ -8,12 +8,14 @@
 #define PLB_PORTS_NUM 1
 #define MEM_PORTS_NUM 3
 
-#define TRANSACTION_NUM 256
+#define BACK_TO_BACK 0
+
+#define TRANSACTION_NUM 25
 #define TRANSACTION_RANDOM_FACTOR 1
 #define PLB_GRANT_RANDOM_FACTOR 1
 #define PLB_VALID_RANDOM_FACTOR 1
-#define MEM_GRANT_RANDOM_FACTOR 16
-#define MEM_VALID_RANDOM_FACTOR 24
+#define MEM_GRANT_RANDOM_FACTOR 1
+#define MEM_VALID_RANDOM_FACTOR 1
 
 const uint32_t TOT_PORTS_NUM = PLB_PORTS_NUM + MEM_PORTS_NUM;
 
@@ -63,11 +65,11 @@ int main(int argc, char **argv) {
 
         random_seed = (i == 0) ? PLB_GRANT_RANDOM_FACTOR : MEM_GRANT_RANDOM_FACTOR;
         grant_spec_counters[i] = ( random_seed != 1 ) ? (rand() % random_seed) : 0;
-        grant_spec_counters[i]++;
+        if( !BACK_TO_BACK ) grant_spec_counters[i]++;
 
         random_seed = (i == 0) ? PLB_VALID_RANDOM_FACTOR : MEM_VALID_RANDOM_FACTOR;
         valid_spec_counters[i] = ( random_seed != 1 ) ? (rand() % random_seed) : 0;
-        valid_spec_counters[i]++;
+        if( !BACK_TO_BACK ) valid_spec_counters[i]++;
 
         grant[i] = 0;
         valid[i] = 0;
@@ -184,7 +186,8 @@ void req_cnt_update( uint8_t port_id, uint8_t * req ){
 
 void gen_memory_grant( uint8_t port_id, uint8_t * grant,  uint8_t * req , uint32_t random_factor ){
 
-    // Grant is generated before  Req, correct this
+    grant[port_id] = 0;
+
     if( grant_counters[port_id] == 0 ){
         grant[port_id] = 0;
         return;
@@ -197,7 +200,7 @@ void gen_memory_grant( uint8_t port_id, uint8_t * grant,  uint8_t * req , uint32
         return;
     } else {
         grant_spec_counters[port_id] = ( random_factor != 1 ) ? (rand() % random_factor) : 0;
-        grant_spec_counters[port_id]++;
+        if( !BACK_TO_BACK ) grant_spec_counters[port_id]++;
     }
 
     if( req_counters[port_id] < grant_counters[port_id] && req[port_id] ){
@@ -226,7 +229,7 @@ void gen_memory_valid( uint8_t port_id, uint8_t * valid, uint64_t * rdata, uint3
         return;
     } else {
         valid_spec_counters[port_id] = ( random_factor != 1 ) ? (rand() % random_factor) : 0;
-        valid_spec_counters[port_id]++;
+        if( !BACK_TO_BACK ) valid_spec_counters[port_id]++;
     }
 
     if( grant_counters[port_id] < valid_counters[port_id] ){

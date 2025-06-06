@@ -19,6 +19,7 @@ import mpt_pkg::*;
 `include "uninasoc_mem.svh"
 
 // verilator lint_off UNOPTFLAT
+// verilator lint_off PINCONNECTEMPTY
 
 module plb_lookup_stage #(
     parameter unsigned  PIPELINE_SLAVE_DATA_WIDTH   = 32,
@@ -66,7 +67,7 @@ module plb_lookup_stage #(
     /////////////////////
 
     `DECLARE_DATA_BUS( mem_to_local_bus, PIPELINE_SLAVE_DATA_WIDTH );
-    `DECLARE_DATA_BUS( local_to_master_bus , PIPELINE_SLAVE_DATA_WIDTH );
+    `DECLARE_DATA_BUS( local_to_reg_bus , PIPELINE_SLAVE_DATA_WIDTH );
 
     //////////////////////////////////////////////////////
     //    _   _                    _   _                //
@@ -129,6 +130,12 @@ module plb_lookup_stage #(
     assign post_local_transaction.walking       = ( |pre_local_transaction.rpa ) ? MPT_WALKING_SKIP : MPT_WALKING_DO ;
     assign post_local_transaction.rpa           = '0;
 
+    assign post_local_transaction.format_error  = pre_local_transaction.format_error;
+    assign post_local_transaction.access_error  = pre_local_transaction.access_error;
+    assign post_local_transaction.plb_hit       = ( |pre_local_transaction.rpa ) ? 1'b1 : 1'b0 ;
+    assign post_local_transaction.mpte          = pre_local_transaction.mpte;
+
+    assign post_local_transaction.valid         = pre_local_transaction.valid;
 
     //////////////////////////////////////////////////
     //    ___                   _   _               //
@@ -138,14 +145,33 @@ module plb_lookup_stage #(
     //           |_|                      |___/     //
     //////////////////////////////////////////////////
 
+    assign local_to_reg_bus_valid = mem_to_local_bus_valid;
+    assign local_to_reg_bus_data = post_local_transaction;
+    assign mem_to_local_bus_ready = local_to_reg_bus_ready;
 
-    assign local_to_master_bus_valid = mem_to_local_bus_valid;
-    assign mem_to_local_bus_ready = local_to_master_bus_ready;
-
-    assign stage_master_data = post_local_transaction; 
-    assign stage_master_valid = local_to_master_bus_valid; 
-    assign local_to_master_bus_ready = stage_master_ready; 
+    //assign stage_master_data = post_local_transaction; 
+    //assign stage_master_valid = local_to_master_bus_valid; 
+    //assign local_to_master_bus_ready = stage_master_ready; 
     
+
+    pipeline_register # ( 
+
+        .DATA_WIDTH             ( PIPELINE_SLAVE_DATA_WIDTH         )
+
+    ) plb_lookup_reg_u (
+
+        .clk_i                  ( clk_i                             ),
+        .rst_ni                 ( rst_ni                            ),
+
+        `MAP_DATA_PORT          ( s_data, local_to_reg_bus          ),
+        `MAP_DATA_PORT          ( m_data, stage_master              ),
+        `SINK_SLAVE_CTRL_PORT   ( s_ctrl                            ),
+        `SINK_MASTER_STATUS_PORT( s_status                          )
+
+    ); 
+
+
 endmodule : plb_lookup_stage
 
 // verilator lint_on UNOPTFLAT
+// verilator lint_on PINCONNECTEMPTY
