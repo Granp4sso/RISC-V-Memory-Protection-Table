@@ -21,13 +21,16 @@ module mpt_top #(
     input logic clk_i,
     input logic rst_ni,
     input logic flush_i,                       // Flush signal to reset internal state
-    input logic ptw_enable_i,                  // Page Table Walk enable signal
-    // input spa_t spa_i,                         // Supervisor physical address input
-    input spa_t_u spa_i,
+    input logic mptw_enable_i,                 // Enable the MPT (i.e. only for non M-mode code)
+
+    // Transaction Port                         
+    input spa_t_u spa_i,                       // Supervisor physical address input
+    input mmpt_reg_t mmpt_reg_i,               // Memory Protection Table Register input
+    input mpt_access_e access_type_i,          // Memory access type (read, write, execute)
     input logic addr_valid_i,                  // Address validity signal
 
     // CSR Port
-    input mmpt_reg_t mmpt_reg_i,               // Memory Protection Table Register input
+    
 
     // Error Port
     output logic access_page_fault_o,          // Access fault output (indicates if access is not allowed) 
@@ -39,8 +42,6 @@ module mpt_top #(
     // Status Port
     output logic ptw_busy_o,                   // Page Table Walk status (busy or not)
     output logic ptw_valid_o,                  // Page Table Walk validity status. Entry is valid
-
-    input mpt_access_e access_type_i,          // Memory access type (read, write, execute)
 
     // Output Port
     output plb_entry_t plb_entry_o,            // Output PLB entry (contains SDID, physical address, and permissions)

@@ -2,11 +2,11 @@
 // Author: Valerio Di Domenico <didomenico.valerio@virgilio.it>
 
 // Description: 
-// This package defines structures, parameters, and state machines for managing 
-// Memory Protection Tables (MPT) in systems with 64-bit architectures. 
-// It includes types for MPT entries, access permissions, error handling, and PLB entries.
-// The package supports different memory protection modes and lookup levels, 
-// adapting to various system configurations based on the XLEN (architecture width).
+//  This package defines structures, parameters, and state machines for managing 
+//  Memory Protection Tables (MPT) in systems with 64-bit architectures. 
+//  It includes types for MPT entries, access permissions, error handling, and PLB entries.
+//  The package supports different memory protection modes and lookup levels, 
+//  adapting to various system configurations based on the XLEN (architecture width).
 
 `ifndef MPT_PKG
 `define MPT_PKG
@@ -16,12 +16,17 @@
         // Define lengths for various fields based on XLEN
         localparam int PPN_LEN       = (XLEN == 32) ? 22: 52;
         localparam int MMPT_MODE_LEN = (XLEN == 32) ? 2 : 4;
-        localparam int MPTSIZE       = (XLEN == 32) ? 4 : 8;
+        localparam int MPTESIZE      = (XLEN == 32) ? 4 : 8;
         localparam int NUMPGINRANGE  = (XLEN == 32) ? 3 : 4;
         localparam int SDID_LEN      = 6;
         localparam int WPRI_BITS_LEN = 2; 
         localparam int PAGESIZE      = 4096;
         localparam logic [MMPT_MODE_LEN-1:0] BARE_MODE = 0; 
+
+        localparam int SMMPT43_WALKING_LEVELS = 3;
+        localparam int SMMPT52_WALKING_LEVELS = 4;
+        localparam int SMMPT64_WALKING_LEVELS = 5;
+
 
         // State machine states for MPT operations
         typedef enum logic [3:0] {
@@ -200,6 +205,38 @@
             logic [WPRI_BITS_LEN-1:0] WPRI; // Write-preserved, read-ignored bits
             logic [PPN_LEN-1:0]       PPN;  // Physical page number (PPN) of the root page of the memory protection tables. Must be set to 0 if mode = BARE
         } mmpt_reg_t;
+
+        ////////////////////////////////////////////////////
+
+        typedef enum logic [1:0] {
+            MPT_WALKING_DO      = 2'b00,
+            MPT_WALKING_SKIP    = 2'b11
+        } mpt_walking_e;
+
+        // Transaction type is used as input for the MPT Walker
+        // And propagated throughout the pipeline
+
+        typedef struct packed {
+            logic               valid;
+            logic               access_error;
+            page_format_fault_e format_error; 
+            logic               plb_hit;
+            logic [XLEN-1:0]    rpa;    
+            mpt_entry_t         mpte;
+            mpt_walking_e       walking;
+            mpt_access_e        access_type;
+            spa_t_u             spa;
+            mmpt_reg_t          mmpt;
+        } mptw_transaction_t;
+
+        typedef struct packed {
+            logic [SDID_LEN-1:0]    SDID;
+            spa_t_u                 spa;
+            mpt_access_e            access_type;
+        } plb_lookup_req_t;
+
+
         
     endpackage;
+    
 `endif

@@ -64,6 +64,9 @@ done
 # Path Envvar
 export ROOT_DIR=$( dirname $( realpath ${BASH_SOURCE[0]} ) )
 export RTL_DIR=${ROOT_DIR}/rtl
+export PACKAGE_DIR=${RTL_DIR}/package
+export HEADERS_DIR=${RTL_DIR}/include
+export DEP_DIR=${RTL_DIR}/dep
 export SIM_DIR=${ROOT_DIR}/simulation
 export SIM_SRC_DIR=${SIM_DIR}/src
 export SIM_WAVES_DIR=${SIM_DIR}/waves
