@@ -10,12 +10,12 @@
 
 #define BACK_TO_BACK 0
 
-#define TRANSACTION_NUM 25
+#define TRANSACTION_NUM 128
 #define TRANSACTION_RANDOM_FACTOR 1
-#define PLB_GRANT_RANDOM_FACTOR 1
-#define PLB_VALID_RANDOM_FACTOR 1
-#define MEM_GRANT_RANDOM_FACTOR 1
-#define MEM_VALID_RANDOM_FACTOR 1
+#define PLB_GRANT_RANDOM_FACTOR 2
+#define PLB_VALID_RANDOM_FACTOR 5
+#define MEM_GRANT_RANDOM_FACTOR 16
+#define MEM_VALID_RANDOM_FACTOR 32
 
 const uint32_t TOT_PORTS_NUM = PLB_PORTS_NUM + MEM_PORTS_NUM;
 
@@ -239,4 +239,3 @@ void gen_memory_valid( uint8_t port_id, uint8_t * valid, uint64_t * rdata, uint3
         rdata[port_id] = 1;
     }
 }
-

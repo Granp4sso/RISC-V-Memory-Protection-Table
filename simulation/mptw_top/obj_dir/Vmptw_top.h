@@ -74,10 +74,17 @@ VL_MODULE(Vmptw_top) {
         CData/*0:0*/ mptw_top__DOT__plb_lookup_stage_u__DOT__mem_to_local_bus_valid;
         CData/*0:0*/ mptw_top__DOT__plb_lookup_stage_u__DOT__local_to_reg_bus_ready;
         CData/*0:0*/ mptw_top__DOT__plb_lookup_stage_u__DOT__mem_stage_u__DOT__req_bus_valid;
+        CData/*0:0*/ mptw_top__DOT__plb_lookup_stage_u__DOT__mem_stage_u__DOT__req_bus_ready;
         CData/*0:0*/ mptw_top__DOT__plb_lookup_stage_u__DOT__mem_stage_u__DOT__req_to_mem_bus_valid;
         CData/*0:0*/ mptw_top__DOT__plb_lookup_stage_u__DOT__mem_stage_u__DOT__req_to_mem_bus_ready;
+        CData/*0:0*/ mptw_top__DOT__plb_lookup_stage_u__DOT__mem_stage_u__DOT__grant_fifo_push;
+        CData/*0:0*/ mptw_top__DOT__plb_lookup_stage_u__DOT__mem_stage_u__DOT__grant_fifo_pop;
         CData/*0:0*/ mptw_top__DOT__plb_lookup_stage_u__DOT__mem_stage_u__DOT__valid_fifo_push;
         CData/*0:0*/ mptw_top__DOT__plb_lookup_stage_u__DOT__mem_stage_u__DOT__valid_fifo_pop;
+        CData/*1:0*/ mptw_top__DOT__plb_lookup_stage_u__DOT__mem_stage_u__DOT__grant_fifo_status_q;
+        CData/*1:0*/ mptw_top__DOT__plb_lookup_stage_u__DOT__mem_stage_u__DOT__grant_fifo_status_d;
+        CData/*1:0*/ mptw_top__DOT__plb_lookup_stage_u__DOT__mem_stage_u__DOT__valid_fifo_status_q;
+        CData/*1:0*/ mptw_top__DOT__plb_lookup_stage_u__DOT__mem_stage_u__DOT__valid_fifo_status_d;
         CData/*0:0*/ mptw_top__DOT__plb_lookup_stage_u__DOT__mem_stage_u__DOT__req_reg__DOT__current_state;
         CData/*0:0*/ mptw_top__DOT__plb_lookup_stage_u__DOT__mem_stage_u__DOT__req_reg__DOT__next_state;
         CData/*0:0*/ mptw_top__DOT__plb_lookup_stage_u__DOT__mem_stage_u__DOT__req_reg__DOT__dummy;
@@ -115,18 +122,25 @@ VL_MODULE(Vmptw_top) {
         CData/*2:0*/ mptw_top__DOT__gen_walking_stages__BRA__0__KET____DOT__walking_stage_u__DOT__parsing_stage_u__DOT__mpte_permissions;
         CData/*0:0*/ mptw_top__DOT__gen_walking_stages__BRA__0__KET____DOT__walking_stage_u__DOT__parsing_stage_u__DOT__access_page_fault;
         CData/*2:0*/ mptw_top__DOT__gen_walking_stages__BRA__0__KET____DOT__walking_stage_u__DOT__parsing_stage_u__DOT__format_error_cause;
+    };
+    struct {
         CData/*3:0*/ mptw_top__DOT__gen_walking_stages__BRA__0__KET____DOT__walking_stage_u__DOT__parsing_stage_u__DOT__range_offset;
         CData/*0:0*/ mptw_top__DOT__gen_walking_stages__BRA__0__KET____DOT__walking_stage_u__DOT__parsing_stage_u__DOT__slave_to_reg_bus_ready;
         CData/*0:0*/ mptw_top__DOT__gen_walking_stages__BRA__0__KET____DOT__walking_stage_u__DOT__parsing_stage_u__DOT__parsing_reg__DOT__current_state;
         CData/*0:0*/ mptw_top__DOT__gen_walking_stages__BRA__0__KET____DOT__walking_stage_u__DOT__parsing_stage_u__DOT__parsing_reg__DOT__next_state;
         CData/*0:0*/ mptw_top__DOT__gen_walking_stages__BRA__0__KET____DOT__walking_stage_u__DOT__parsing_stage_u__DOT__parsing_reg__DOT__dummy;
         CData/*0:0*/ mptw_top__DOT__gen_walking_stages__BRA__0__KET____DOT__walking_stage_u__DOT__mem_stage_u__DOT__req_bus_valid;
+        CData/*0:0*/ mptw_top__DOT__gen_walking_stages__BRA__0__KET____DOT__walking_stage_u__DOT__mem_stage_u__DOT__req_bus_ready;
         CData/*0:0*/ mptw_top__DOT__gen_walking_stages__BRA__0__KET____DOT__walking_stage_u__DOT__mem_stage_u__DOT__req_to_mem_bus_valid;
-    };
-    struct {
         CData/*0:0*/ mptw_top__DOT__gen_walking_stages__BRA__0__KET____DOT__walking_stage_u__DOT__mem_stage_u__DOT__req_to_mem_bus_ready;
+        CData/*0:0*/ mptw_top__DOT__gen_walking_stages__BRA__0__KET____DOT__walking_stage_u__DOT__mem_stage_u__DOT__grant_fifo_push;
+        CData/*0:0*/ mptw_top__DOT__gen_walking_stages__BRA__0__KET____DOT__walking_stage_u__DOT__mem_stage_u__DOT__grant_fifo_pop;
         CData/*0:0*/ mptw_top__DOT__gen_walking_stages__BRA__0__KET____DOT__walking_stage_u__DOT__mem_stage_u__DOT__valid_fifo_push;
         CData/*0:0*/ mptw_top__DOT__gen_walking_stages__BRA__0__KET____DOT__walking_stage_u__DOT__mem_stage_u__DOT__valid_fifo_pop;
+        CData/*1:0*/ mptw_top__DOT__gen_walking_stages__BRA__0__KET____DOT__walking_stage_u__DOT__mem_stage_u__DOT__grant_fifo_status_q;
+        CData/*1:0*/ mptw_top__DOT__gen_walking_stages__BRA__0__KET____DOT__walking_stage_u__DOT__mem_stage_u__DOT__grant_fifo_status_d;
+        CData/*1:0*/ mptw_top__DOT__gen_walking_stages__BRA__0__KET____DOT__walking_stage_u__DOT__mem_stage_u__DOT__valid_fifo_status_q;
+        CData/*1:0*/ mptw_top__DOT__gen_walking_stages__BRA__0__KET____DOT__walking_stage_u__DOT__mem_stage_u__DOT__valid_fifo_status_d;
         CData/*0:0*/ mptw_top__DOT__gen_walking_stages__BRA__0__KET____DOT__walking_stage_u__DOT__mem_stage_u__DOT__req_reg__DOT__current_state;
         CData/*0:0*/ mptw_top__DOT__gen_walking_stages__BRA__0__KET____DOT__walking_stage_u__DOT__mem_stage_u__DOT__req_reg__DOT__next_state;
         CData/*0:0*/ mptw_top__DOT__gen_walking_stages__BRA__0__KET____DOT__walking_stage_u__DOT__mem_stage_u__DOT__req_reg__DOT__dummy;
@@ -161,12 +175,21 @@ VL_MODULE(Vmptw_top) {
         CData/*0:0*/ mptw_top__DOT__gen_walking_stages__BRA__1__KET____DOT__walking_stage_u__DOT__parsing_stage_u__DOT__parsing_reg__DOT__next_state;
         CData/*0:0*/ mptw_top__DOT__gen_walking_stages__BRA__1__KET____DOT__walking_stage_u__DOT__parsing_stage_u__DOT__parsing_reg__DOT__dummy;
         CData/*0:0*/ mptw_top__DOT__gen_walking_stages__BRA__1__KET____DOT__walking_stage_u__DOT__mem_stage_u__DOT__req_bus_valid;
+        CData/*0:0*/ mptw_top__DOT__gen_walking_stages__BRA__1__KET____DOT__walking_stage_u__DOT__mem_stage_u__DOT__req_bus_ready;
         CData/*0:0*/ mptw_top__DOT__gen_walking_stages__BRA__1__KET____DOT__walking_stage_u__DOT__mem_stage_u__DOT__req_to_mem_bus_valid;
         CData/*0:0*/ mptw_top__DOT__gen_walking_stages__BRA__1__KET____DOT__walking_stage_u__DOT__mem_stage_u__DOT__req_to_mem_bus_ready;
+        CData/*0:0*/ mptw_top__DOT__gen_walking_stages__BRA__1__KET____DOT__walking_stage_u__DOT__mem_stage_u__DOT__grant_fifo_push;
+        CData/*0:0*/ mptw_top__DOT__gen_walking_stages__BRA__1__KET____DOT__walking_stage_u__DOT__mem_stage_u__DOT__grant_fifo_pop;
         CData/*0:0*/ mptw_top__DOT__gen_walking_stages__BRA__1__KET____DOT__walking_stage_u__DOT__mem_stage_u__DOT__valid_fifo_push;
         CData/*0:0*/ mptw_top__DOT__gen_walking_stages__BRA__1__KET____DOT__walking_stage_u__DOT__mem_stage_u__DOT__valid_fifo_pop;
+        CData/*1:0*/ mptw_top__DOT__gen_walking_stages__BRA__1__KET____DOT__walking_stage_u__DOT__mem_stage_u__DOT__grant_fifo_status_q;
+        CData/*1:0*/ mptw_top__DOT__gen_walking_stages__BRA__1__KET____DOT__walking_stage_u__DOT__mem_stage_u__DOT__grant_fifo_status_d;
+        CData/*1:0*/ mptw_top__DOT__gen_walking_stages__BRA__1__KET____DOT__walking_stage_u__DOT__mem_stage_u__DOT__valid_fifo_status_q;
+        CData/*1:0*/ mptw_top__DOT__gen_walking_stages__BRA__1__KET____DOT__walking_stage_u__DOT__mem_stage_u__DOT__valid_fifo_status_d;
         CData/*0:0*/ mptw_top__DOT__gen_walking_stages__BRA__1__KET____DOT__walking_stage_u__DOT__mem_stage_u__DOT__req_reg__DOT__current_state;
         CData/*0:0*/ mptw_top__DOT__gen_walking_stages__BRA__1__KET____DOT__walking_stage_u__DOT__mem_stage_u__DOT__req_reg__DOT__next_state;
+    };
+    struct {
         CData/*0:0*/ mptw_top__DOT__gen_walking_stages__BRA__1__KET____DOT__walking_stage_u__DOT__mem_stage_u__DOT__req_reg__DOT__dummy;
         CData/*0:0*/ mptw_top__DOT__gen_walking_stages__BRA__1__KET____DOT__walking_stage_u__DOT__mem_stage_u__DOT__grant_fifo_u__DOT__gate_clock;
         CData/*1:0*/ mptw_top__DOT__gen_walking_stages__BRA__1__KET____DOT__walking_stage_u__DOT__mem_stage_u__DOT__grant_fifo_u__DOT__read_pointer_n;
@@ -188,8 +211,6 @@ VL_MODULE(Vmptw_top) {
         CData/*2:0*/ mptw_top__DOT__gen_walking_stages__BRA__2__KET____DOT__walking_stage_u__DOT__format_error_cause_o;
         CData/*0:0*/ mptw_top__DOT__gen_walking_stages__BRA__2__KET____DOT__walking_stage_u__DOT__parsing_to_walking_valid;
         CData/*0:0*/ mptw_top__DOT__gen_walking_stages__BRA__2__KET____DOT__walking_stage_u__DOT__parsing_to_walking_ready;
-    };
-    struct {
         CData/*0:0*/ mptw_top__DOT__gen_walking_stages__BRA__2__KET____DOT__walking_stage_u__DOT__walking_to_pipe_valid;
         CData/*0:0*/ mptw_top__DOT__gen_walking_stages__BRA__2__KET____DOT__walking_stage_u__DOT__walking_to_pipe_ready;
         CData/*2:0*/ mptw_top__DOT__gen_walking_stages__BRA__2__KET____DOT__walking_stage_u__DOT__parsing_stage_u__DOT__mpte_permissions;
@@ -201,10 +222,17 @@ VL_MODULE(Vmptw_top) {
         CData/*0:0*/ mptw_top__DOT__gen_walking_stages__BRA__2__KET____DOT__walking_stage_u__DOT__parsing_stage_u__DOT__parsing_reg__DOT__next_state;
         CData/*0:0*/ mptw_top__DOT__gen_walking_stages__BRA__2__KET____DOT__walking_stage_u__DOT__parsing_stage_u__DOT__parsing_reg__DOT__dummy;
         CData/*0:0*/ mptw_top__DOT__gen_walking_stages__BRA__2__KET____DOT__walking_stage_u__DOT__mem_stage_u__DOT__req_bus_valid;
+        CData/*0:0*/ mptw_top__DOT__gen_walking_stages__BRA__2__KET____DOT__walking_stage_u__DOT__mem_stage_u__DOT__req_bus_ready;
         CData/*0:0*/ mptw_top__DOT__gen_walking_stages__BRA__2__KET____DOT__walking_stage_u__DOT__mem_stage_u__DOT__req_to_mem_bus_valid;
         CData/*0:0*/ mptw_top__DOT__gen_walking_stages__BRA__2__KET____DOT__walking_stage_u__DOT__mem_stage_u__DOT__req_to_mem_bus_ready;
+        CData/*0:0*/ mptw_top__DOT__gen_walking_stages__BRA__2__KET____DOT__walking_stage_u__DOT__mem_stage_u__DOT__grant_fifo_push;
+        CData/*0:0*/ mptw_top__DOT__gen_walking_stages__BRA__2__KET____DOT__walking_stage_u__DOT__mem_stage_u__DOT__grant_fifo_pop;
         CData/*0:0*/ mptw_top__DOT__gen_walking_stages__BRA__2__KET____DOT__walking_stage_u__DOT__mem_stage_u__DOT__valid_fifo_push;
         CData/*0:0*/ mptw_top__DOT__gen_walking_stages__BRA__2__KET____DOT__walking_stage_u__DOT__mem_stage_u__DOT__valid_fifo_pop;
+        CData/*1:0*/ mptw_top__DOT__gen_walking_stages__BRA__2__KET____DOT__walking_stage_u__DOT__mem_stage_u__DOT__grant_fifo_status_q;
+        CData/*1:0*/ mptw_top__DOT__gen_walking_stages__BRA__2__KET____DOT__walking_stage_u__DOT__mem_stage_u__DOT__grant_fifo_status_d;
+        CData/*1:0*/ mptw_top__DOT__gen_walking_stages__BRA__2__KET____DOT__walking_stage_u__DOT__mem_stage_u__DOT__valid_fifo_status_q;
+        CData/*1:0*/ mptw_top__DOT__gen_walking_stages__BRA__2__KET____DOT__walking_stage_u__DOT__mem_stage_u__DOT__valid_fifo_status_d;
         CData/*0:0*/ mptw_top__DOT__gen_walking_stages__BRA__2__KET____DOT__walking_stage_u__DOT__mem_stage_u__DOT__req_reg__DOT__current_state;
         CData/*0:0*/ mptw_top__DOT__gen_walking_stages__BRA__2__KET____DOT__walking_stage_u__DOT__mem_stage_u__DOT__req_reg__DOT__next_state;
         CData/*0:0*/ mptw_top__DOT__gen_walking_stages__BRA__2__KET____DOT__walking_stage_u__DOT__mem_stage_u__DOT__req_reg__DOT__dummy;
@@ -226,6 +254,8 @@ VL_MODULE(Vmptw_top) {
         CData/*0:0*/ mptw_top__DOT__gen_walking_stages__BRA__2__KET____DOT__walking_stage_u__DOT__walking_reg__DOT__next_state;
         CData/*0:0*/ mptw_top__DOT__gen_walking_stages__BRA__2__KET____DOT__walking_stage_u__DOT__walking_reg__DOT__dummy;
         SData/*8:0*/ mptw_top__DOT__commit_stage_u__DOT__spa_current_page_number;
+    };
+    struct {
         SData/*8:0*/ mptw_top__DOT__gen_walking_stages__BRA__0__KET____DOT__walking_stage_u__DOT__parsing_stage_u__DOT__spa_current_page_number;
         SData/*8:0*/ mptw_top__DOT__gen_walking_stages__BRA__1__KET____DOT__walking_stage_u__DOT__parsing_stage_u__DOT__spa_current_page_number;
         SData/*8:0*/ mptw_top__DOT__gen_walking_stages__BRA__2__KET____DOT__walking_stage_u__DOT__parsing_stage_u__DOT__spa_current_page_number;
@@ -254,8 +284,6 @@ VL_MODULE(Vmptw_top) {
         WData/*265:0*/ mptw_top__DOT__gen_walking_stages__BRA__1__KET____DOT__walking_stage_u__DOT__walking_reg__DOT__reg_data_q[9];
         WData/*265:0*/ mptw_top__DOT__gen_walking_stages__BRA__1__KET____DOT__walking_stage_u__DOT__walking_reg__DOT__reg_data_d[9];
         WData/*265:0*/ mptw_top__DOT__gen_walking_stages__BRA__2__KET____DOT__walking_stage_u__DOT__parsing_stage_u__DOT__parsing_reg__DOT__reg_data_q[9];
-    };
-    struct {
         WData/*265:0*/ mptw_top__DOT__gen_walking_stages__BRA__2__KET____DOT__walking_stage_u__DOT__parsing_stage_u__DOT__parsing_reg__DOT__reg_data_d[9];
         WData/*265:0*/ mptw_top__DOT__gen_walking_stages__BRA__2__KET____DOT__walking_stage_u__DOT__mem_stage_u__DOT__req_to_mem_bus_data[9];
         WData/*265:0*/ mptw_top__DOT__gen_walking_stages__BRA__2__KET____DOT__walking_stage_u__DOT__mem_stage_u__DOT__req_reg__DOT__reg_data_q[9];
@@ -268,6 +296,7 @@ VL_MODULE(Vmptw_top) {
         WData/*71:0*/ mptw_top__DOT__plb_lookup_stage_u__DOT__plb_tag_req[3];
         WData/*265:0*/ mptw_top__DOT__plb_lookup_stage_u__DOT__mem_stage_u__DOT__grant_fifo_to_valid_fifo[9];
         WData/*265:0*/ mptw_top__DOT__plb_lookup_stage_u__DOT__mem_stage_u__DOT__valid_fifo_to_master[9];
+        QData/*32:0*/ mptw_top__DOT__plb_lookup_stage_u__DOT__mem_stage_u__DOT__stage_usage;
         WData/*1063:0*/ mptw_top__DOT__plb_lookup_stage_u__DOT__mem_stage_u__DOT__grant_fifo_u__DOT__mem_n[34];
         WData/*1063:0*/ mptw_top__DOT__plb_lookup_stage_u__DOT__mem_stage_u__DOT__grant_fifo_u__DOT__mem_q[34];
         WData/*1063:0*/ mptw_top__DOT__plb_lookup_stage_u__DOT__mem_stage_u__DOT__valid_fifo_u__DOT__mem_n[34];
@@ -279,6 +308,8 @@ VL_MODULE(Vmptw_top) {
         QData/*63:0*/ mptw_top__DOT__gen_walking_stages__BRA__0__KET____DOT__walking_stage_u__DOT__parsing_stage_u__DOT__base_phyisical_address;
         QData/*63:0*/ mptw_top__DOT__gen_walking_stages__BRA__0__KET____DOT__walking_stage_u__DOT__parsing_stage_u__DOT__next_mpte_addr;
         WData/*265:0*/ mptw_top__DOT__gen_walking_stages__BRA__0__KET____DOT__walking_stage_u__DOT__mem_stage_u__DOT__grant_fifo_to_valid_fifo[9];
+        WData/*265:0*/ mptw_top__DOT__gen_walking_stages__BRA__0__KET____DOT__walking_stage_u__DOT__mem_stage_u__DOT__valid_fifo_to_master[9];
+        QData/*32:0*/ mptw_top__DOT__gen_walking_stages__BRA__0__KET____DOT__walking_stage_u__DOT__mem_stage_u__DOT__stage_usage;
         WData/*1063:0*/ mptw_top__DOT__gen_walking_stages__BRA__0__KET____DOT__walking_stage_u__DOT__mem_stage_u__DOT__grant_fifo_u__DOT__mem_n[34];
         WData/*1063:0*/ mptw_top__DOT__gen_walking_stages__BRA__0__KET____DOT__walking_stage_u__DOT__mem_stage_u__DOT__grant_fifo_u__DOT__mem_q[34];
         WData/*1063:0*/ mptw_top__DOT__gen_walking_stages__BRA__0__KET____DOT__walking_stage_u__DOT__mem_stage_u__DOT__valid_fifo_u__DOT__mem_n[34];
@@ -287,6 +318,10 @@ VL_MODULE(Vmptw_top) {
         QData/*63:0*/ mptw_top__DOT__gen_walking_stages__BRA__1__KET____DOT__walking_stage_u__DOT__parsing_stage_u__DOT__base_phyisical_address;
         QData/*63:0*/ mptw_top__DOT__gen_walking_stages__BRA__1__KET____DOT__walking_stage_u__DOT__parsing_stage_u__DOT__next_mpte_addr;
         WData/*265:0*/ mptw_top__DOT__gen_walking_stages__BRA__1__KET____DOT__walking_stage_u__DOT__mem_stage_u__DOT__grant_fifo_to_valid_fifo[9];
+        WData/*265:0*/ mptw_top__DOT__gen_walking_stages__BRA__1__KET____DOT__walking_stage_u__DOT__mem_stage_u__DOT__valid_fifo_to_master[9];
+        QData/*32:0*/ mptw_top__DOT__gen_walking_stages__BRA__1__KET____DOT__walking_stage_u__DOT__mem_stage_u__DOT__stage_usage;
+    };
+    struct {
         WData/*1063:0*/ mptw_top__DOT__gen_walking_stages__BRA__1__KET____DOT__walking_stage_u__DOT__mem_stage_u__DOT__grant_fifo_u__DOT__mem_n[34];
         WData/*1063:0*/ mptw_top__DOT__gen_walking_stages__BRA__1__KET____DOT__walking_stage_u__DOT__mem_stage_u__DOT__grant_fifo_u__DOT__mem_q[34];
         WData/*1063:0*/ mptw_top__DOT__gen_walking_stages__BRA__1__KET____DOT__walking_stage_u__DOT__mem_stage_u__DOT__valid_fifo_u__DOT__mem_n[34];
@@ -295,6 +330,8 @@ VL_MODULE(Vmptw_top) {
         QData/*63:0*/ mptw_top__DOT__gen_walking_stages__BRA__2__KET____DOT__walking_stage_u__DOT__parsing_stage_u__DOT__base_phyisical_address;
         QData/*63:0*/ mptw_top__DOT__gen_walking_stages__BRA__2__KET____DOT__walking_stage_u__DOT__parsing_stage_u__DOT__next_mpte_addr;
         WData/*265:0*/ mptw_top__DOT__gen_walking_stages__BRA__2__KET____DOT__walking_stage_u__DOT__mem_stage_u__DOT__grant_fifo_to_valid_fifo[9];
+        WData/*265:0*/ mptw_top__DOT__gen_walking_stages__BRA__2__KET____DOT__walking_stage_u__DOT__mem_stage_u__DOT__valid_fifo_to_master[9];
+        QData/*32:0*/ mptw_top__DOT__gen_walking_stages__BRA__2__KET____DOT__walking_stage_u__DOT__mem_stage_u__DOT__stage_usage;
         WData/*1063:0*/ mptw_top__DOT__gen_walking_stages__BRA__2__KET____DOT__walking_stage_u__DOT__mem_stage_u__DOT__grant_fifo_u__DOT__mem_n[34];
         WData/*1063:0*/ mptw_top__DOT__gen_walking_stages__BRA__2__KET____DOT__walking_stage_u__DOT__mem_stage_u__DOT__grant_fifo_u__DOT__mem_q[34];
         WData/*1063:0*/ mptw_top__DOT__gen_walking_stages__BRA__2__KET____DOT__walking_stage_u__DOT__mem_stage_u__DOT__valid_fifo_u__DOT__mem_n[34];
@@ -303,8 +340,11 @@ VL_MODULE(Vmptw_top) {
     
     // LOCAL VARIABLES
     // Internals; generally not touched by application code
+    CData/*0:0*/ mptw_top__DOT____Vcellout__gen_walking_stages__BRA__0__KET____DOT__walking_stage_u__memory_master_mem_req;
     CData/*0:0*/ mptw_top__DOT____Vcellout__gen_walking_stages__BRA__0__KET____DOT__walking_stage_u__stage_master_valid;
+    CData/*0:0*/ mptw_top__DOT____Vcellout__gen_walking_stages__BRA__1__KET____DOT__walking_stage_u__memory_master_mem_req;
     CData/*0:0*/ mptw_top__DOT____Vcellout__gen_walking_stages__BRA__1__KET____DOT__walking_stage_u__stage_master_valid;
+    CData/*0:0*/ mptw_top__DOT____Vcellout__gen_walking_stages__BRA__2__KET____DOT__walking_stage_u__memory_master_mem_req;
     CData/*0:0*/ mptw_top__DOT____Vcellout__gen_walking_stages__BRA__2__KET____DOT__walking_stage_u__stage_master_valid;
     CData/*0:0*/ __Vclklast__TOP__clk_i;
     CData/*0:0*/ __Vclklast__TOP__rst_ni;
@@ -312,6 +352,9 @@ VL_MODULE(Vmptw_top) {
     CData/*0:0*/ __Vchglast__TOP__mptw_top__DOT__gen_walking_stages__BRA__0__KET____DOT__walking_stage_u__DOT__walking_to_pipe_valid;
     CData/*0:0*/ __Vchglast__TOP__mptw_top__DOT__gen_walking_stages__BRA__1__KET____DOT__walking_stage_u__DOT__walking_to_pipe_valid;
     CData/*0:0*/ __Vchglast__TOP__mptw_top__DOT__gen_walking_stages__BRA__2__KET____DOT__walking_stage_u__DOT__walking_to_pipe_valid;
+    QData/*63:0*/ mptw_top__DOT____Vcellout__gen_walking_stages__BRA__0__KET____DOT__walking_stage_u__memory_master_mem_addr;
+    QData/*63:0*/ mptw_top__DOT____Vcellout__gen_walking_stages__BRA__1__KET____DOT__walking_stage_u__memory_master_mem_addr;
+    QData/*63:0*/ mptw_top__DOT____Vcellout__gen_walking_stages__BRA__2__KET____DOT__walking_stage_u__memory_master_mem_addr;
     WData/*265:0*/ mptw_top__DOT__plb_lookup_stage_u__DOT__mem_stage_u__DOT____Vcellout__grant_fifo_u__data_o[9];
     WData/*265:0*/ mptw_top__DOT__plb_lookup_stage_u__DOT__mem_stage_u__DOT__grant_fifo_u__DOT____Vlvbound1[9];
     WData/*265:0*/ mptw_top__DOT__plb_lookup_stage_u__DOT__mem_stage_u__DOT__valid_fifo_u__DOT____Vlvbound1[9];
