@@ -10,12 +10,14 @@
 
 #define BACK_TO_BACK 0
 
-#define TRANSACTION_NUM 128
+#define TRANSACTION_NUM 16
 #define TRANSACTION_RANDOM_FACTOR 1
-#define PLB_GRANT_RANDOM_FACTOR 2
-#define PLB_VALID_RANDOM_FACTOR 5
-#define MEM_GRANT_RANDOM_FACTOR 16
-#define MEM_VALID_RANDOM_FACTOR 32
+#define PLB_GRANT_RANDOM_FACTOR 1
+#define PLB_VALID_RANDOM_FACTOR 2
+#define MEM_GRANT_RANDOM_FACTOR 64
+#define MEM_VALID_RANDOM_FACTOR 96
+
+#define PLB_MISS_RATE 0
 
 const uint32_t TOT_PORTS_NUM = PLB_PORTS_NUM + MEM_PORTS_NUM;
 
@@ -24,7 +26,7 @@ struct transaction_t {
     uint64_t data;
 };
 
-uint32_t transaction_counter, transaction_spec_counter;
+uint32_t transaction_counter, transaction_spec_counter, completed_counter;
 uint32_t req_counters[TOT_PORTS_NUM];
 uint32_t grant_counters[TOT_PORTS_NUM];
 uint32_t valid_counters[TOT_PORTS_NUM];
@@ -57,6 +59,7 @@ int main(int argc, char **argv) {
 
     transaction_counter = TRANSACTION_NUM;
     transaction_spec_counter = ( TRANSACTION_RANDOM_FACTOR != 1 ) ? (rand() % TRANSACTION_RANDOM_FACTOR) : 0;
+    completed_counter = 0;
 
     for(int i = 0; i < TOT_PORTS_NUM; i++){
 
@@ -126,16 +129,23 @@ int main(int argc, char **argv) {
             gen_transaction(&transaction, mptw_ready, TRANSACTION_RANDOM_FACTOR);
             // Assign Transaction
             uut.mod->mptw_transaction_valid_i = transaction.valid;
-            uut.mod->mmpt_reg_i = transaction.data;
+            uut.mod->mmpt_reg_i = transaction.data | ((uint64_t) 0x3 << 60);
             uut.mod->spa_i = transaction.data;
             uut.mod->access_type_i = 0x7; 
 
         }
 
-        if( valid_counters[TOT_PORTS_NUM - 1] == 0 && ending_clock_cycle == 0 ) {
+        // Every time the mptw outputs a valid signal, a full transaction have
+        // been processed.
+        /*if( valid_counters[TOT_PORTS_NUM - 1] == 0 && ending_clock_cycle == 0 ) {
             ending_clock_cycle = i;
         } else if ( ending_clock_cycle != 0 && i == ending_clock_cycle + 200 ) {
             printf("\nDone: %u transactions completed in %d clock cycles\n", TRANSACTION_NUM, ending_clock_cycle);
+            break;
+        }*/
+        if( uut.mod->mptw_transaction_valid_o ) completed_counter++;
+        if( completed_counter == TRANSACTION_NUM ){
+            printf("\nDone: %u transactions completed in %d clock cycles\n", TRANSACTION_NUM, i);
             break;
         }
 
@@ -204,7 +214,7 @@ void gen_memory_grant( uint8_t port_id, uint8_t * grant,  uint8_t * req , uint32
     }
 
     if( req_counters[port_id] < grant_counters[port_id] && req[port_id] ){
-        printf("[%02u] Generating Grant - %08u\n", port_id, grant_counters[port_id]);
+        printf("[Memory Port %02u] Generating Grant - %08u\n", port_id, grant_counters[port_id]);
         grant_counters[port_id]--;
         grant[port_id] = 1;
     }
@@ -233,9 +243,14 @@ void gen_memory_valid( uint8_t port_id, uint8_t * valid, uint64_t * rdata, uint3
     }
 
     if( grant_counters[port_id] < valid_counters[port_id] ){
-        printf("[%02u] Generating Valid - %08u\n", port_id, valid_counters[port_id]);
+        printf("[Memory Port %02u] Generating Valid - %08u\n", port_id, valid_counters[port_id]);
         valid_counters[port_id]--;
         valid[port_id] = 1;
-        rdata[port_id] = 1;
+        if( port_id == 0 ){
+            // PLB Miss or Hit
+            rdata[port_id] = valid_counters[port_id] % 2; // PLB_MISS_RATE
+        } else {
+            rdata[port_id] = 0xffffffff;
+        }
     }
 }

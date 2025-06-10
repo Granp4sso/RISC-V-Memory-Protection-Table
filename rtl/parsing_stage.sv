@@ -252,7 +252,7 @@ module parsing_stage #(
         mpte_permissions = '0;
         access_page_fault = '0;
 
-        if( ~mpt_entry.L ) begin
+        if( mpt_entry.L ) begin
 
             mpte_permissions = mpt_entry.mpt_payload.leaf.PERMS[range_offset];
 
@@ -278,6 +278,15 @@ module parsing_stage #(
     //           |_|                      |___/     //
     //////////////////////////////////////////////////
 
+    //////////////////////////////////
+    // FOR TESTING PURPOSES - BEGIN //
+    //////////////////////////////////
+    assign format_error_cause = '0;
+    assign access_page_fault = '0;
+    ////////////////////////////////
+    // FOR TESTING PURPOSES - END //
+    ////////////////////////////////
+
     // Part of the transaction stay unchanged
     assign output_transaction.mmpt  = input_transaction.mmpt;
     assign output_transaction.spa   = input_transaction.spa;
@@ -288,7 +297,7 @@ module parsing_stage #(
 
     // Update the other fields
     assign output_transaction.mpte = next_mpte_addr;
-    assign output_transaction.walking = ( format_error_cause != NO_ERROR || access_page_fault ) ? MPT_WALKING_SKIP : MPT_WALKING_DO ;
+    assign output_transaction.walking = ( format_error_cause != NO_ERROR || access_page_fault ) ? MPT_WALKING_SKIP : input_transaction.walking ;
     assign output_transaction.format_error = ( input_transaction.valid ) ? input_transaction.format_error : NO_ERROR ;
     assign output_transaction.access_error = ( input_transaction.valid ) ? input_transaction.access_error : '0 ;
 

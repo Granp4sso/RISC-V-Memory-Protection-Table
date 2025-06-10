@@ -7,7 +7,7 @@
 #include "verilated_vcd_c.h"
 
 #define CLK_HALF_PERIOD 10
-#define SIM_CYCLES 100000
+#define SIM_CYCLES 3000000
 
 struct uut_t {
 	Vmptw_top * 	mod;

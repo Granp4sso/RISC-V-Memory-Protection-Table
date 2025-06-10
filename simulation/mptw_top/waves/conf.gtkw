@@ -1,18 +1,19 @@
 [*]
 [*] GTKWave Analyzer v3.3.104 (w)1999-2020 BSI
-[*] Tue Jun 10 08:53:36 2025
+[*] Tue Jun 10 14:17:07 2025
 [*]
 [dumpfile] "/home/stefano/Desktop/Work/Projects/smmtt/b_pipelining_2/simulation/mptw_top/waves/trace.vcd"
-[dumpfile_mtime] "Tue Jun 10 08:52:06 2025"
-[dumpfile_size] 11079665
+[dumpfile_mtime] "Tue Jun 10 14:15:42 2025"
+[dumpfile_size] 3482446745
 [savefile] "/home/stefano/Desktop/Work/Projects/smmtt/b_pipelining_2/simulation/mptw_top/waves/conf.gtkw"
 [timestart] 1
 [size] 1850 1016
 [pos] 70 47
-*-12.733255 1250 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+*-14.733255 83210 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
 [treeopen] TOP.
 [treeopen] TOP.mptw_top.
 [treeopen] TOP.mptw_top.gen_walking_stages(0).
+[treeopen] TOP.mptw_top.gen_walking_stages(0).walking_stage_u.
 [treeopen] TOP.mptw_top.gen_walking_stages(0).walking_stage_u.mem_stage_u.
 [treeopen] TOP.mptw_top.gen_walking_stages(1).
 [treeopen] TOP.mptw_top.gen_walking_stages(2).
@@ -47,20 +48,6 @@ TOP.mptw_top.plb_lookup_stage_u.stage_slave_data[265:0]
 TOP.mptw_top.plb_lookup_stage_u.stage_slave_ready
 [color] 5
 TOP.mptw_top.plb_lookup_stage_u.stage_slave_valid
-TOP.mptw_top.plb_lookup_stage_u.mem_stage_u.grant_fifo_status_q[1:0]
-TOP.mptw_top.plb_lookup_stage_u.mem_stage_u.valid_fifo_status_q[1:0]
-TOP.mptw_top.plb_lookup_stage_u.mem_stage_u.valid_fifo_status_d[1:0]
-TOP.mptw_top.plb_lookup_stage_u.mem_stage_u.grant_fifo_push
-TOP.mptw_top.plb_lookup_stage_u.mem_stage_u.grant_fifo_push
-TOP.mptw_top.plb_lookup_stage_u.mem_stage_u.grant_fifo_pop
-@22
-TOP.mptw_top.plb_lookup_stage_u.mem_stage_u.grant_fifo_usage[31:0]
-@28
-TOP.mptw_top.plb_lookup_stage_u.mem_stage_u.grant_fifo_full
-@22
-TOP.mptw_top.plb_lookup_stage_u.mem_stage_u.valid_fifo_usage[31:0]
-@29
-TOP.mptw_top.plb_lookup_stage_u.mem_stage_u.valid_fifo_full
 @22
 [color] 5
 TOP.mptw_top.plb_lookup_stage_u.stage_master_data[265:0]
@@ -85,6 +72,9 @@ TOP.mptw_top.gen_walking_stages(0).walking_stage_u.stage_master_data[265:0]
 TOP.mptw_top.gen_walking_stages(0).walking_stage_u.stage_master_valid
 [color] 3
 TOP.mptw_top.gen_walking_stages(0).walking_stage_u.stage_master_ready
+TOP.mptw_top.gen_walking_stages(0).walking_stage_u.mem_stage_u.valid_fifo_full
+@29
+TOP.mptw_top.gen_walking_stages(0).walking_stage_u.mem_stage_u.grant_fifo_full
 @22
 [color] 1
 TOP.mptw_top.gen_walking_stages(1).walking_stage_u.stage_slave_data[265:0]

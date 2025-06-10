@@ -61,6 +61,7 @@ module plb_lookup_stage #(
     mptw_transaction_t  pre_local_transaction;
     mptw_transaction_t  post_local_transaction;
     plb_lookup_req_t    plb_tag_req;
+    logic               plb_hit;
 
     /////////////////////
     // Bus Declaration //
@@ -118,24 +119,29 @@ module plb_lookup_stage #(
 
     // The PLB request is built from the out transaction
     assign pre_local_transaction = mem_to_local_bus_data;
-
+    assign plb_hit = |pre_local_transaction.rpa;
 
     // The slave_to_mem is going to output a valid transaction
     // Currently, we assume the PLB to use the SRAM protocol, and packs the
     // HIT or MISS into the data field for a transaction
 
-    assign post_local_transaction.mmpt          = pre_local_transaction.mmpt;
-    assign post_local_transaction.spa           = pre_local_transaction.spa;
-    assign post_local_transaction.access_type   = pre_local_transaction.access_type;
-    assign post_local_transaction.walking       = ( |pre_local_transaction.rpa ) ? MPT_WALKING_SKIP : MPT_WALKING_DO ;
-    assign post_local_transaction.rpa           = '0;
-
-    assign post_local_transaction.format_error  = pre_local_transaction.format_error;
+    assign post_local_transaction.valid         = pre_local_transaction.valid;
     assign post_local_transaction.access_error  = pre_local_transaction.access_error;
-    assign post_local_transaction.plb_hit       = ( |pre_local_transaction.rpa ) ? 1'b1 : 1'b0 ;
+    assign post_local_transaction.format_error  = pre_local_transaction.format_error;
+    assign post_local_transaction.plb_hit       = plb_hit ;
+    assign post_local_transaction.rpa           = pre_local_transaction.rpa;
     assign post_local_transaction.mpte          = pre_local_transaction.mpte;
 
-    assign post_local_transaction.valid         = pre_local_transaction.valid;
+    // If no error occurred, and a hit does not occur, then walk
+    assign post_local_transaction.walking       =   ( 
+                                                        ( pre_local_transaction.format_error != NO_ERROR ) ||
+                                                        ( ( pre_local_transaction.valid ) && ( plb_hit ) )
+                                                    ) 
+                                                        ? MPT_WALKING_SKIP : pre_local_transaction.walking ;
+
+    assign post_local_transaction.access_type   = pre_local_transaction.access_type;
+    assign post_local_transaction.spa           = pre_local_transaction.spa;
+    assign post_local_transaction.mmpt          = pre_local_transaction.mmpt;
 
     //////////////////////////////////////////////////
     //    ___                   _   _               //
@@ -148,12 +154,7 @@ module plb_lookup_stage #(
     assign local_to_reg_bus_valid = mem_to_local_bus_valid;
     assign local_to_reg_bus_data = post_local_transaction;
     assign mem_to_local_bus_ready = local_to_reg_bus_ready;
-
-    //assign stage_master_data = post_local_transaction; 
-    //assign stage_master_valid = local_to_master_bus_valid; 
-    //assign local_to_master_bus_ready = stage_master_ready; 
     
-
     pipeline_register # ( 
 
         .DATA_WIDTH             ( PIPELINE_SLAVE_DATA_WIDTH         )

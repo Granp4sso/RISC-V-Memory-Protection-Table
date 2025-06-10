@@ -10,6 +10,7 @@ DIR_NAME := $(notdir $(CURDIR))
 TOP_MODULE := ${DIR_NAME}
 PKG_FILES := $(shell find $(PACKAGE_DIR) -type f)
 HEADER_FILES := $(shell find $(HEADERS_DIR) -type f)
+DEP_FILES := $(shell find $(DEP_DIR) -type f)
 
 # simulation files paths
 SIM_PROJECT_ROOT = ${SIM_DIR}/${DIR_NAME}
@@ -21,7 +22,7 @@ SIM_WAVES_DIR = ${SIM_PROJECT_ROOT}/waves
 VINCLUDE = -I${RTL_DIR} -I${HEADERS_DIR}
 
 # Disable warnings
-WARNINGSBYPASS = -Wno-UNUSED 
+WARNINGSBYPASS = -Wno-UNUSED -Wno-SYNCASYNCNET
 
 ###########
 # Targets #
@@ -45,7 +46,7 @@ patch_sim:
 
 # Build Verilator Wrapper
 verilate:
-	${VERILATOR} -Wall ${WARNINGSBYPASS} --top-module ${TOP_MODULE} --trace -cc ${PKG_FILES} ${RTL_DIR}/${TOP_MODULE}.sv ${VINCLUDE} \
+	${VERILATOR} -Wall ${WARNINGSBYPASS} --top-module ${TOP_MODULE} --trace -cc ${PKG_FILES} ${DEP_FILES} ${RTL_DIR}/${TOP_MODULE}.sv ${VINCLUDE} \
 	-DAXI_DATA_WIDTH=${AXI_DATA_WIDTH} -DAXI_ADDR_WIDTH=${AXI_ADDR_WIDTH} +define+ARCH_${ARCH}; \
 	cd obj_dir; make -f V${TOP_MODULE}.mk
 

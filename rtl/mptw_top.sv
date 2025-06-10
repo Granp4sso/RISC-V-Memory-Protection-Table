@@ -28,7 +28,7 @@ module mptw_top #(
     parameter unsigned PLB_STAGE_DEPTH             = 4,
     parameter unsigned PLB_TRANSACTION_DATA_WIDTH  = 64,                        // 8
     parameter unsigned PLB_TRANSACTION_ADDR_WIDTH  = 64,                        // $bits(plb_lookup_req_t)
-    parameter unsigned WALKING_STAGE_MEM_DEPTH     = 4
+    parameter unsigned WALKING_STAGE_MEM_DEPTH     = PLB_STAGE_DEPTH
 
 ) (
     //////////////////
@@ -37,18 +37,20 @@ module mptw_top #(
 
     input  logic                clk_i,
     input  logic                rst_ni,
-    input  logic                flush_i,                // Flush signal to reset internal state
-    input  logic                mptw_enable_i,          // Enable the MPT (i.e. only for non M-mode code)
+    input  logic                flush_i,                // Flush signal to reset internal state             <TODO>
+    input  logic                mptw_enable_i,          // Enable the MPT (i.e. only for non M-mode code)   <TODO>
 
     //////////////////////
     // Transaction Port //
     //////////////////////
 
-    input  spa_t_u              spa_i,                  // Supervisor physical address input
-    input  mmpt_reg_t           mmpt_reg_i,             // Memory Protection Table Register input
-    input  mpt_access_e         access_type_i,          // Memory access type (read, write, execute)
-    input  logic                mptw_transaction_valid_i,
-    output logic                mptw_ready_o,           // The MPT Walker is ready to serve a transaction
+    input  spa_t_u              spa_i,                      // Supervisor physical address input
+    input  mmpt_reg_t           mmpt_reg_i,                 // Memory Protection Table Register input (coming from CSRs)
+    input  mpt_access_e         access_type_i,              // Memory access type (read, write, execute)
+    input  logic                mptw_transaction_valid_i,   // Input Data are Valid
+    output logic                mptw_ready_o,               // The MPT Walker is ready to serve a transaction
+    output logic                mptw_transaction_valid_o,   // Output Data is Valid (for one clock cycle)
+    //output plb_entry_t plb_entry_o,            // Output PLB entry (contains SDID, physical address, and permissions) <TODO>
 
     ////////////////
     // Error Port //
@@ -66,9 +68,6 @@ module mptw_top #(
     // Walking Stages Ports
     `DECLARE_MEM_PORT_ARRAY(walking_mem_master, NUM_STAGES, DATA_WIDTH, ADDR_WIDTH)
 
-    // Output Port
-    //output plb_entry_t plb_entry_o,            // Output PLB entry (contains SDID, physical address, and permissions)
-    //output logic allow_o                       // Access allowed output (indicates if access is allowed)
 );  
 
     //////////////////////////////////////////////////////////////
@@ -291,7 +290,12 @@ module mptw_top #(
 
     ); 
 
+    // Currently, we tie the last stage to be always ready
+    // Future stall logic will deal with this
     assign commit_to_output_ready = 1;
+    // Also, this allows the valid signal to be high for exactly one
+    // clock cycle every time a new data is available on the commit stage
+    assign mptw_transaction_valid_o = commit_to_output_valid;
 
 endmodule : mptw_top
 
