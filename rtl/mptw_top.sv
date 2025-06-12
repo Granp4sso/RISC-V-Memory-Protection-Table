@@ -211,7 +211,7 @@ module mptw_top #(
 
         .PIPELINE_SLAVE_DATA_WIDTH      ( issue_stage_datawidth         ),
         .PIPELINE_MASTER_DATA_WIDTH     ( plb_lookup_stage_datawidth    ),
-        .PIPELINE_PASSTHROUGH           ( 1 ) // For now Passthrough
+        .PIPELINE_PASSTHROUGH           ( 1                             ) 
 
     ) issue_stage_u (
 
@@ -321,6 +321,32 @@ module mptw_top #(
         end
     endgenerate
 
+    //////////////////////////////////////////////////////////////////////////////////
+    //    _            _     ___             _             ___ _                    //
+    //   | |   __ _ __| |_  | _ \__ _ _ _ __(_)_ _  __ _  / __| |_ __ _ __ _ ___    //
+    //   | |__/ _` (_-<  _| |  _/ _` | '_(_-< | ' \/ _` | \__ \  _/ _` / _` / -_)   //
+    //   |____\__,_/__/\__| |_| \__,_|_| /__/_|_||_\__, | |___/\__\__,_\__, \___|   //
+    //                                             |___/               |___/        //
+    //////////////////////////////////////////////////////////////////////////////////
+
+    parsing_stage #(
+        .PIPELINE_SLAVE_DATA_WIDTH   ( walking_stage_datawidth      ),
+        .PIPELINE_MASTER_DATA_WIDTH  ( walking_stage_datawidth      ),
+        .WALKING_LEVEL               ( 0                            )
+    ) commit_stage_u (
+        .clk_i                      ( clk_i                         ),
+        .rst_ni                     ( rst_ni                        ),
+
+        // Pipeline Ports
+        `MAP_DATA_INDEX_PORT        ( stage_slave  , walking_stage, NUM_STAGES ),
+        `MAP_DATA_PORT              ( stage_master , commit_to_output          ), // This must go to the Retire Stage
+
+        // Error Port
+        .access_page_fault_o        ( ),
+        .format_error_cause_o       ( )
+
+    ); 
+
     //////////////////////////////////////////////////
     //    ____             _                  _     //
     //   | __ )  __ _  ___| | _____ _ __   __| |    //
@@ -342,7 +368,9 @@ module mptw_top #(
 
         .PIPELINE_SLAVE_DATA_WIDTH      ( issue_stage_datawidth         ),
         .PIPELINE_MASTER_DATA_WIDTH     ( plb_lookup_stage_datawidth    ),
-        .REORDER_BUFFER_DEPTH           ( REORDER_BUFFER_DEPTH          )
+        .REORDER_BUFFER_DEPTH           ( REORDER_BUFFER_DEPTH          ),
+        .RETIRE_PORT_NUM                ( 1 + NUM_STAGES                ),
+        .PIPELINE_PASSTHROUGH           ( 1                             ) 
 
     ) retire_stage_u (
 
@@ -367,24 +395,11 @@ module mptw_top #(
     //                                             |___/        //
     //////////////////////////////////////////////////////////////
 
-    // This is the last parsing stage
-    parsing_stage #(
-        .PIPELINE_SLAVE_DATA_WIDTH   ( walking_stage_datawidth      ),
-        .PIPELINE_MASTER_DATA_WIDTH  ( walking_stage_datawidth      ),
-        .WALKING_LEVEL               ( 0                            )
-    ) commit_stage_u (
-        .clk_i                      ( clk_i                         ),
-        .rst_ni                     ( rst_ni                        ),
+    // The commit stage does not implement any specific logic.
+    // Instead, it just maps the output of the retire stage to
+    // the system output.
 
-        // Pipeline Ports
-        `MAP_DATA_INDEX_PORT        ( stage_slave  , walking_stage, NUM_STAGES ),
-        `MAP_DATA_PORT              ( stage_master , commit_to_output          ),
 
-        // Error Port
-        .access_page_fault_o        ( ),
-        .format_error_cause_o       ( )
-
-    ); 
 
     // Currently, we tie the last stage to be always ready
     // Future stall logic will deal with this

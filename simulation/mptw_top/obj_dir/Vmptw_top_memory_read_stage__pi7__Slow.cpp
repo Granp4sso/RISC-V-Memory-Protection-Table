@@ -2,311 +2,45 @@
 // DESCRIPTION: Verilator output: Design implementation internals
 // See Vmptw_top.h for the primary calling header
 
-#include "Vmptw_top_memory_read_stage__pi6.h"
+#include "Vmptw_top_memory_read_stage__pi7.h"
 #include "Vmptw_top__Syms.h"
 
 //==========
 
-VL_INLINE_OPT void Vmptw_top_memory_read_stage__pi6::_sequent__TOP__mptw_top__DOT__plb_lookup_stage_u__DOT__mem_stage_u__10(Vmptw_top__Syms* __restrict vlSymsp) {
-    VL_DEBUG_IF(VL_DBG_MSGF("+          Vmptw_top_memory_read_stage__pi6::_sequent__TOP__mptw_top__DOT__plb_lookup_stage_u__DOT__mem_stage_u__10\n"); );
-    Vmptw_top* const __restrict vlTOPp VL_ATTR_UNUSED = vlSymsp->TOPp;
-    // Body
-    if (vlTOPp->rst_ni) {
-        this->__PVT__valid_counter_q = this->__PVT__valid_counter_d;
-        this->__PVT__valid_fifo_status_q = this->__PVT__valid_fifo_status_d;
-        this->__PVT__grant_fifo_status_q = this->__PVT__grant_fifo_status_d;
-        this->__PVT__req_reg__DOT__reg_data_q[0U] = 
-            this->__PVT__req_reg__DOT__reg_data_d[0U];
-        this->__PVT__req_reg__DOT__reg_data_q[1U] = 
-            this->__PVT__req_reg__DOT__reg_data_d[1U];
-        this->__PVT__req_reg__DOT__reg_data_q[2U] = 
-            this->__PVT__req_reg__DOT__reg_data_d[2U];
-        this->__PVT__req_reg__DOT__reg_data_q[3U] = 
-            this->__PVT__req_reg__DOT__reg_data_d[3U];
-        this->__PVT__req_reg__DOT__reg_data_q[4U] = 
-            this->__PVT__req_reg__DOT__reg_data_d[4U];
-        this->__PVT__req_reg__DOT__reg_data_q[5U] = 
-            this->__PVT__req_reg__DOT__reg_data_d[5U];
-        this->__PVT__req_reg__DOT__reg_data_q[6U] = 
-            this->__PVT__req_reg__DOT__reg_data_d[6U];
-        this->__PVT__req_reg__DOT__reg_data_q[7U] = 
-            this->__PVT__req_reg__DOT__reg_data_d[7U];
-        this->__PVT__req_reg__DOT__reg_data_q[8U] = 
-            this->__PVT__req_reg__DOT__reg_data_d[8U];
-        this->__PVT__req_reg__DOT__current_state = 
-            ((IData)(this->__PVT__req_reg__DOT__next_state) 
-             & 1U);
-    } else {
-        this->__PVT__valid_counter_q = 0ULL;
-        this->__PVT__valid_fifo_status_q = 0U;
-        this->__PVT__grant_fifo_status_q = 0U;
-        this->__PVT__req_reg__DOT__reg_data_q[0U] = 0U;
-        this->__PVT__req_reg__DOT__reg_data_q[1U] = 0U;
-        this->__PVT__req_reg__DOT__reg_data_q[2U] = 0U;
-        this->__PVT__req_reg__DOT__reg_data_q[3U] = 0U;
-        this->__PVT__req_reg__DOT__reg_data_q[4U] = 0U;
-        this->__PVT__req_reg__DOT__reg_data_q[5U] = 0U;
-        this->__PVT__req_reg__DOT__reg_data_q[6U] = 0U;
-        this->__PVT__req_reg__DOT__reg_data_q[7U] = 0U;
-        this->__PVT__req_reg__DOT__reg_data_q[8U] = 0U;
-        this->__PVT__req_reg__DOT__current_state = 0U;
-    }
-    if (this->__PVT__req_reg__DOT__current_state) {
-        if (this->__PVT__req_reg__DOT__current_state) {
-            this->__PVT__req_bus_valid = 1U;
-        }
-    } else {
-        this->__PVT__req_bus_valid = 0U;
-    }
+VL_CTOR_IMP(Vmptw_top_memory_read_stage__pi7) {
+    // Reset internal values
+    // Reset structure values
+    _ctor_var_reset();
 }
 
-VL_INLINE_OPT void Vmptw_top_memory_read_stage__pi6::_sequent__TOP__mptw_top__DOT__plb_lookup_stage_u__DOT__mem_stage_u__11(Vmptw_top__Syms* __restrict vlSymsp) {
-    VL_DEBUG_IF(VL_DBG_MSGF("+          Vmptw_top_memory_read_stage__pi6::_sequent__TOP__mptw_top__DOT__plb_lookup_stage_u__DOT__mem_stage_u__11\n"); );
+void Vmptw_top_memory_read_stage__pi7::__Vconfigure(Vmptw_top__Syms* vlSymsp, bool first) {
+    if (false && first) {}  // Prevent unused
+    this->__VlSymsp = vlSymsp;
+    if (false && this->__VlSymsp) {}  // Prevent unused
+}
+
+Vmptw_top_memory_read_stage__pi7::~Vmptw_top_memory_read_stage__pi7() {
+}
+
+void Vmptw_top_memory_read_stage__pi7::_settle__TOP__mptw_top__DOT__plb_lookup_stage_u__DOT__mem_stage_u__1(Vmptw_top__Syms* __restrict vlSymsp) {
+    VL_DEBUG_IF(VL_DBG_MSGF("+          Vmptw_top_memory_read_stage__pi7::_settle__TOP__mptw_top__DOT__plb_lookup_stage_u__DOT__mem_stage_u__1\n"); );
     Vmptw_top* const __restrict vlTOPp VL_ATTR_UNUSED = vlSymsp->TOPp;
     // Body
-    if (vlTOPp->rst_ni) {
-        this->__PVT__valid_fifo_u__DOT__write_pointer_q 
-            = this->__PVT__valid_fifo_u__DOT__write_pointer_n;
-        this->__PVT__grant_fifo_u__DOT__write_pointer_q 
-            = this->__PVT__grant_fifo_u__DOT__write_pointer_n;
-        this->__PVT__valid_fifo_u__DOT__read_pointer_q 
-            = this->__PVT__valid_fifo_u__DOT__read_pointer_n;
+    if ((0U == (IData)(this->__PVT__valid_fifo_status_q))) {
+        this->__PVT__valid_fifo_pop = 0U;
     } else {
-        this->__PVT__valid_fifo_u__DOT__write_pointer_q = 0U;
-        this->__PVT__grant_fifo_u__DOT__write_pointer_q = 0U;
-        this->__PVT__valid_fifo_u__DOT__read_pointer_q = 0U;
-    }
-    if (vlTOPp->rst_ni) {
-        if ((1U & (~ (IData)(this->__PVT__valid_fifo_u__DOT__gate_clock)))) {
-            this->__PVT__valid_fifo_u__DOT__mem_q[0U] 
-                = this->__PVT__valid_fifo_u__DOT__mem_n[0U];
-            this->__PVT__valid_fifo_u__DOT__mem_q[1U] 
-                = this->__PVT__valid_fifo_u__DOT__mem_n[1U];
-            this->__PVT__valid_fifo_u__DOT__mem_q[2U] 
-                = this->__PVT__valid_fifo_u__DOT__mem_n[2U];
-            this->__PVT__valid_fifo_u__DOT__mem_q[3U] 
-                = this->__PVT__valid_fifo_u__DOT__mem_n[3U];
-            this->__PVT__valid_fifo_u__DOT__mem_q[4U] 
-                = this->__PVT__valid_fifo_u__DOT__mem_n[4U];
-            this->__PVT__valid_fifo_u__DOT__mem_q[5U] 
-                = this->__PVT__valid_fifo_u__DOT__mem_n[5U];
-            this->__PVT__valid_fifo_u__DOT__mem_q[6U] 
-                = this->__PVT__valid_fifo_u__DOT__mem_n[6U];
-            this->__PVT__valid_fifo_u__DOT__mem_q[7U] 
-                = this->__PVT__valid_fifo_u__DOT__mem_n[7U];
-            this->__PVT__valid_fifo_u__DOT__mem_q[8U] 
-                = this->__PVT__valid_fifo_u__DOT__mem_n[8U];
-            this->__PVT__valid_fifo_u__DOT__mem_q[9U] 
-                = this->__PVT__valid_fifo_u__DOT__mem_n[9U];
-            this->__PVT__valid_fifo_u__DOT__mem_q[0xaU] 
-                = this->__PVT__valid_fifo_u__DOT__mem_n[0xaU];
-            this->__PVT__valid_fifo_u__DOT__mem_q[0xbU] 
-                = this->__PVT__valid_fifo_u__DOT__mem_n[0xbU];
-            this->__PVT__valid_fifo_u__DOT__mem_q[0xcU] 
-                = this->__PVT__valid_fifo_u__DOT__mem_n[0xcU];
-            this->__PVT__valid_fifo_u__DOT__mem_q[0xdU] 
-                = this->__PVT__valid_fifo_u__DOT__mem_n[0xdU];
-            this->__PVT__valid_fifo_u__DOT__mem_q[0xeU] 
-                = this->__PVT__valid_fifo_u__DOT__mem_n[0xeU];
-            this->__PVT__valid_fifo_u__DOT__mem_q[0xfU] 
-                = this->__PVT__valid_fifo_u__DOT__mem_n[0xfU];
-            this->__PVT__valid_fifo_u__DOT__mem_q[0x10U] 
-                = this->__PVT__valid_fifo_u__DOT__mem_n[0x10U];
-            this->__PVT__valid_fifo_u__DOT__mem_q[0x11U] 
-                = this->__PVT__valid_fifo_u__DOT__mem_n[0x11U];
-            this->__PVT__valid_fifo_u__DOT__mem_q[0x12U] 
-                = this->__PVT__valid_fifo_u__DOT__mem_n[0x12U];
-            this->__PVT__valid_fifo_u__DOT__mem_q[0x13U] 
-                = this->__PVT__valid_fifo_u__DOT__mem_n[0x13U];
-            this->__PVT__valid_fifo_u__DOT__mem_q[0x14U] 
-                = this->__PVT__valid_fifo_u__DOT__mem_n[0x14U];
-            this->__PVT__valid_fifo_u__DOT__mem_q[0x15U] 
-                = this->__PVT__valid_fifo_u__DOT__mem_n[0x15U];
-            this->__PVT__valid_fifo_u__DOT__mem_q[0x16U] 
-                = this->__PVT__valid_fifo_u__DOT__mem_n[0x16U];
-            this->__PVT__valid_fifo_u__DOT__mem_q[0x17U] 
-                = this->__PVT__valid_fifo_u__DOT__mem_n[0x17U];
-            this->__PVT__valid_fifo_u__DOT__mem_q[0x18U] 
-                = this->__PVT__valid_fifo_u__DOT__mem_n[0x18U];
-            this->__PVT__valid_fifo_u__DOT__mem_q[0x19U] 
-                = this->__PVT__valid_fifo_u__DOT__mem_n[0x19U];
-            this->__PVT__valid_fifo_u__DOT__mem_q[0x1aU] 
-                = this->__PVT__valid_fifo_u__DOT__mem_n[0x1aU];
-            this->__PVT__valid_fifo_u__DOT__mem_q[0x1bU] 
-                = this->__PVT__valid_fifo_u__DOT__mem_n[0x1bU];
-            this->__PVT__valid_fifo_u__DOT__mem_q[0x1cU] 
-                = this->__PVT__valid_fifo_u__DOT__mem_n[0x1cU];
-            this->__PVT__valid_fifo_u__DOT__mem_q[0x1dU] 
-                = this->__PVT__valid_fifo_u__DOT__mem_n[0x1dU];
-            this->__PVT__valid_fifo_u__DOT__mem_q[0x1eU] 
-                = this->__PVT__valid_fifo_u__DOT__mem_n[0x1eU];
-            this->__PVT__valid_fifo_u__DOT__mem_q[0x1fU] 
-                = this->__PVT__valid_fifo_u__DOT__mem_n[0x1fU];
-            this->__PVT__valid_fifo_u__DOT__mem_q[0x20U] 
-                = this->__PVT__valid_fifo_u__DOT__mem_n[0x20U];
-            this->__PVT__valid_fifo_u__DOT__mem_q[0x21U] 
-                = this->__PVT__valid_fifo_u__DOT__mem_n[0x21U];
-            this->__PVT__valid_fifo_u__DOT__mem_q[0x22U] 
-                = this->__PVT__valid_fifo_u__DOT__mem_n[0x22U];
+        if ((1U == (IData)(this->__PVT__valid_fifo_status_q))) {
+            this->__PVT__valid_fifo_pop = 0U;
+        } else {
+            if ((2U == (IData)(this->__PVT__valid_fifo_status_q))) {
+                this->__PVT__valid_fifo_pop = 0U;
+                if (vlTOPp->mptw_top__DOT__plb_lookup_stage_u__DOT__local_to_reg_bus_ready) {
+                    this->__PVT__valid_fifo_pop = 1U;
+                }
+            } else {
+                this->__PVT__valid_fifo_pop = 0U;
+            }
         }
-    } else {
-        this->__PVT__valid_fifo_u__DOT__mem_q[0U] = 0U;
-        this->__PVT__valid_fifo_u__DOT__mem_q[1U] = 0U;
-        this->__PVT__valid_fifo_u__DOT__mem_q[2U] = 0U;
-        this->__PVT__valid_fifo_u__DOT__mem_q[3U] = 0U;
-        this->__PVT__valid_fifo_u__DOT__mem_q[4U] = 0U;
-        this->__PVT__valid_fifo_u__DOT__mem_q[5U] = 0U;
-        this->__PVT__valid_fifo_u__DOT__mem_q[6U] = 0U;
-        this->__PVT__valid_fifo_u__DOT__mem_q[7U] = 0U;
-        this->__PVT__valid_fifo_u__DOT__mem_q[8U] = 0U;
-        this->__PVT__valid_fifo_u__DOT__mem_q[9U] = 0U;
-        this->__PVT__valid_fifo_u__DOT__mem_q[0xaU] = 0U;
-        this->__PVT__valid_fifo_u__DOT__mem_q[0xbU] = 0U;
-        this->__PVT__valid_fifo_u__DOT__mem_q[0xcU] = 0U;
-        this->__PVT__valid_fifo_u__DOT__mem_q[0xdU] = 0U;
-        this->__PVT__valid_fifo_u__DOT__mem_q[0xeU] = 0U;
-        this->__PVT__valid_fifo_u__DOT__mem_q[0xfU] = 0U;
-        this->__PVT__valid_fifo_u__DOT__mem_q[0x10U] = 0U;
-        this->__PVT__valid_fifo_u__DOT__mem_q[0x11U] = 0U;
-        this->__PVT__valid_fifo_u__DOT__mem_q[0x12U] = 0U;
-        this->__PVT__valid_fifo_u__DOT__mem_q[0x13U] = 0U;
-        this->__PVT__valid_fifo_u__DOT__mem_q[0x14U] = 0U;
-        this->__PVT__valid_fifo_u__DOT__mem_q[0x15U] = 0U;
-        this->__PVT__valid_fifo_u__DOT__mem_q[0x16U] = 0U;
-        this->__PVT__valid_fifo_u__DOT__mem_q[0x17U] = 0U;
-        this->__PVT__valid_fifo_u__DOT__mem_q[0x18U] = 0U;
-        this->__PVT__valid_fifo_u__DOT__mem_q[0x19U] = 0U;
-        this->__PVT__valid_fifo_u__DOT__mem_q[0x1aU] = 0U;
-        this->__PVT__valid_fifo_u__DOT__mem_q[0x1bU] = 0U;
-        this->__PVT__valid_fifo_u__DOT__mem_q[0x1cU] = 0U;
-        this->__PVT__valid_fifo_u__DOT__mem_q[0x1dU] = 0U;
-        this->__PVT__valid_fifo_u__DOT__mem_q[0x1eU] = 0U;
-        this->__PVT__valid_fifo_u__DOT__mem_q[0x1fU] = 0U;
-        this->__PVT__valid_fifo_u__DOT__mem_q[0x20U] = 0U;
-        this->__PVT__valid_fifo_u__DOT__mem_q[0x21U] = 0U;
-        this->__PVT__valid_fifo_u__DOT__mem_q[0x22U] = 0U;
-    }
-    this->__PVT__grant_fifo_u__DOT__read_pointer_q 
-        = ((IData)(vlTOPp->rst_ni) ? (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_n)
-            : 0U);
-    if (vlTOPp->rst_ni) {
-        if ((1U & (~ (IData)(this->__PVT__grant_fifo_u__DOT__gate_clock)))) {
-            this->__PVT__grant_fifo_u__DOT__mem_q[0U] 
-                = this->__PVT__grant_fifo_u__DOT__mem_n[0U];
-            this->__PVT__grant_fifo_u__DOT__mem_q[1U] 
-                = this->__PVT__grant_fifo_u__DOT__mem_n[1U];
-            this->__PVT__grant_fifo_u__DOT__mem_q[2U] 
-                = this->__PVT__grant_fifo_u__DOT__mem_n[2U];
-            this->__PVT__grant_fifo_u__DOT__mem_q[3U] 
-                = this->__PVT__grant_fifo_u__DOT__mem_n[3U];
-            this->__PVT__grant_fifo_u__DOT__mem_q[4U] 
-                = this->__PVT__grant_fifo_u__DOT__mem_n[4U];
-            this->__PVT__grant_fifo_u__DOT__mem_q[5U] 
-                = this->__PVT__grant_fifo_u__DOT__mem_n[5U];
-            this->__PVT__grant_fifo_u__DOT__mem_q[6U] 
-                = this->__PVT__grant_fifo_u__DOT__mem_n[6U];
-            this->__PVT__grant_fifo_u__DOT__mem_q[7U] 
-                = this->__PVT__grant_fifo_u__DOT__mem_n[7U];
-            this->__PVT__grant_fifo_u__DOT__mem_q[8U] 
-                = this->__PVT__grant_fifo_u__DOT__mem_n[8U];
-            this->__PVT__grant_fifo_u__DOT__mem_q[9U] 
-                = this->__PVT__grant_fifo_u__DOT__mem_n[9U];
-            this->__PVT__grant_fifo_u__DOT__mem_q[0xaU] 
-                = this->__PVT__grant_fifo_u__DOT__mem_n[0xaU];
-            this->__PVT__grant_fifo_u__DOT__mem_q[0xbU] 
-                = this->__PVT__grant_fifo_u__DOT__mem_n[0xbU];
-            this->__PVT__grant_fifo_u__DOT__mem_q[0xcU] 
-                = this->__PVT__grant_fifo_u__DOT__mem_n[0xcU];
-            this->__PVT__grant_fifo_u__DOT__mem_q[0xdU] 
-                = this->__PVT__grant_fifo_u__DOT__mem_n[0xdU];
-            this->__PVT__grant_fifo_u__DOT__mem_q[0xeU] 
-                = this->__PVT__grant_fifo_u__DOT__mem_n[0xeU];
-            this->__PVT__grant_fifo_u__DOT__mem_q[0xfU] 
-                = this->__PVT__grant_fifo_u__DOT__mem_n[0xfU];
-            this->__PVT__grant_fifo_u__DOT__mem_q[0x10U] 
-                = this->__PVT__grant_fifo_u__DOT__mem_n[0x10U];
-            this->__PVT__grant_fifo_u__DOT__mem_q[0x11U] 
-                = this->__PVT__grant_fifo_u__DOT__mem_n[0x11U];
-            this->__PVT__grant_fifo_u__DOT__mem_q[0x12U] 
-                = this->__PVT__grant_fifo_u__DOT__mem_n[0x12U];
-            this->__PVT__grant_fifo_u__DOT__mem_q[0x13U] 
-                = this->__PVT__grant_fifo_u__DOT__mem_n[0x13U];
-            this->__PVT__grant_fifo_u__DOT__mem_q[0x14U] 
-                = this->__PVT__grant_fifo_u__DOT__mem_n[0x14U];
-            this->__PVT__grant_fifo_u__DOT__mem_q[0x15U] 
-                = this->__PVT__grant_fifo_u__DOT__mem_n[0x15U];
-            this->__PVT__grant_fifo_u__DOT__mem_q[0x16U] 
-                = this->__PVT__grant_fifo_u__DOT__mem_n[0x16U];
-            this->__PVT__grant_fifo_u__DOT__mem_q[0x17U] 
-                = this->__PVT__grant_fifo_u__DOT__mem_n[0x17U];
-            this->__PVT__grant_fifo_u__DOT__mem_q[0x18U] 
-                = this->__PVT__grant_fifo_u__DOT__mem_n[0x18U];
-            this->__PVT__grant_fifo_u__DOT__mem_q[0x19U] 
-                = this->__PVT__grant_fifo_u__DOT__mem_n[0x19U];
-            this->__PVT__grant_fifo_u__DOT__mem_q[0x1aU] 
-                = this->__PVT__grant_fifo_u__DOT__mem_n[0x1aU];
-            this->__PVT__grant_fifo_u__DOT__mem_q[0x1bU] 
-                = this->__PVT__grant_fifo_u__DOT__mem_n[0x1bU];
-            this->__PVT__grant_fifo_u__DOT__mem_q[0x1cU] 
-                = this->__PVT__grant_fifo_u__DOT__mem_n[0x1cU];
-            this->__PVT__grant_fifo_u__DOT__mem_q[0x1dU] 
-                = this->__PVT__grant_fifo_u__DOT__mem_n[0x1dU];
-            this->__PVT__grant_fifo_u__DOT__mem_q[0x1eU] 
-                = this->__PVT__grant_fifo_u__DOT__mem_n[0x1eU];
-            this->__PVT__grant_fifo_u__DOT__mem_q[0x1fU] 
-                = this->__PVT__grant_fifo_u__DOT__mem_n[0x1fU];
-            this->__PVT__grant_fifo_u__DOT__mem_q[0x20U] 
-                = this->__PVT__grant_fifo_u__DOT__mem_n[0x20U];
-            this->__PVT__grant_fifo_u__DOT__mem_q[0x21U] 
-                = this->__PVT__grant_fifo_u__DOT__mem_n[0x21U];
-            this->__PVT__grant_fifo_u__DOT__mem_q[0x22U] 
-                = this->__PVT__grant_fifo_u__DOT__mem_n[0x22U];
-        }
-    } else {
-        this->__PVT__grant_fifo_u__DOT__mem_q[0U] = 0U;
-        this->__PVT__grant_fifo_u__DOT__mem_q[1U] = 0U;
-        this->__PVT__grant_fifo_u__DOT__mem_q[2U] = 0U;
-        this->__PVT__grant_fifo_u__DOT__mem_q[3U] = 0U;
-        this->__PVT__grant_fifo_u__DOT__mem_q[4U] = 0U;
-        this->__PVT__grant_fifo_u__DOT__mem_q[5U] = 0U;
-        this->__PVT__grant_fifo_u__DOT__mem_q[6U] = 0U;
-        this->__PVT__grant_fifo_u__DOT__mem_q[7U] = 0U;
-        this->__PVT__grant_fifo_u__DOT__mem_q[8U] = 0U;
-        this->__PVT__grant_fifo_u__DOT__mem_q[9U] = 0U;
-        this->__PVT__grant_fifo_u__DOT__mem_q[0xaU] = 0U;
-        this->__PVT__grant_fifo_u__DOT__mem_q[0xbU] = 0U;
-        this->__PVT__grant_fifo_u__DOT__mem_q[0xcU] = 0U;
-        this->__PVT__grant_fifo_u__DOT__mem_q[0xdU] = 0U;
-        this->__PVT__grant_fifo_u__DOT__mem_q[0xeU] = 0U;
-        this->__PVT__grant_fifo_u__DOT__mem_q[0xfU] = 0U;
-        this->__PVT__grant_fifo_u__DOT__mem_q[0x10U] = 0U;
-        this->__PVT__grant_fifo_u__DOT__mem_q[0x11U] = 0U;
-        this->__PVT__grant_fifo_u__DOT__mem_q[0x12U] = 0U;
-        this->__PVT__grant_fifo_u__DOT__mem_q[0x13U] = 0U;
-        this->__PVT__grant_fifo_u__DOT__mem_q[0x14U] = 0U;
-        this->__PVT__grant_fifo_u__DOT__mem_q[0x15U] = 0U;
-        this->__PVT__grant_fifo_u__DOT__mem_q[0x16U] = 0U;
-        this->__PVT__grant_fifo_u__DOT__mem_q[0x17U] = 0U;
-        this->__PVT__grant_fifo_u__DOT__mem_q[0x18U] = 0U;
-        this->__PVT__grant_fifo_u__DOT__mem_q[0x19U] = 0U;
-        this->__PVT__grant_fifo_u__DOT__mem_q[0x1aU] = 0U;
-        this->__PVT__grant_fifo_u__DOT__mem_q[0x1bU] = 0U;
-        this->__PVT__grant_fifo_u__DOT__mem_q[0x1cU] = 0U;
-        this->__PVT__grant_fifo_u__DOT__mem_q[0x1dU] = 0U;
-        this->__PVT__grant_fifo_u__DOT__mem_q[0x1eU] = 0U;
-        this->__PVT__grant_fifo_u__DOT__mem_q[0x1fU] = 0U;
-        this->__PVT__grant_fifo_u__DOT__mem_q[0x20U] = 0U;
-        this->__PVT__grant_fifo_u__DOT__mem_q[0x21U] = 0U;
-        this->__PVT__grant_fifo_u__DOT__mem_q[0x22U] = 0U;
-    }
-    if (vlTOPp->rst_ni) {
-        this->__PVT__valid_fifo_u__DOT__status_cnt_q 
-            = this->__PVT__valid_fifo_u__DOT__status_cnt_n;
-        this->__PVT__grant_fifo_u__DOT__status_cnt_q 
-            = this->__PVT__grant_fifo_u__DOT__status_cnt_n;
-    } else {
-        this->__PVT__valid_fifo_u__DOT__status_cnt_q = 0U;
-        this->__PVT__grant_fifo_u__DOT__status_cnt_q = 0U;
     }
     if ((0x45bU >= (0x7ffU & ((IData)(0x117U) * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q))))) {
         this->__Vcellout__grant_fifo_u__data_o[0U] 
@@ -451,74 +185,25 @@ VL_INLINE_OPT void Vmptw_top_memory_read_stage__pi6::_sequent__TOP__mptw_top__DO
         this->__Vcellout__grant_fifo_u__data_o[7U] = 0U;
         this->__Vcellout__grant_fifo_u__data_o[8U] = 0U;
     }
+    if (this->__PVT__req_reg__DOT__current_state) {
+        if (this->__PVT__req_reg__DOT__current_state) {
+            this->__PVT__req_bus_valid = 1U;
+        }
+    } else {
+        this->__PVT__req_bus_valid = 0U;
+    }
     this->__PVT__stage_usage = (0x1ffffffffULL & ((QData)((IData)(
                                                                   (3U 
                                                                    & (IData)(this->__PVT__grant_fifo_u__DOT__status_cnt_q)))) 
                                                   + (QData)((IData)(
                                                                     (3U 
                                                                      & (IData)(this->__PVT__valid_fifo_u__DOT__status_cnt_q))))));
-    if ((0U == (IData)(this->__PVT__grant_fifo_status_q))) {
-        this->memory_master_mem_addr = 0ULL;
-        if (((IData)(this->__PVT__req_bus_valid) & 
-             (((4ULL > this->__PVT__stage_usage) & 
-               (4U != (IData)(this->__PVT__grant_fifo_u__DOT__status_cnt_q))) 
-              & (4U != (IData)(this->__PVT__valid_fifo_u__DOT__status_cnt_q))))) {
-            if ((0U == (3U & ((this->__PVT__req_reg__DOT__reg_data_q[5U] 
-                               << 0x1eU) | (this->__PVT__req_reg__DOT__reg_data_q[4U] 
-                                            >> 2U))))) {
-                this->memory_master_mem_addr = (((QData)((IData)(
-                                                                 this->__PVT__req_reg__DOT__reg_data_q[3U])) 
-                                                 << 0x20U) 
-                                                | (QData)((IData)(
-                                                                  this->__PVT__req_reg__DOT__reg_data_q[2U])));
-            }
-        }
-    } else {
-        this->memory_master_mem_addr = ((1U == (IData)(this->__PVT__grant_fifo_status_q))
-                                         ? (((QData)((IData)(
-                                                             this->__PVT__req_reg__DOT__reg_data_q[3U])) 
-                                             << 0x20U) 
-                                            | (QData)((IData)(
-                                                              this->__PVT__req_reg__DOT__reg_data_q[2U])))
-                                         : 0ULL);
-    }
-    if ((0U == (IData)(this->__PVT__grant_fifo_status_q))) {
-        this->memory_master_mem_req = 0U;
-        if (((IData)(this->__PVT__req_bus_valid) & 
-             (((4ULL > this->__PVT__stage_usage) & 
-               (4U != (IData)(this->__PVT__grant_fifo_u__DOT__status_cnt_q))) 
-              & (4U != (IData)(this->__PVT__valid_fifo_u__DOT__status_cnt_q))))) {
-            if ((0U == (3U & ((this->__PVT__req_reg__DOT__reg_data_q[5U] 
-                               << 0x1eU) | (this->__PVT__req_reg__DOT__reg_data_q[4U] 
-                                            >> 2U))))) {
-                this->memory_master_mem_req = 1U;
-            }
-        }
-    } else {
-        this->memory_master_mem_req = ((1U == (IData)(this->__PVT__grant_fifo_status_q)) 
-                                       & (IData)(this->__PVT__req_bus_valid));
-    }
-}
-
-VL_INLINE_OPT void Vmptw_top_memory_read_stage__pi6::_combo__TOP__mptw_top__DOT__plb_lookup_stage_u__DOT__mem_stage_u__20(Vmptw_top__Syms* __restrict vlSymsp) {
-    VL_DEBUG_IF(VL_DBG_MSGF("+          Vmptw_top_memory_read_stage__pi6::_combo__TOP__mptw_top__DOT__plb_lookup_stage_u__DOT__mem_stage_u__20\n"); );
-    Vmptw_top* const __restrict vlTOPp VL_ATTR_UNUSED = vlSymsp->TOPp;
-    // Body
-    if ((0U == (IData)(this->__PVT__valid_fifo_status_q))) {
-        this->__PVT__valid_fifo_pop = 0U;
-    } else {
-        if ((1U == (IData)(this->__PVT__valid_fifo_status_q))) {
-            this->__PVT__valid_fifo_pop = 0U;
-        } else {
-            if ((2U == (IData)(this->__PVT__valid_fifo_status_q))) {
-                this->__PVT__valid_fifo_pop = 0U;
-                if (vlTOPp->mptw_top__DOT__plb_lookup_stage_u__DOT__local_to_reg_bus_ready) {
-                    this->__PVT__valid_fifo_pop = 1U;
-                }
-            } else {
-                this->__PVT__valid_fifo_pop = 0U;
-            }
-        }
+    this->__PVT__valid_fifo_u__DOT__read_pointer_n 
+        = this->__PVT__valid_fifo_u__DOT__read_pointer_q;
+    if (((IData)(this->__PVT__valid_fifo_pop) & (0U 
+                                                 != (IData)(this->__PVT__valid_fifo_u__DOT__status_cnt_q)))) {
+        this->__PVT__valid_fifo_u__DOT__read_pointer_n 
+            = (3U & ((IData)(1U) + (IData)(this->__PVT__valid_fifo_u__DOT__read_pointer_q)));
     }
     this->__PVT__grant_fifo_to_valid_fifo[0U] = this->__Vcellout__grant_fifo_u__data_o[0U];
     this->__PVT__grant_fifo_to_valid_fifo[1U] = this->__Vcellout__grant_fifo_u__data_o[1U];
@@ -633,6 +318,47 @@ VL_INLINE_OPT void Vmptw_top_memory_read_stage__pi6::_combo__TOP__mptw_top__DOT_
         }
     }
     if ((0U == (IData)(this->__PVT__grant_fifo_status_q))) {
+        this->memory_master_mem_addr = 0ULL;
+        if (((IData)(this->__PVT__req_bus_valid) & 
+             (((4ULL > this->__PVT__stage_usage) & 
+               (4U != (IData)(this->__PVT__grant_fifo_u__DOT__status_cnt_q))) 
+              & (4U != (IData)(this->__PVT__valid_fifo_u__DOT__status_cnt_q))))) {
+            if ((0U == (3U & ((this->__PVT__req_reg__DOT__reg_data_q[5U] 
+                               << 0x1eU) | (this->__PVT__req_reg__DOT__reg_data_q[4U] 
+                                            >> 2U))))) {
+                this->memory_master_mem_addr = (((QData)((IData)(
+                                                                 this->__PVT__req_reg__DOT__reg_data_q[3U])) 
+                                                 << 0x20U) 
+                                                | (QData)((IData)(
+                                                                  this->__PVT__req_reg__DOT__reg_data_q[2U])));
+            }
+        }
+    } else {
+        this->memory_master_mem_addr = ((1U == (IData)(this->__PVT__grant_fifo_status_q))
+                                         ? (((QData)((IData)(
+                                                             this->__PVT__req_reg__DOT__reg_data_q[3U])) 
+                                             << 0x20U) 
+                                            | (QData)((IData)(
+                                                              this->__PVT__req_reg__DOT__reg_data_q[2U])))
+                                         : 0ULL);
+    }
+    if ((0U == (IData)(this->__PVT__grant_fifo_status_q))) {
+        this->memory_master_mem_req = 0U;
+        if (((IData)(this->__PVT__req_bus_valid) & 
+             (((4ULL > this->__PVT__stage_usage) & 
+               (4U != (IData)(this->__PVT__grant_fifo_u__DOT__status_cnt_q))) 
+              & (4U != (IData)(this->__PVT__valid_fifo_u__DOT__status_cnt_q))))) {
+            if ((0U == (3U & ((this->__PVT__req_reg__DOT__reg_data_q[5U] 
+                               << 0x1eU) | (this->__PVT__req_reg__DOT__reg_data_q[4U] 
+                                            >> 2U))))) {
+                this->memory_master_mem_req = 1U;
+            }
+        }
+    } else {
+        this->memory_master_mem_req = ((1U == (IData)(this->__PVT__grant_fifo_status_q)) 
+                                       & (IData)(this->__PVT__req_bus_valid));
+    }
+    if ((0U == (IData)(this->__PVT__grant_fifo_status_q))) {
         this->__PVT__grant_fifo_push = 0U;
         if (((IData)(this->__PVT__req_bus_valid) & 
              (((4ULL > this->__PVT__stage_usage) & 
@@ -682,13 +408,6 @@ VL_INLINE_OPT void Vmptw_top_memory_read_stage__pi6::_combo__TOP__mptw_top__DOT_
             this->__PVT__req_bus_ready = ((2U == (IData)(this->__PVT__grant_fifo_status_q)) 
                                           & (4ULL > this->__PVT__stage_usage));
         }
-    }
-    this->__PVT__valid_fifo_u__DOT__read_pointer_n 
-        = this->__PVT__valid_fifo_u__DOT__read_pointer_q;
-    if (((IData)(this->__PVT__valid_fifo_pop) & (0U 
-                                                 != (IData)(this->__PVT__valid_fifo_u__DOT__status_cnt_q)))) {
-        this->__PVT__valid_fifo_u__DOT__read_pointer_n 
-            = (3U & ((IData)(1U) + (IData)(this->__PVT__valid_fifo_u__DOT__read_pointer_q)));
     }
     this->__PVT__grant_fifo_u__DOT__gate_clock = 1U;
     if (((IData)(this->__PVT__grant_fifo_push) & (4U 
@@ -1490,8 +1209,8 @@ VL_INLINE_OPT void Vmptw_top_memory_read_stage__pi6::_combo__TOP__mptw_top__DOT_
     }
 }
 
-VL_INLINE_OPT void Vmptw_top_memory_read_stage__pi6::_combo__TOP__mptw_top__DOT__gen_walking_stages__BRA__0__KET____DOT__walking_stage_u__DOT__mem_stage_u__16(Vmptw_top__Syms* __restrict vlSymsp) {
-    VL_DEBUG_IF(VL_DBG_MSGF("+          Vmptw_top_memory_read_stage__pi6::_combo__TOP__mptw_top__DOT__gen_walking_stages__BRA__0__KET____DOT__walking_stage_u__DOT__mem_stage_u__16\n"); );
+void Vmptw_top_memory_read_stage__pi7::_settle__TOP__mptw_top__DOT__gen_walking_stages__BRA__0__KET____DOT__walking_stage_u__DOT__mem_stage_u__2(Vmptw_top__Syms* __restrict vlSymsp) {
+    VL_DEBUG_IF(VL_DBG_MSGF("+          Vmptw_top_memory_read_stage__pi7::_settle__TOP__mptw_top__DOT__gen_walking_stages__BRA__0__KET____DOT__walking_stage_u__DOT__mem_stage_u__2\n"); );
     Vmptw_top* const __restrict vlTOPp VL_ATTR_UNUSED = vlSymsp->TOPp;
     // Body
     if ((0U == (IData)(this->__PVT__valid_fifo_status_q))) {
@@ -1509,6 +1228,169 @@ VL_INLINE_OPT void Vmptw_top_memory_read_stage__pi6::_combo__TOP__mptw_top__DOT_
                 this->__PVT__valid_fifo_pop = 0U;
             }
         }
+    }
+    if ((0x45bU >= (0x7ffU & ((IData)(0x117U) * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q))))) {
+        this->__Vcellout__grant_fifo_u__data_o[0U] 
+            = (((0U == (0x1fU & ((IData)(0x117U) * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q))))
+                 ? 0U : (this->__PVT__grant_fifo_u__DOT__mem_q[
+                         ((IData)(1U) + (0x3fU & (((IData)(0x117U) 
+                                                   * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)) 
+                                                  >> 5U)))] 
+                         << ((IData)(0x20U) - (0x1fU 
+                                               & ((IData)(0x117U) 
+                                                  * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)))))) 
+               | (this->__PVT__grant_fifo_u__DOT__mem_q[
+                  (0x3fU & (((IData)(0x117U) * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)) 
+                            >> 5U))] >> (0x1fU & ((IData)(0x117U) 
+                                                  * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)))));
+        this->__Vcellout__grant_fifo_u__data_o[1U] 
+            = (((0U == (0x1fU & ((IData)(0x117U) * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q))))
+                 ? 0U : (this->__PVT__grant_fifo_u__DOT__mem_q[
+                         ((IData)(2U) + (0x3fU & (((IData)(0x117U) 
+                                                   * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)) 
+                                                  >> 5U)))] 
+                         << ((IData)(0x20U) - (0x1fU 
+                                               & ((IData)(0x117U) 
+                                                  * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)))))) 
+               | (this->__PVT__grant_fifo_u__DOT__mem_q[
+                  ((IData)(1U) + (0x3fU & (((IData)(0x117U) 
+                                            * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)) 
+                                           >> 5U)))] 
+                  >> (0x1fU & ((IData)(0x117U) * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)))));
+        this->__Vcellout__grant_fifo_u__data_o[2U] 
+            = (((0U == (0x1fU & ((IData)(0x117U) * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q))))
+                 ? 0U : (this->__PVT__grant_fifo_u__DOT__mem_q[
+                         ((IData)(3U) + (0x3fU & (((IData)(0x117U) 
+                                                   * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)) 
+                                                  >> 5U)))] 
+                         << ((IData)(0x20U) - (0x1fU 
+                                               & ((IData)(0x117U) 
+                                                  * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)))))) 
+               | (this->__PVT__grant_fifo_u__DOT__mem_q[
+                  ((IData)(2U) + (0x3fU & (((IData)(0x117U) 
+                                            * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)) 
+                                           >> 5U)))] 
+                  >> (0x1fU & ((IData)(0x117U) * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)))));
+        this->__Vcellout__grant_fifo_u__data_o[3U] 
+            = (((0U == (0x1fU & ((IData)(0x117U) * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q))))
+                 ? 0U : (this->__PVT__grant_fifo_u__DOT__mem_q[
+                         ((IData)(4U) + (0x3fU & (((IData)(0x117U) 
+                                                   * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)) 
+                                                  >> 5U)))] 
+                         << ((IData)(0x20U) - (0x1fU 
+                                               & ((IData)(0x117U) 
+                                                  * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)))))) 
+               | (this->__PVT__grant_fifo_u__DOT__mem_q[
+                  ((IData)(3U) + (0x3fU & (((IData)(0x117U) 
+                                            * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)) 
+                                           >> 5U)))] 
+                  >> (0x1fU & ((IData)(0x117U) * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)))));
+        this->__Vcellout__grant_fifo_u__data_o[4U] 
+            = (((0U == (0x1fU & ((IData)(0x117U) * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q))))
+                 ? 0U : (this->__PVT__grant_fifo_u__DOT__mem_q[
+                         ((IData)(5U) + (0x3fU & (((IData)(0x117U) 
+                                                   * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)) 
+                                                  >> 5U)))] 
+                         << ((IData)(0x20U) - (0x1fU 
+                                               & ((IData)(0x117U) 
+                                                  * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)))))) 
+               | (this->__PVT__grant_fifo_u__DOT__mem_q[
+                  ((IData)(4U) + (0x3fU & (((IData)(0x117U) 
+                                            * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)) 
+                                           >> 5U)))] 
+                  >> (0x1fU & ((IData)(0x117U) * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)))));
+        this->__Vcellout__grant_fifo_u__data_o[5U] 
+            = (((0U == (0x1fU & ((IData)(0x117U) * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q))))
+                 ? 0U : (this->__PVT__grant_fifo_u__DOT__mem_q[
+                         ((IData)(6U) + (0x3fU & (((IData)(0x117U) 
+                                                   * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)) 
+                                                  >> 5U)))] 
+                         << ((IData)(0x20U) - (0x1fU 
+                                               & ((IData)(0x117U) 
+                                                  * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)))))) 
+               | (this->__PVT__grant_fifo_u__DOT__mem_q[
+                  ((IData)(5U) + (0x3fU & (((IData)(0x117U) 
+                                            * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)) 
+                                           >> 5U)))] 
+                  >> (0x1fU & ((IData)(0x117U) * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)))));
+        this->__Vcellout__grant_fifo_u__data_o[6U] 
+            = (((0U == (0x1fU & ((IData)(0x117U) * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q))))
+                 ? 0U : (this->__PVT__grant_fifo_u__DOT__mem_q[
+                         ((IData)(7U) + (0x3fU & (((IData)(0x117U) 
+                                                   * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)) 
+                                                  >> 5U)))] 
+                         << ((IData)(0x20U) - (0x1fU 
+                                               & ((IData)(0x117U) 
+                                                  * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)))))) 
+               | (this->__PVT__grant_fifo_u__DOT__mem_q[
+                  ((IData)(6U) + (0x3fU & (((IData)(0x117U) 
+                                            * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)) 
+                                           >> 5U)))] 
+                  >> (0x1fU & ((IData)(0x117U) * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)))));
+        this->__Vcellout__grant_fifo_u__data_o[7U] 
+            = (((0U == (0x1fU & ((IData)(0x117U) * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q))))
+                 ? 0U : (this->__PVT__grant_fifo_u__DOT__mem_q[
+                         ((IData)(8U) + (0x3fU & (((IData)(0x117U) 
+                                                   * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)) 
+                                                  >> 5U)))] 
+                         << ((IData)(0x20U) - (0x1fU 
+                                               & ((IData)(0x117U) 
+                                                  * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)))))) 
+               | (this->__PVT__grant_fifo_u__DOT__mem_q[
+                  ((IData)(7U) + (0x3fU & (((IData)(0x117U) 
+                                            * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)) 
+                                           >> 5U)))] 
+                  >> (0x1fU & ((IData)(0x117U) * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)))));
+        this->__Vcellout__grant_fifo_u__data_o[8U] 
+            = (0x7fffffU & (((0U == (0x1fU & ((IData)(0x117U) 
+                                              * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q))))
+                              ? 0U : (this->__PVT__grant_fifo_u__DOT__mem_q[
+                                      ((IData)(9U) 
+                                       + (0x3fU & (
+                                                   ((IData)(0x117U) 
+                                                    * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)) 
+                                                   >> 5U)))] 
+                                      << ((IData)(0x20U) 
+                                          - (0x1fU 
+                                             & ((IData)(0x117U) 
+                                                * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)))))) 
+                            | (this->__PVT__grant_fifo_u__DOT__mem_q[
+                               ((IData)(8U) + (0x3fU 
+                                               & (((IData)(0x117U) 
+                                                   * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)) 
+                                                  >> 5U)))] 
+                               >> (0x1fU & ((IData)(0x117U) 
+                                            * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q))))));
+    } else {
+        this->__Vcellout__grant_fifo_u__data_o[0U] = 0U;
+        this->__Vcellout__grant_fifo_u__data_o[1U] = 0U;
+        this->__Vcellout__grant_fifo_u__data_o[2U] = 0U;
+        this->__Vcellout__grant_fifo_u__data_o[3U] = 0U;
+        this->__Vcellout__grant_fifo_u__data_o[4U] = 0U;
+        this->__Vcellout__grant_fifo_u__data_o[5U] = 0U;
+        this->__Vcellout__grant_fifo_u__data_o[6U] = 0U;
+        this->__Vcellout__grant_fifo_u__data_o[7U] = 0U;
+        this->__Vcellout__grant_fifo_u__data_o[8U] = 0U;
+    }
+    if (this->__PVT__req_reg__DOT__current_state) {
+        if (this->__PVT__req_reg__DOT__current_state) {
+            this->__PVT__req_bus_valid = 1U;
+        }
+    } else {
+        this->__PVT__req_bus_valid = 0U;
+    }
+    this->__PVT__stage_usage = (0x1ffffffffULL & ((QData)((IData)(
+                                                                  (3U 
+                                                                   & (IData)(this->__PVT__grant_fifo_u__DOT__status_cnt_q)))) 
+                                                  + (QData)((IData)(
+                                                                    (3U 
+                                                                     & (IData)(this->__PVT__valid_fifo_u__DOT__status_cnt_q))))));
+    this->__PVT__valid_fifo_u__DOT__read_pointer_n 
+        = this->__PVT__valid_fifo_u__DOT__read_pointer_q;
+    if (((IData)(this->__PVT__valid_fifo_pop) & (0U 
+                                                 != (IData)(this->__PVT__valid_fifo_u__DOT__status_cnt_q)))) {
+        this->__PVT__valid_fifo_u__DOT__read_pointer_n 
+            = (3U & ((IData)(1U) + (IData)(this->__PVT__valid_fifo_u__DOT__read_pointer_q)));
     }
     this->__PVT__grant_fifo_to_valid_fifo[0U] = this->__Vcellout__grant_fifo_u__data_o[0U];
     this->__PVT__grant_fifo_to_valid_fifo[1U] = this->__Vcellout__grant_fifo_u__data_o[1U];
@@ -1630,6 +1512,47 @@ VL_INLINE_OPT void Vmptw_top_memory_read_stage__pi6::_combo__TOP__mptw_top__DOT_
         }
     }
     if ((0U == (IData)(this->__PVT__grant_fifo_status_q))) {
+        this->memory_master_mem_addr = 0ULL;
+        if (((IData)(this->__PVT__req_bus_valid) & 
+             (((4ULL > this->__PVT__stage_usage) & 
+               (4U != (IData)(this->__PVT__grant_fifo_u__DOT__status_cnt_q))) 
+              & (4U != (IData)(this->__PVT__valid_fifo_u__DOT__status_cnt_q))))) {
+            if ((0U == (3U & ((this->__PVT__req_reg__DOT__reg_data_q[5U] 
+                               << 0x1eU) | (this->__PVT__req_reg__DOT__reg_data_q[4U] 
+                                            >> 2U))))) {
+                this->memory_master_mem_addr = (((QData)((IData)(
+                                                                 this->__PVT__req_reg__DOT__reg_data_q[3U])) 
+                                                 << 0x20U) 
+                                                | (QData)((IData)(
+                                                                  this->__PVT__req_reg__DOT__reg_data_q[2U])));
+            }
+        }
+    } else {
+        this->memory_master_mem_addr = ((1U == (IData)(this->__PVT__grant_fifo_status_q))
+                                         ? (((QData)((IData)(
+                                                             this->__PVT__req_reg__DOT__reg_data_q[3U])) 
+                                             << 0x20U) 
+                                            | (QData)((IData)(
+                                                              this->__PVT__req_reg__DOT__reg_data_q[2U])))
+                                         : 0ULL);
+    }
+    if ((0U == (IData)(this->__PVT__grant_fifo_status_q))) {
+        this->memory_master_mem_req = 0U;
+        if (((IData)(this->__PVT__req_bus_valid) & 
+             (((4ULL > this->__PVT__stage_usage) & 
+               (4U != (IData)(this->__PVT__grant_fifo_u__DOT__status_cnt_q))) 
+              & (4U != (IData)(this->__PVT__valid_fifo_u__DOT__status_cnt_q))))) {
+            if ((0U == (3U & ((this->__PVT__req_reg__DOT__reg_data_q[5U] 
+                               << 0x1eU) | (this->__PVT__req_reg__DOT__reg_data_q[4U] 
+                                            >> 2U))))) {
+                this->memory_master_mem_req = 1U;
+            }
+        }
+    } else {
+        this->memory_master_mem_req = ((1U == (IData)(this->__PVT__grant_fifo_status_q)) 
+                                       & (IData)(this->__PVT__req_bus_valid));
+    }
+    if ((0U == (IData)(this->__PVT__grant_fifo_status_q))) {
         this->__PVT__grant_fifo_push = 0U;
         if (((IData)(this->__PVT__req_bus_valid) & 
              (((4ULL > this->__PVT__stage_usage) & 
@@ -1681,13 +1604,6 @@ VL_INLINE_OPT void Vmptw_top_memory_read_stage__pi6::_combo__TOP__mptw_top__DOT_
             this->__PVT__req_bus_ready = ((2U == (IData)(this->__PVT__grant_fifo_status_q)) 
                                           & (4ULL > this->__PVT__stage_usage));
         }
-    }
-    this->__PVT__valid_fifo_u__DOT__read_pointer_n 
-        = this->__PVT__valid_fifo_u__DOT__read_pointer_q;
-    if (((IData)(this->__PVT__valid_fifo_pop) & (0U 
-                                                 != (IData)(this->__PVT__valid_fifo_u__DOT__status_cnt_q)))) {
-        this->__PVT__valid_fifo_u__DOT__read_pointer_n 
-            = (3U & ((IData)(1U) + (IData)(this->__PVT__valid_fifo_u__DOT__read_pointer_q)));
     }
     this->__PVT__grant_fifo_u__DOT__gate_clock = 1U;
     if (((IData)(this->__PVT__grant_fifo_push) & (4U 
@@ -2471,8 +2387,8 @@ VL_INLINE_OPT void Vmptw_top_memory_read_stage__pi6::_combo__TOP__mptw_top__DOT_
     }
 }
 
-VL_INLINE_OPT void Vmptw_top_memory_read_stage__pi6::_combo__TOP__mptw_top__DOT__gen_walking_stages__BRA__1__KET____DOT__walking_stage_u__DOT__mem_stage_u__17(Vmptw_top__Syms* __restrict vlSymsp) {
-    VL_DEBUG_IF(VL_DBG_MSGF("+          Vmptw_top_memory_read_stage__pi6::_combo__TOP__mptw_top__DOT__gen_walking_stages__BRA__1__KET____DOT__walking_stage_u__DOT__mem_stage_u__17\n"); );
+void Vmptw_top_memory_read_stage__pi7::_settle__TOP__mptw_top__DOT__gen_walking_stages__BRA__1__KET____DOT__walking_stage_u__DOT__mem_stage_u__3(Vmptw_top__Syms* __restrict vlSymsp) {
+    VL_DEBUG_IF(VL_DBG_MSGF("+          Vmptw_top_memory_read_stage__pi7::_settle__TOP__mptw_top__DOT__gen_walking_stages__BRA__1__KET____DOT__walking_stage_u__DOT__mem_stage_u__3\n"); );
     Vmptw_top* const __restrict vlTOPp VL_ATTR_UNUSED = vlSymsp->TOPp;
     // Body
     if ((0U == (IData)(this->__PVT__valid_fifo_status_q))) {
@@ -2490,6 +2406,169 @@ VL_INLINE_OPT void Vmptw_top_memory_read_stage__pi6::_combo__TOP__mptw_top__DOT_
                 this->__PVT__valid_fifo_pop = 0U;
             }
         }
+    }
+    if ((0x45bU >= (0x7ffU & ((IData)(0x117U) * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q))))) {
+        this->__Vcellout__grant_fifo_u__data_o[0U] 
+            = (((0U == (0x1fU & ((IData)(0x117U) * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q))))
+                 ? 0U : (this->__PVT__grant_fifo_u__DOT__mem_q[
+                         ((IData)(1U) + (0x3fU & (((IData)(0x117U) 
+                                                   * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)) 
+                                                  >> 5U)))] 
+                         << ((IData)(0x20U) - (0x1fU 
+                                               & ((IData)(0x117U) 
+                                                  * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)))))) 
+               | (this->__PVT__grant_fifo_u__DOT__mem_q[
+                  (0x3fU & (((IData)(0x117U) * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)) 
+                            >> 5U))] >> (0x1fU & ((IData)(0x117U) 
+                                                  * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)))));
+        this->__Vcellout__grant_fifo_u__data_o[1U] 
+            = (((0U == (0x1fU & ((IData)(0x117U) * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q))))
+                 ? 0U : (this->__PVT__grant_fifo_u__DOT__mem_q[
+                         ((IData)(2U) + (0x3fU & (((IData)(0x117U) 
+                                                   * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)) 
+                                                  >> 5U)))] 
+                         << ((IData)(0x20U) - (0x1fU 
+                                               & ((IData)(0x117U) 
+                                                  * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)))))) 
+               | (this->__PVT__grant_fifo_u__DOT__mem_q[
+                  ((IData)(1U) + (0x3fU & (((IData)(0x117U) 
+                                            * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)) 
+                                           >> 5U)))] 
+                  >> (0x1fU & ((IData)(0x117U) * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)))));
+        this->__Vcellout__grant_fifo_u__data_o[2U] 
+            = (((0U == (0x1fU & ((IData)(0x117U) * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q))))
+                 ? 0U : (this->__PVT__grant_fifo_u__DOT__mem_q[
+                         ((IData)(3U) + (0x3fU & (((IData)(0x117U) 
+                                                   * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)) 
+                                                  >> 5U)))] 
+                         << ((IData)(0x20U) - (0x1fU 
+                                               & ((IData)(0x117U) 
+                                                  * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)))))) 
+               | (this->__PVT__grant_fifo_u__DOT__mem_q[
+                  ((IData)(2U) + (0x3fU & (((IData)(0x117U) 
+                                            * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)) 
+                                           >> 5U)))] 
+                  >> (0x1fU & ((IData)(0x117U) * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)))));
+        this->__Vcellout__grant_fifo_u__data_o[3U] 
+            = (((0U == (0x1fU & ((IData)(0x117U) * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q))))
+                 ? 0U : (this->__PVT__grant_fifo_u__DOT__mem_q[
+                         ((IData)(4U) + (0x3fU & (((IData)(0x117U) 
+                                                   * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)) 
+                                                  >> 5U)))] 
+                         << ((IData)(0x20U) - (0x1fU 
+                                               & ((IData)(0x117U) 
+                                                  * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)))))) 
+               | (this->__PVT__grant_fifo_u__DOT__mem_q[
+                  ((IData)(3U) + (0x3fU & (((IData)(0x117U) 
+                                            * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)) 
+                                           >> 5U)))] 
+                  >> (0x1fU & ((IData)(0x117U) * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)))));
+        this->__Vcellout__grant_fifo_u__data_o[4U] 
+            = (((0U == (0x1fU & ((IData)(0x117U) * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q))))
+                 ? 0U : (this->__PVT__grant_fifo_u__DOT__mem_q[
+                         ((IData)(5U) + (0x3fU & (((IData)(0x117U) 
+                                                   * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)) 
+                                                  >> 5U)))] 
+                         << ((IData)(0x20U) - (0x1fU 
+                                               & ((IData)(0x117U) 
+                                                  * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)))))) 
+               | (this->__PVT__grant_fifo_u__DOT__mem_q[
+                  ((IData)(4U) + (0x3fU & (((IData)(0x117U) 
+                                            * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)) 
+                                           >> 5U)))] 
+                  >> (0x1fU & ((IData)(0x117U) * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)))));
+        this->__Vcellout__grant_fifo_u__data_o[5U] 
+            = (((0U == (0x1fU & ((IData)(0x117U) * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q))))
+                 ? 0U : (this->__PVT__grant_fifo_u__DOT__mem_q[
+                         ((IData)(6U) + (0x3fU & (((IData)(0x117U) 
+                                                   * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)) 
+                                                  >> 5U)))] 
+                         << ((IData)(0x20U) - (0x1fU 
+                                               & ((IData)(0x117U) 
+                                                  * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)))))) 
+               | (this->__PVT__grant_fifo_u__DOT__mem_q[
+                  ((IData)(5U) + (0x3fU & (((IData)(0x117U) 
+                                            * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)) 
+                                           >> 5U)))] 
+                  >> (0x1fU & ((IData)(0x117U) * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)))));
+        this->__Vcellout__grant_fifo_u__data_o[6U] 
+            = (((0U == (0x1fU & ((IData)(0x117U) * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q))))
+                 ? 0U : (this->__PVT__grant_fifo_u__DOT__mem_q[
+                         ((IData)(7U) + (0x3fU & (((IData)(0x117U) 
+                                                   * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)) 
+                                                  >> 5U)))] 
+                         << ((IData)(0x20U) - (0x1fU 
+                                               & ((IData)(0x117U) 
+                                                  * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)))))) 
+               | (this->__PVT__grant_fifo_u__DOT__mem_q[
+                  ((IData)(6U) + (0x3fU & (((IData)(0x117U) 
+                                            * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)) 
+                                           >> 5U)))] 
+                  >> (0x1fU & ((IData)(0x117U) * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)))));
+        this->__Vcellout__grant_fifo_u__data_o[7U] 
+            = (((0U == (0x1fU & ((IData)(0x117U) * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q))))
+                 ? 0U : (this->__PVT__grant_fifo_u__DOT__mem_q[
+                         ((IData)(8U) + (0x3fU & (((IData)(0x117U) 
+                                                   * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)) 
+                                                  >> 5U)))] 
+                         << ((IData)(0x20U) - (0x1fU 
+                                               & ((IData)(0x117U) 
+                                                  * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)))))) 
+               | (this->__PVT__grant_fifo_u__DOT__mem_q[
+                  ((IData)(7U) + (0x3fU & (((IData)(0x117U) 
+                                            * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)) 
+                                           >> 5U)))] 
+                  >> (0x1fU & ((IData)(0x117U) * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)))));
+        this->__Vcellout__grant_fifo_u__data_o[8U] 
+            = (0x7fffffU & (((0U == (0x1fU & ((IData)(0x117U) 
+                                              * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q))))
+                              ? 0U : (this->__PVT__grant_fifo_u__DOT__mem_q[
+                                      ((IData)(9U) 
+                                       + (0x3fU & (
+                                                   ((IData)(0x117U) 
+                                                    * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)) 
+                                                   >> 5U)))] 
+                                      << ((IData)(0x20U) 
+                                          - (0x1fU 
+                                             & ((IData)(0x117U) 
+                                                * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)))))) 
+                            | (this->__PVT__grant_fifo_u__DOT__mem_q[
+                               ((IData)(8U) + (0x3fU 
+                                               & (((IData)(0x117U) 
+                                                   * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)) 
+                                                  >> 5U)))] 
+                               >> (0x1fU & ((IData)(0x117U) 
+                                            * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q))))));
+    } else {
+        this->__Vcellout__grant_fifo_u__data_o[0U] = 0U;
+        this->__Vcellout__grant_fifo_u__data_o[1U] = 0U;
+        this->__Vcellout__grant_fifo_u__data_o[2U] = 0U;
+        this->__Vcellout__grant_fifo_u__data_o[3U] = 0U;
+        this->__Vcellout__grant_fifo_u__data_o[4U] = 0U;
+        this->__Vcellout__grant_fifo_u__data_o[5U] = 0U;
+        this->__Vcellout__grant_fifo_u__data_o[6U] = 0U;
+        this->__Vcellout__grant_fifo_u__data_o[7U] = 0U;
+        this->__Vcellout__grant_fifo_u__data_o[8U] = 0U;
+    }
+    if (this->__PVT__req_reg__DOT__current_state) {
+        if (this->__PVT__req_reg__DOT__current_state) {
+            this->__PVT__req_bus_valid = 1U;
+        }
+    } else {
+        this->__PVT__req_bus_valid = 0U;
+    }
+    this->__PVT__stage_usage = (0x1ffffffffULL & ((QData)((IData)(
+                                                                  (3U 
+                                                                   & (IData)(this->__PVT__grant_fifo_u__DOT__status_cnt_q)))) 
+                                                  + (QData)((IData)(
+                                                                    (3U 
+                                                                     & (IData)(this->__PVT__valid_fifo_u__DOT__status_cnt_q))))));
+    this->__PVT__valid_fifo_u__DOT__read_pointer_n 
+        = this->__PVT__valid_fifo_u__DOT__read_pointer_q;
+    if (((IData)(this->__PVT__valid_fifo_pop) & (0U 
+                                                 != (IData)(this->__PVT__valid_fifo_u__DOT__status_cnt_q)))) {
+        this->__PVT__valid_fifo_u__DOT__read_pointer_n 
+            = (3U & ((IData)(1U) + (IData)(this->__PVT__valid_fifo_u__DOT__read_pointer_q)));
     }
     this->__PVT__grant_fifo_to_valid_fifo[0U] = this->__Vcellout__grant_fifo_u__data_o[0U];
     this->__PVT__grant_fifo_to_valid_fifo[1U] = this->__Vcellout__grant_fifo_u__data_o[1U];
@@ -2611,6 +2690,47 @@ VL_INLINE_OPT void Vmptw_top_memory_read_stage__pi6::_combo__TOP__mptw_top__DOT_
         }
     }
     if ((0U == (IData)(this->__PVT__grant_fifo_status_q))) {
+        this->memory_master_mem_addr = 0ULL;
+        if (((IData)(this->__PVT__req_bus_valid) & 
+             (((4ULL > this->__PVT__stage_usage) & 
+               (4U != (IData)(this->__PVT__grant_fifo_u__DOT__status_cnt_q))) 
+              & (4U != (IData)(this->__PVT__valid_fifo_u__DOT__status_cnt_q))))) {
+            if ((0U == (3U & ((this->__PVT__req_reg__DOT__reg_data_q[5U] 
+                               << 0x1eU) | (this->__PVT__req_reg__DOT__reg_data_q[4U] 
+                                            >> 2U))))) {
+                this->memory_master_mem_addr = (((QData)((IData)(
+                                                                 this->__PVT__req_reg__DOT__reg_data_q[3U])) 
+                                                 << 0x20U) 
+                                                | (QData)((IData)(
+                                                                  this->__PVT__req_reg__DOT__reg_data_q[2U])));
+            }
+        }
+    } else {
+        this->memory_master_mem_addr = ((1U == (IData)(this->__PVT__grant_fifo_status_q))
+                                         ? (((QData)((IData)(
+                                                             this->__PVT__req_reg__DOT__reg_data_q[3U])) 
+                                             << 0x20U) 
+                                            | (QData)((IData)(
+                                                              this->__PVT__req_reg__DOT__reg_data_q[2U])))
+                                         : 0ULL);
+    }
+    if ((0U == (IData)(this->__PVT__grant_fifo_status_q))) {
+        this->memory_master_mem_req = 0U;
+        if (((IData)(this->__PVT__req_bus_valid) & 
+             (((4ULL > this->__PVT__stage_usage) & 
+               (4U != (IData)(this->__PVT__grant_fifo_u__DOT__status_cnt_q))) 
+              & (4U != (IData)(this->__PVT__valid_fifo_u__DOT__status_cnt_q))))) {
+            if ((0U == (3U & ((this->__PVT__req_reg__DOT__reg_data_q[5U] 
+                               << 0x1eU) | (this->__PVT__req_reg__DOT__reg_data_q[4U] 
+                                            >> 2U))))) {
+                this->memory_master_mem_req = 1U;
+            }
+        }
+    } else {
+        this->memory_master_mem_req = ((1U == (IData)(this->__PVT__grant_fifo_status_q)) 
+                                       & (IData)(this->__PVT__req_bus_valid));
+    }
+    if ((0U == (IData)(this->__PVT__grant_fifo_status_q))) {
         this->__PVT__grant_fifo_push = 0U;
         if (((IData)(this->__PVT__req_bus_valid) & 
              (((4ULL > this->__PVT__stage_usage) & 
@@ -2662,13 +2782,6 @@ VL_INLINE_OPT void Vmptw_top_memory_read_stage__pi6::_combo__TOP__mptw_top__DOT_
             this->__PVT__req_bus_ready = ((2U == (IData)(this->__PVT__grant_fifo_status_q)) 
                                           & (4ULL > this->__PVT__stage_usage));
         }
-    }
-    this->__PVT__valid_fifo_u__DOT__read_pointer_n 
-        = this->__PVT__valid_fifo_u__DOT__read_pointer_q;
-    if (((IData)(this->__PVT__valid_fifo_pop) & (0U 
-                                                 != (IData)(this->__PVT__valid_fifo_u__DOT__status_cnt_q)))) {
-        this->__PVT__valid_fifo_u__DOT__read_pointer_n 
-            = (3U & ((IData)(1U) + (IData)(this->__PVT__valid_fifo_u__DOT__read_pointer_q)));
     }
     this->__PVT__grant_fifo_u__DOT__gate_clock = 1U;
     if (((IData)(this->__PVT__grant_fifo_push) & (4U 
@@ -3452,8 +3565,8 @@ VL_INLINE_OPT void Vmptw_top_memory_read_stage__pi6::_combo__TOP__mptw_top__DOT_
     }
 }
 
-VL_INLINE_OPT void Vmptw_top_memory_read_stage__pi6::_combo__TOP__mptw_top__DOT__gen_walking_stages__BRA__2__KET____DOT__walking_stage_u__DOT__mem_stage_u__18(Vmptw_top__Syms* __restrict vlSymsp) {
-    VL_DEBUG_IF(VL_DBG_MSGF("+          Vmptw_top_memory_read_stage__pi6::_combo__TOP__mptw_top__DOT__gen_walking_stages__BRA__2__KET____DOT__walking_stage_u__DOT__mem_stage_u__18\n"); );
+void Vmptw_top_memory_read_stage__pi7::_settle__TOP__mptw_top__DOT__gen_walking_stages__BRA__2__KET____DOT__walking_stage_u__DOT__mem_stage_u__4(Vmptw_top__Syms* __restrict vlSymsp) {
+    VL_DEBUG_IF(VL_DBG_MSGF("+          Vmptw_top_memory_read_stage__pi7::_settle__TOP__mptw_top__DOT__gen_walking_stages__BRA__2__KET____DOT__walking_stage_u__DOT__mem_stage_u__4\n"); );
     Vmptw_top* const __restrict vlTOPp VL_ATTR_UNUSED = vlSymsp->TOPp;
     // Body
     if ((0U == (IData)(this->__PVT__valid_fifo_status_q))) {
@@ -3471,6 +3584,169 @@ VL_INLINE_OPT void Vmptw_top_memory_read_stage__pi6::_combo__TOP__mptw_top__DOT_
                 this->__PVT__valid_fifo_pop = 0U;
             }
         }
+    }
+    if ((0x45bU >= (0x7ffU & ((IData)(0x117U) * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q))))) {
+        this->__Vcellout__grant_fifo_u__data_o[0U] 
+            = (((0U == (0x1fU & ((IData)(0x117U) * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q))))
+                 ? 0U : (this->__PVT__grant_fifo_u__DOT__mem_q[
+                         ((IData)(1U) + (0x3fU & (((IData)(0x117U) 
+                                                   * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)) 
+                                                  >> 5U)))] 
+                         << ((IData)(0x20U) - (0x1fU 
+                                               & ((IData)(0x117U) 
+                                                  * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)))))) 
+               | (this->__PVT__grant_fifo_u__DOT__mem_q[
+                  (0x3fU & (((IData)(0x117U) * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)) 
+                            >> 5U))] >> (0x1fU & ((IData)(0x117U) 
+                                                  * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)))));
+        this->__Vcellout__grant_fifo_u__data_o[1U] 
+            = (((0U == (0x1fU & ((IData)(0x117U) * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q))))
+                 ? 0U : (this->__PVT__grant_fifo_u__DOT__mem_q[
+                         ((IData)(2U) + (0x3fU & (((IData)(0x117U) 
+                                                   * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)) 
+                                                  >> 5U)))] 
+                         << ((IData)(0x20U) - (0x1fU 
+                                               & ((IData)(0x117U) 
+                                                  * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)))))) 
+               | (this->__PVT__grant_fifo_u__DOT__mem_q[
+                  ((IData)(1U) + (0x3fU & (((IData)(0x117U) 
+                                            * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)) 
+                                           >> 5U)))] 
+                  >> (0x1fU & ((IData)(0x117U) * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)))));
+        this->__Vcellout__grant_fifo_u__data_o[2U] 
+            = (((0U == (0x1fU & ((IData)(0x117U) * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q))))
+                 ? 0U : (this->__PVT__grant_fifo_u__DOT__mem_q[
+                         ((IData)(3U) + (0x3fU & (((IData)(0x117U) 
+                                                   * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)) 
+                                                  >> 5U)))] 
+                         << ((IData)(0x20U) - (0x1fU 
+                                               & ((IData)(0x117U) 
+                                                  * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)))))) 
+               | (this->__PVT__grant_fifo_u__DOT__mem_q[
+                  ((IData)(2U) + (0x3fU & (((IData)(0x117U) 
+                                            * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)) 
+                                           >> 5U)))] 
+                  >> (0x1fU & ((IData)(0x117U) * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)))));
+        this->__Vcellout__grant_fifo_u__data_o[3U] 
+            = (((0U == (0x1fU & ((IData)(0x117U) * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q))))
+                 ? 0U : (this->__PVT__grant_fifo_u__DOT__mem_q[
+                         ((IData)(4U) + (0x3fU & (((IData)(0x117U) 
+                                                   * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)) 
+                                                  >> 5U)))] 
+                         << ((IData)(0x20U) - (0x1fU 
+                                               & ((IData)(0x117U) 
+                                                  * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)))))) 
+               | (this->__PVT__grant_fifo_u__DOT__mem_q[
+                  ((IData)(3U) + (0x3fU & (((IData)(0x117U) 
+                                            * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)) 
+                                           >> 5U)))] 
+                  >> (0x1fU & ((IData)(0x117U) * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)))));
+        this->__Vcellout__grant_fifo_u__data_o[4U] 
+            = (((0U == (0x1fU & ((IData)(0x117U) * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q))))
+                 ? 0U : (this->__PVT__grant_fifo_u__DOT__mem_q[
+                         ((IData)(5U) + (0x3fU & (((IData)(0x117U) 
+                                                   * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)) 
+                                                  >> 5U)))] 
+                         << ((IData)(0x20U) - (0x1fU 
+                                               & ((IData)(0x117U) 
+                                                  * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)))))) 
+               | (this->__PVT__grant_fifo_u__DOT__mem_q[
+                  ((IData)(4U) + (0x3fU & (((IData)(0x117U) 
+                                            * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)) 
+                                           >> 5U)))] 
+                  >> (0x1fU & ((IData)(0x117U) * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)))));
+        this->__Vcellout__grant_fifo_u__data_o[5U] 
+            = (((0U == (0x1fU & ((IData)(0x117U) * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q))))
+                 ? 0U : (this->__PVT__grant_fifo_u__DOT__mem_q[
+                         ((IData)(6U) + (0x3fU & (((IData)(0x117U) 
+                                                   * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)) 
+                                                  >> 5U)))] 
+                         << ((IData)(0x20U) - (0x1fU 
+                                               & ((IData)(0x117U) 
+                                                  * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)))))) 
+               | (this->__PVT__grant_fifo_u__DOT__mem_q[
+                  ((IData)(5U) + (0x3fU & (((IData)(0x117U) 
+                                            * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)) 
+                                           >> 5U)))] 
+                  >> (0x1fU & ((IData)(0x117U) * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)))));
+        this->__Vcellout__grant_fifo_u__data_o[6U] 
+            = (((0U == (0x1fU & ((IData)(0x117U) * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q))))
+                 ? 0U : (this->__PVT__grant_fifo_u__DOT__mem_q[
+                         ((IData)(7U) + (0x3fU & (((IData)(0x117U) 
+                                                   * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)) 
+                                                  >> 5U)))] 
+                         << ((IData)(0x20U) - (0x1fU 
+                                               & ((IData)(0x117U) 
+                                                  * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)))))) 
+               | (this->__PVT__grant_fifo_u__DOT__mem_q[
+                  ((IData)(6U) + (0x3fU & (((IData)(0x117U) 
+                                            * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)) 
+                                           >> 5U)))] 
+                  >> (0x1fU & ((IData)(0x117U) * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)))));
+        this->__Vcellout__grant_fifo_u__data_o[7U] 
+            = (((0U == (0x1fU & ((IData)(0x117U) * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q))))
+                 ? 0U : (this->__PVT__grant_fifo_u__DOT__mem_q[
+                         ((IData)(8U) + (0x3fU & (((IData)(0x117U) 
+                                                   * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)) 
+                                                  >> 5U)))] 
+                         << ((IData)(0x20U) - (0x1fU 
+                                               & ((IData)(0x117U) 
+                                                  * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)))))) 
+               | (this->__PVT__grant_fifo_u__DOT__mem_q[
+                  ((IData)(7U) + (0x3fU & (((IData)(0x117U) 
+                                            * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)) 
+                                           >> 5U)))] 
+                  >> (0x1fU & ((IData)(0x117U) * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)))));
+        this->__Vcellout__grant_fifo_u__data_o[8U] 
+            = (0x7fffffU & (((0U == (0x1fU & ((IData)(0x117U) 
+                                              * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q))))
+                              ? 0U : (this->__PVT__grant_fifo_u__DOT__mem_q[
+                                      ((IData)(9U) 
+                                       + (0x3fU & (
+                                                   ((IData)(0x117U) 
+                                                    * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)) 
+                                                   >> 5U)))] 
+                                      << ((IData)(0x20U) 
+                                          - (0x1fU 
+                                             & ((IData)(0x117U) 
+                                                * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)))))) 
+                            | (this->__PVT__grant_fifo_u__DOT__mem_q[
+                               ((IData)(8U) + (0x3fU 
+                                               & (((IData)(0x117U) 
+                                                   * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)) 
+                                                  >> 5U)))] 
+                               >> (0x1fU & ((IData)(0x117U) 
+                                            * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q))))));
+    } else {
+        this->__Vcellout__grant_fifo_u__data_o[0U] = 0U;
+        this->__Vcellout__grant_fifo_u__data_o[1U] = 0U;
+        this->__Vcellout__grant_fifo_u__data_o[2U] = 0U;
+        this->__Vcellout__grant_fifo_u__data_o[3U] = 0U;
+        this->__Vcellout__grant_fifo_u__data_o[4U] = 0U;
+        this->__Vcellout__grant_fifo_u__data_o[5U] = 0U;
+        this->__Vcellout__grant_fifo_u__data_o[6U] = 0U;
+        this->__Vcellout__grant_fifo_u__data_o[7U] = 0U;
+        this->__Vcellout__grant_fifo_u__data_o[8U] = 0U;
+    }
+    if (this->__PVT__req_reg__DOT__current_state) {
+        if (this->__PVT__req_reg__DOT__current_state) {
+            this->__PVT__req_bus_valid = 1U;
+        }
+    } else {
+        this->__PVT__req_bus_valid = 0U;
+    }
+    this->__PVT__stage_usage = (0x1ffffffffULL & ((QData)((IData)(
+                                                                  (3U 
+                                                                   & (IData)(this->__PVT__grant_fifo_u__DOT__status_cnt_q)))) 
+                                                  + (QData)((IData)(
+                                                                    (3U 
+                                                                     & (IData)(this->__PVT__valid_fifo_u__DOT__status_cnt_q))))));
+    this->__PVT__valid_fifo_u__DOT__read_pointer_n 
+        = this->__PVT__valid_fifo_u__DOT__read_pointer_q;
+    if (((IData)(this->__PVT__valid_fifo_pop) & (0U 
+                                                 != (IData)(this->__PVT__valid_fifo_u__DOT__status_cnt_q)))) {
+        this->__PVT__valid_fifo_u__DOT__read_pointer_n 
+            = (3U & ((IData)(1U) + (IData)(this->__PVT__valid_fifo_u__DOT__read_pointer_q)));
     }
     this->__PVT__grant_fifo_to_valid_fifo[0U] = this->__Vcellout__grant_fifo_u__data_o[0U];
     this->__PVT__grant_fifo_to_valid_fifo[1U] = this->__Vcellout__grant_fifo_u__data_o[1U];
@@ -3592,6 +3868,47 @@ VL_INLINE_OPT void Vmptw_top_memory_read_stage__pi6::_combo__TOP__mptw_top__DOT_
         }
     }
     if ((0U == (IData)(this->__PVT__grant_fifo_status_q))) {
+        this->memory_master_mem_addr = 0ULL;
+        if (((IData)(this->__PVT__req_bus_valid) & 
+             (((4ULL > this->__PVT__stage_usage) & 
+               (4U != (IData)(this->__PVT__grant_fifo_u__DOT__status_cnt_q))) 
+              & (4U != (IData)(this->__PVT__valid_fifo_u__DOT__status_cnt_q))))) {
+            if ((0U == (3U & ((this->__PVT__req_reg__DOT__reg_data_q[5U] 
+                               << 0x1eU) | (this->__PVT__req_reg__DOT__reg_data_q[4U] 
+                                            >> 2U))))) {
+                this->memory_master_mem_addr = (((QData)((IData)(
+                                                                 this->__PVT__req_reg__DOT__reg_data_q[3U])) 
+                                                 << 0x20U) 
+                                                | (QData)((IData)(
+                                                                  this->__PVT__req_reg__DOT__reg_data_q[2U])));
+            }
+        }
+    } else {
+        this->memory_master_mem_addr = ((1U == (IData)(this->__PVT__grant_fifo_status_q))
+                                         ? (((QData)((IData)(
+                                                             this->__PVT__req_reg__DOT__reg_data_q[3U])) 
+                                             << 0x20U) 
+                                            | (QData)((IData)(
+                                                              this->__PVT__req_reg__DOT__reg_data_q[2U])))
+                                         : 0ULL);
+    }
+    if ((0U == (IData)(this->__PVT__grant_fifo_status_q))) {
+        this->memory_master_mem_req = 0U;
+        if (((IData)(this->__PVT__req_bus_valid) & 
+             (((4ULL > this->__PVT__stage_usage) & 
+               (4U != (IData)(this->__PVT__grant_fifo_u__DOT__status_cnt_q))) 
+              & (4U != (IData)(this->__PVT__valid_fifo_u__DOT__status_cnt_q))))) {
+            if ((0U == (3U & ((this->__PVT__req_reg__DOT__reg_data_q[5U] 
+                               << 0x1eU) | (this->__PVT__req_reg__DOT__reg_data_q[4U] 
+                                            >> 2U))))) {
+                this->memory_master_mem_req = 1U;
+            }
+        }
+    } else {
+        this->memory_master_mem_req = ((1U == (IData)(this->__PVT__grant_fifo_status_q)) 
+                                       & (IData)(this->__PVT__req_bus_valid));
+    }
+    if ((0U == (IData)(this->__PVT__grant_fifo_status_q))) {
         this->__PVT__grant_fifo_push = 0U;
         if (((IData)(this->__PVT__req_bus_valid) & 
              (((4ULL > this->__PVT__stage_usage) & 
@@ -3643,13 +3960,6 @@ VL_INLINE_OPT void Vmptw_top_memory_read_stage__pi6::_combo__TOP__mptw_top__DOT_
             this->__PVT__req_bus_ready = ((2U == (IData)(this->__PVT__grant_fifo_status_q)) 
                                           & (4ULL > this->__PVT__stage_usage));
         }
-    }
-    this->__PVT__valid_fifo_u__DOT__read_pointer_n 
-        = this->__PVT__valid_fifo_u__DOT__read_pointer_q;
-    if (((IData)(this->__PVT__valid_fifo_pop) & (0U 
-                                                 != (IData)(this->__PVT__valid_fifo_u__DOT__status_cnt_q)))) {
-        this->__PVT__valid_fifo_u__DOT__read_pointer_n 
-            = (3U & ((IData)(1U) + (IData)(this->__PVT__valid_fifo_u__DOT__read_pointer_q)));
     }
     this->__PVT__grant_fifo_u__DOT__gate_clock = 1U;
     if (((IData)(this->__PVT__grant_fifo_push) & (4U 
@@ -4433,8 +4743,8 @@ VL_INLINE_OPT void Vmptw_top_memory_read_stage__pi6::_combo__TOP__mptw_top__DOT_
     }
 }
 
-VL_INLINE_OPT void Vmptw_top_memory_read_stage__pi6::_combo__TOP__mptw_top__DOT__gen_walking_stages__BRA__3__KET____DOT__walking_stage_u__DOT__mem_stage_u__19(Vmptw_top__Syms* __restrict vlSymsp) {
-    VL_DEBUG_IF(VL_DBG_MSGF("+          Vmptw_top_memory_read_stage__pi6::_combo__TOP__mptw_top__DOT__gen_walking_stages__BRA__3__KET____DOT__walking_stage_u__DOT__mem_stage_u__19\n"); );
+void Vmptw_top_memory_read_stage__pi7::_settle__TOP__mptw_top__DOT__gen_walking_stages__BRA__3__KET____DOT__walking_stage_u__DOT__mem_stage_u__5(Vmptw_top__Syms* __restrict vlSymsp) {
+    VL_DEBUG_IF(VL_DBG_MSGF("+          Vmptw_top_memory_read_stage__pi7::_settle__TOP__mptw_top__DOT__gen_walking_stages__BRA__3__KET____DOT__walking_stage_u__DOT__mem_stage_u__5\n"); );
     Vmptw_top* const __restrict vlTOPp VL_ATTR_UNUSED = vlSymsp->TOPp;
     // Body
     if ((0U == (IData)(this->__PVT__valid_fifo_status_q))) {
@@ -4452,6 +4762,169 @@ VL_INLINE_OPT void Vmptw_top_memory_read_stage__pi6::_combo__TOP__mptw_top__DOT_
                 this->__PVT__valid_fifo_pop = 0U;
             }
         }
+    }
+    if ((0x45bU >= (0x7ffU & ((IData)(0x117U) * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q))))) {
+        this->__Vcellout__grant_fifo_u__data_o[0U] 
+            = (((0U == (0x1fU & ((IData)(0x117U) * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q))))
+                 ? 0U : (this->__PVT__grant_fifo_u__DOT__mem_q[
+                         ((IData)(1U) + (0x3fU & (((IData)(0x117U) 
+                                                   * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)) 
+                                                  >> 5U)))] 
+                         << ((IData)(0x20U) - (0x1fU 
+                                               & ((IData)(0x117U) 
+                                                  * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)))))) 
+               | (this->__PVT__grant_fifo_u__DOT__mem_q[
+                  (0x3fU & (((IData)(0x117U) * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)) 
+                            >> 5U))] >> (0x1fU & ((IData)(0x117U) 
+                                                  * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)))));
+        this->__Vcellout__grant_fifo_u__data_o[1U] 
+            = (((0U == (0x1fU & ((IData)(0x117U) * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q))))
+                 ? 0U : (this->__PVT__grant_fifo_u__DOT__mem_q[
+                         ((IData)(2U) + (0x3fU & (((IData)(0x117U) 
+                                                   * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)) 
+                                                  >> 5U)))] 
+                         << ((IData)(0x20U) - (0x1fU 
+                                               & ((IData)(0x117U) 
+                                                  * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)))))) 
+               | (this->__PVT__grant_fifo_u__DOT__mem_q[
+                  ((IData)(1U) + (0x3fU & (((IData)(0x117U) 
+                                            * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)) 
+                                           >> 5U)))] 
+                  >> (0x1fU & ((IData)(0x117U) * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)))));
+        this->__Vcellout__grant_fifo_u__data_o[2U] 
+            = (((0U == (0x1fU & ((IData)(0x117U) * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q))))
+                 ? 0U : (this->__PVT__grant_fifo_u__DOT__mem_q[
+                         ((IData)(3U) + (0x3fU & (((IData)(0x117U) 
+                                                   * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)) 
+                                                  >> 5U)))] 
+                         << ((IData)(0x20U) - (0x1fU 
+                                               & ((IData)(0x117U) 
+                                                  * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)))))) 
+               | (this->__PVT__grant_fifo_u__DOT__mem_q[
+                  ((IData)(2U) + (0x3fU & (((IData)(0x117U) 
+                                            * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)) 
+                                           >> 5U)))] 
+                  >> (0x1fU & ((IData)(0x117U) * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)))));
+        this->__Vcellout__grant_fifo_u__data_o[3U] 
+            = (((0U == (0x1fU & ((IData)(0x117U) * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q))))
+                 ? 0U : (this->__PVT__grant_fifo_u__DOT__mem_q[
+                         ((IData)(4U) + (0x3fU & (((IData)(0x117U) 
+                                                   * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)) 
+                                                  >> 5U)))] 
+                         << ((IData)(0x20U) - (0x1fU 
+                                               & ((IData)(0x117U) 
+                                                  * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)))))) 
+               | (this->__PVT__grant_fifo_u__DOT__mem_q[
+                  ((IData)(3U) + (0x3fU & (((IData)(0x117U) 
+                                            * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)) 
+                                           >> 5U)))] 
+                  >> (0x1fU & ((IData)(0x117U) * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)))));
+        this->__Vcellout__grant_fifo_u__data_o[4U] 
+            = (((0U == (0x1fU & ((IData)(0x117U) * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q))))
+                 ? 0U : (this->__PVT__grant_fifo_u__DOT__mem_q[
+                         ((IData)(5U) + (0x3fU & (((IData)(0x117U) 
+                                                   * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)) 
+                                                  >> 5U)))] 
+                         << ((IData)(0x20U) - (0x1fU 
+                                               & ((IData)(0x117U) 
+                                                  * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)))))) 
+               | (this->__PVT__grant_fifo_u__DOT__mem_q[
+                  ((IData)(4U) + (0x3fU & (((IData)(0x117U) 
+                                            * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)) 
+                                           >> 5U)))] 
+                  >> (0x1fU & ((IData)(0x117U) * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)))));
+        this->__Vcellout__grant_fifo_u__data_o[5U] 
+            = (((0U == (0x1fU & ((IData)(0x117U) * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q))))
+                 ? 0U : (this->__PVT__grant_fifo_u__DOT__mem_q[
+                         ((IData)(6U) + (0x3fU & (((IData)(0x117U) 
+                                                   * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)) 
+                                                  >> 5U)))] 
+                         << ((IData)(0x20U) - (0x1fU 
+                                               & ((IData)(0x117U) 
+                                                  * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)))))) 
+               | (this->__PVT__grant_fifo_u__DOT__mem_q[
+                  ((IData)(5U) + (0x3fU & (((IData)(0x117U) 
+                                            * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)) 
+                                           >> 5U)))] 
+                  >> (0x1fU & ((IData)(0x117U) * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)))));
+        this->__Vcellout__grant_fifo_u__data_o[6U] 
+            = (((0U == (0x1fU & ((IData)(0x117U) * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q))))
+                 ? 0U : (this->__PVT__grant_fifo_u__DOT__mem_q[
+                         ((IData)(7U) + (0x3fU & (((IData)(0x117U) 
+                                                   * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)) 
+                                                  >> 5U)))] 
+                         << ((IData)(0x20U) - (0x1fU 
+                                               & ((IData)(0x117U) 
+                                                  * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)))))) 
+               | (this->__PVT__grant_fifo_u__DOT__mem_q[
+                  ((IData)(6U) + (0x3fU & (((IData)(0x117U) 
+                                            * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)) 
+                                           >> 5U)))] 
+                  >> (0x1fU & ((IData)(0x117U) * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)))));
+        this->__Vcellout__grant_fifo_u__data_o[7U] 
+            = (((0U == (0x1fU & ((IData)(0x117U) * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q))))
+                 ? 0U : (this->__PVT__grant_fifo_u__DOT__mem_q[
+                         ((IData)(8U) + (0x3fU & (((IData)(0x117U) 
+                                                   * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)) 
+                                                  >> 5U)))] 
+                         << ((IData)(0x20U) - (0x1fU 
+                                               & ((IData)(0x117U) 
+                                                  * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)))))) 
+               | (this->__PVT__grant_fifo_u__DOT__mem_q[
+                  ((IData)(7U) + (0x3fU & (((IData)(0x117U) 
+                                            * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)) 
+                                           >> 5U)))] 
+                  >> (0x1fU & ((IData)(0x117U) * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)))));
+        this->__Vcellout__grant_fifo_u__data_o[8U] 
+            = (0x7fffffU & (((0U == (0x1fU & ((IData)(0x117U) 
+                                              * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q))))
+                              ? 0U : (this->__PVT__grant_fifo_u__DOT__mem_q[
+                                      ((IData)(9U) 
+                                       + (0x3fU & (
+                                                   ((IData)(0x117U) 
+                                                    * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)) 
+                                                   >> 5U)))] 
+                                      << ((IData)(0x20U) 
+                                          - (0x1fU 
+                                             & ((IData)(0x117U) 
+                                                * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)))))) 
+                            | (this->__PVT__grant_fifo_u__DOT__mem_q[
+                               ((IData)(8U) + (0x3fU 
+                                               & (((IData)(0x117U) 
+                                                   * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q)) 
+                                                  >> 5U)))] 
+                               >> (0x1fU & ((IData)(0x117U) 
+                                            * (IData)(this->__PVT__grant_fifo_u__DOT__read_pointer_q))))));
+    } else {
+        this->__Vcellout__grant_fifo_u__data_o[0U] = 0U;
+        this->__Vcellout__grant_fifo_u__data_o[1U] = 0U;
+        this->__Vcellout__grant_fifo_u__data_o[2U] = 0U;
+        this->__Vcellout__grant_fifo_u__data_o[3U] = 0U;
+        this->__Vcellout__grant_fifo_u__data_o[4U] = 0U;
+        this->__Vcellout__grant_fifo_u__data_o[5U] = 0U;
+        this->__Vcellout__grant_fifo_u__data_o[6U] = 0U;
+        this->__Vcellout__grant_fifo_u__data_o[7U] = 0U;
+        this->__Vcellout__grant_fifo_u__data_o[8U] = 0U;
+    }
+    if (this->__PVT__req_reg__DOT__current_state) {
+        if (this->__PVT__req_reg__DOT__current_state) {
+            this->__PVT__req_bus_valid = 1U;
+        }
+    } else {
+        this->__PVT__req_bus_valid = 0U;
+    }
+    this->__PVT__stage_usage = (0x1ffffffffULL & ((QData)((IData)(
+                                                                  (3U 
+                                                                   & (IData)(this->__PVT__grant_fifo_u__DOT__status_cnt_q)))) 
+                                                  + (QData)((IData)(
+                                                                    (3U 
+                                                                     & (IData)(this->__PVT__valid_fifo_u__DOT__status_cnt_q))))));
+    this->__PVT__valid_fifo_u__DOT__read_pointer_n 
+        = this->__PVT__valid_fifo_u__DOT__read_pointer_q;
+    if (((IData)(this->__PVT__valid_fifo_pop) & (0U 
+                                                 != (IData)(this->__PVT__valid_fifo_u__DOT__status_cnt_q)))) {
+        this->__PVT__valid_fifo_u__DOT__read_pointer_n 
+            = (3U & ((IData)(1U) + (IData)(this->__PVT__valid_fifo_u__DOT__read_pointer_q)));
     }
     this->__PVT__grant_fifo_to_valid_fifo[0U] = this->__Vcellout__grant_fifo_u__data_o[0U];
     this->__PVT__grant_fifo_to_valid_fifo[1U] = this->__Vcellout__grant_fifo_u__data_o[1U];
@@ -4573,6 +5046,47 @@ VL_INLINE_OPT void Vmptw_top_memory_read_stage__pi6::_combo__TOP__mptw_top__DOT_
         }
     }
     if ((0U == (IData)(this->__PVT__grant_fifo_status_q))) {
+        this->memory_master_mem_addr = 0ULL;
+        if (((IData)(this->__PVT__req_bus_valid) & 
+             (((4ULL > this->__PVT__stage_usage) & 
+               (4U != (IData)(this->__PVT__grant_fifo_u__DOT__status_cnt_q))) 
+              & (4U != (IData)(this->__PVT__valid_fifo_u__DOT__status_cnt_q))))) {
+            if ((0U == (3U & ((this->__PVT__req_reg__DOT__reg_data_q[5U] 
+                               << 0x1eU) | (this->__PVT__req_reg__DOT__reg_data_q[4U] 
+                                            >> 2U))))) {
+                this->memory_master_mem_addr = (((QData)((IData)(
+                                                                 this->__PVT__req_reg__DOT__reg_data_q[3U])) 
+                                                 << 0x20U) 
+                                                | (QData)((IData)(
+                                                                  this->__PVT__req_reg__DOT__reg_data_q[2U])));
+            }
+        }
+    } else {
+        this->memory_master_mem_addr = ((1U == (IData)(this->__PVT__grant_fifo_status_q))
+                                         ? (((QData)((IData)(
+                                                             this->__PVT__req_reg__DOT__reg_data_q[3U])) 
+                                             << 0x20U) 
+                                            | (QData)((IData)(
+                                                              this->__PVT__req_reg__DOT__reg_data_q[2U])))
+                                         : 0ULL);
+    }
+    if ((0U == (IData)(this->__PVT__grant_fifo_status_q))) {
+        this->memory_master_mem_req = 0U;
+        if (((IData)(this->__PVT__req_bus_valid) & 
+             (((4ULL > this->__PVT__stage_usage) & 
+               (4U != (IData)(this->__PVT__grant_fifo_u__DOT__status_cnt_q))) 
+              & (4U != (IData)(this->__PVT__valid_fifo_u__DOT__status_cnt_q))))) {
+            if ((0U == (3U & ((this->__PVT__req_reg__DOT__reg_data_q[5U] 
+                               << 0x1eU) | (this->__PVT__req_reg__DOT__reg_data_q[4U] 
+                                            >> 2U))))) {
+                this->memory_master_mem_req = 1U;
+            }
+        }
+    } else {
+        this->memory_master_mem_req = ((1U == (IData)(this->__PVT__grant_fifo_status_q)) 
+                                       & (IData)(this->__PVT__req_bus_valid));
+    }
+    if ((0U == (IData)(this->__PVT__grant_fifo_status_q))) {
         this->__PVT__grant_fifo_push = 0U;
         if (((IData)(this->__PVT__req_bus_valid) & 
              (((4ULL > this->__PVT__stage_usage) & 
@@ -4624,13 +5138,6 @@ VL_INLINE_OPT void Vmptw_top_memory_read_stage__pi6::_combo__TOP__mptw_top__DOT_
             this->__PVT__req_bus_ready = ((2U == (IData)(this->__PVT__grant_fifo_status_q)) 
                                           & (4ULL > this->__PVT__stage_usage));
         }
-    }
-    this->__PVT__valid_fifo_u__DOT__read_pointer_n 
-        = this->__PVT__valid_fifo_u__DOT__read_pointer_q;
-    if (((IData)(this->__PVT__valid_fifo_pop) & (0U 
-                                                 != (IData)(this->__PVT__valid_fifo_u__DOT__status_cnt_q)))) {
-        this->__PVT__valid_fifo_u__DOT__read_pointer_n 
-            = (3U & ((IData)(1U) + (IData)(this->__PVT__valid_fifo_u__DOT__read_pointer_q)));
     }
     this->__PVT__grant_fifo_u__DOT__gate_clock = 1U;
     if (((IData)(this->__PVT__grant_fifo_push) & (4U 
@@ -5412,4 +5919,68 @@ VL_INLINE_OPT void Vmptw_top_memory_read_stage__pi6::_combo__TOP__mptw_top__DOT_
                                              * (IData)(this->__PVT__valid_fifo_u__DOT__write_pointer_q))), this->__PVT__valid_fifo_u__DOT__mem_n, this->valid_fifo_u__DOT____Vlvbound1);
         }
     }
+}
+
+void Vmptw_top_memory_read_stage__pi7::_ctor_var_reset() {
+    VL_DEBUG_IF(VL_DBG_MSGF("+          Vmptw_top_memory_read_stage__pi7::_ctor_var_reset\n"); );
+    // Body
+    clk_i = VL_RAND_RESET_I(1);
+    rst_ni = VL_RAND_RESET_I(1);
+    VL_RAND_RESET_W(279, stage_slave_data);
+    stage_slave_valid = VL_RAND_RESET_I(1);
+    stage_slave_ready = VL_RAND_RESET_I(1);
+    VL_RAND_RESET_W(279, stage_master_data);
+    stage_master_valid = VL_RAND_RESET_I(1);
+    stage_master_ready = VL_RAND_RESET_I(1);
+    memory_master_mem_req = VL_RAND_RESET_I(1);
+    memory_master_mem_gnt = VL_RAND_RESET_I(1);
+    memory_master_mem_valid = VL_RAND_RESET_I(1);
+    memory_master_mem_addr = VL_RAND_RESET_Q(64);
+    memory_master_mem_rdata = VL_RAND_RESET_Q(64);
+    __PVT__memory_master_mem_wdata = VL_RAND_RESET_Q(64);
+    __PVT__memory_master_mem_we = VL_RAND_RESET_I(1);
+    __PVT__memory_master_mem_be = VL_RAND_RESET_I(8);
+    memory_master_mem_error = VL_RAND_RESET_I(1);
+    __PVT__req_bus_valid = VL_RAND_RESET_I(1);
+    __PVT__req_bus_ready = VL_RAND_RESET_I(1);
+    VL_RAND_RESET_W(279, __PVT__grant_fifo_to_valid_fifo);
+    VL_RAND_RESET_W(279, __PVT__valid_fifo_to_master);
+    __PVT__valid_do_walk = VL_RAND_RESET_I(1);
+    __PVT__grant_fifo_push = VL_RAND_RESET_I(1);
+    __PVT__grant_fifo_pop = VL_RAND_RESET_I(1);
+    __PVT__valid_fifo_push = VL_RAND_RESET_I(1);
+    __PVT__valid_fifo_pop = VL_RAND_RESET_I(1);
+    __PVT__valid_counter_q = VL_RAND_RESET_Q(33);
+    __PVT__valid_counter_d = VL_RAND_RESET_Q(33);
+    __PVT__stage_usage = VL_RAND_RESET_Q(33);
+    __PVT__grant_fifo_status_q = VL_RAND_RESET_I(2);
+    __PVT__grant_fifo_status_d = VL_RAND_RESET_I(2);
+    __PVT__valid_fifo_status_q = VL_RAND_RESET_I(2);
+    __PVT__valid_fifo_status_d = VL_RAND_RESET_I(2);
+    VL_RAND_RESET_W(279, __Vcellout__grant_fifo_u__data_o);
+    __PVT__req_reg__DOT__current_state = VL_RAND_RESET_I(1);
+    __PVT__req_reg__DOT__next_state = VL_RAND_RESET_I(1);
+    VL_RAND_RESET_W(279, __PVT__req_reg__DOT__reg_data_q);
+    VL_RAND_RESET_W(279, __PVT__req_reg__DOT__reg_data_d);
+    __PVT__req_reg__DOT__dummy = VL_RAND_RESET_I(1);
+    __PVT__grant_fifo_u__DOT__gate_clock = VL_RAND_RESET_I(1);
+    __PVT__grant_fifo_u__DOT__read_pointer_n = VL_RAND_RESET_I(2);
+    __PVT__grant_fifo_u__DOT__read_pointer_q = VL_RAND_RESET_I(2);
+    __PVT__grant_fifo_u__DOT__write_pointer_n = VL_RAND_RESET_I(2);
+    __PVT__grant_fifo_u__DOT__write_pointer_q = VL_RAND_RESET_I(2);
+    __PVT__grant_fifo_u__DOT__status_cnt_n = VL_RAND_RESET_I(3);
+    __PVT__grant_fifo_u__DOT__status_cnt_q = VL_RAND_RESET_I(3);
+    VL_RAND_RESET_W(1116, __PVT__grant_fifo_u__DOT__mem_n);
+    VL_RAND_RESET_W(1116, __PVT__grant_fifo_u__DOT__mem_q);
+    VL_RAND_RESET_W(279, grant_fifo_u__DOT____Vlvbound1);
+    __PVT__valid_fifo_u__DOT__gate_clock = VL_RAND_RESET_I(1);
+    __PVT__valid_fifo_u__DOT__read_pointer_n = VL_RAND_RESET_I(2);
+    __PVT__valid_fifo_u__DOT__read_pointer_q = VL_RAND_RESET_I(2);
+    __PVT__valid_fifo_u__DOT__write_pointer_n = VL_RAND_RESET_I(2);
+    __PVT__valid_fifo_u__DOT__write_pointer_q = VL_RAND_RESET_I(2);
+    __PVT__valid_fifo_u__DOT__status_cnt_n = VL_RAND_RESET_I(3);
+    __PVT__valid_fifo_u__DOT__status_cnt_q = VL_RAND_RESET_I(3);
+    VL_RAND_RESET_W(1116, __PVT__valid_fifo_u__DOT__mem_n);
+    VL_RAND_RESET_W(1116, __PVT__valid_fifo_u__DOT__mem_q);
+    VL_RAND_RESET_W(279, valid_fifo_u__DOT____Vlvbound1);
 }

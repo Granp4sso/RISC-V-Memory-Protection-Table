@@ -65,7 +65,25 @@ module issue_stage #(
     `ASSIGN_DATA_BUS_ARRAY_TO_SCALAR( backend_to_issue  , 1 , stage_slave );
 
     // Now let's do the passthrough from the fetch stage to the backend
-    `ASSIGN_DATA_BUS( issue_to_backend, fetch_to_issue );
+    if( ~PIPELINE_PASSTHROUGH ) begin: pipeline_register_generate
+        pipeline_register # ( 
+
+            .DATA_WIDTH             ( PIPELINE_SLAVE_DATA_WIDTH    )
+
+        ) issue_backend_reg (
+
+            .clk_i                  ( clk_i                         ),
+            .rst_ni                 ( rst_ni                        ),
+
+            `MAP_DATA_PORT          ( s_data, fetch_to_issue        ),
+            `MAP_DATA_PORT          ( m_data, issue_to_backend      ),
+            `SINK_SLAVE_CTRL_PORT   ( s_ctrl                        ),
+            `SINK_MASTER_STATUS_PORT( s_status  )
+
+        ); 
+    end else begin: pipeline_register_passthrough
+        `ASSIGN_DATA_BUS( issue_to_backend, fetch_to_issue );
+    end
 
     //////////////////////////////////////////////////
     //    ___                   _   _               //
@@ -76,7 +94,7 @@ module issue_stage #(
     //////////////////////////////////////////////////
 
     // Then receive the answer from the backend (i.e. ID assigned to transaction)
-    if( PIPELINE_PASSTHROUGH ) begin: pipeline_register_generate
+    if( ~PIPELINE_PASSTHROUGH ) begin: pipeline_register_generate
         pipeline_register # ( 
 
             .DATA_WIDTH             ( PIPELINE_SLAVE_DATA_WIDTH    )

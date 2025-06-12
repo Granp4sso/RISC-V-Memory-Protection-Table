@@ -15,6 +15,8 @@ import mpt_pkg::*;
 
 // verilator lint_off PINCONNECTEMPTY
 // verilator lint_off UNDRIVEN
+// verilator lint_off WIDTH
+// verilator lint_off UNOPTFLAT
 
 // Import headers
 `include "pipelining.svh" 
@@ -22,7 +24,9 @@ import mpt_pkg::*;
 module retire_stage #(
     parameter unsigned PIPELINE_SLAVE_DATA_WIDTH    = 32,
     parameter unsigned PIPELINE_MASTER_DATA_WIDTH   = 32,
-    parameter unsigned REORDER_BUFFER_DEPTH         = 32   
+    parameter unsigned REORDER_BUFFER_DEPTH         = 32,
+    parameter unsigned RETIRE_PORT_NUM              = 4,
+    parameter unsigned PIPELINE_PASSTHROUGH         = 0   
 ) (
     // Generic Signals
     input  logic                clk_i,
@@ -46,21 +50,69 @@ module retire_stage #(
     //         |___/                    //
     //////////////////////////////////////
 
+    typedef enum logic[1:0] { 
+        ROB_PUSH_AVAILABLE,
+        ROB_PUSH_FULL,
+        ROB_PUSH_FLUSH
+    } rob_push_status_e;
+
+    typedef enum logic[1:0] { 
+        ROB_MEM_READ,
+        ROB_MEM_WRITE,
+        ROB_MEM_CLEAR
+    } rob_mem_op_e;
+
+
     /////////////////////////
     // Signals Declaration //
     /////////////////////////
 
+    // Issue Stage
+    mptw_transaction_t from_issue_transaction;
+    mptw_transaction_t to_issue_transaction;
+
+    // Push Proces
+    rob_push_status_e rob_push_status_q, rob_push_status_d;
+    logic [$clog2(REORDER_BUFFER_DEPTH):0] rob_next_valid_id_q, rob_next_valid_id_d;
+
+    // Reorder Buffer FIFO
     logic rob_fifo_full;
     logic rob_fifo_empty;
     logic rob_fifo_push;
     logic rob_fifo_pop;
-    logic [$bits(TRANSACTION_FIFO_DEPTH)-1:0] rob_fifo_usage;
-    mptw_transaction_t rob_fifo_data_in;
-    mptw_transaction_t rob_fifo_data_out;
+    logic [$clog2(REORDER_BUFFER_DEPTH)-1:0] rob_fifo_usage;
+    rob_id_size_t rob_fifo_data_in;
+    rob_id_size_t rob_fifo_data_out;
+
+    // Reorder Buffer Memories
+    // A single ROB Memory is a packed 2D array.
+    // We have an unpacked array of RETIRE_PORT_NUM elements
+    logic [REORDER_BUFFER_DEPTH - 1 : 0][$bits(mptw_transaction_t) - 1 : 0] rob_memory_q[RETIRE_PORT_NUM];
+    logic [REORDER_BUFFER_DEPTH - 1 : 0][$bits(mptw_transaction_t) - 1 : 0] rob_memory_d[RETIRE_PORT_NUM];
+    // Addressing the ROB memories
+    logic [$clog2(REORDER_BUFFER_DEPTH) - 1] rob_memory_waddr[RETIRE_PORT_NUM];
+    logic [$clog2(REORDER_BUFFER_DEPTH) - 1] rob_memory_raddr[RETIRE_PORT_NUM];
+    // Data from/to ROB memories
+    logic [$bits(mptw_transaction_t) - 1 : 0] rob_memory_wdata[RETIRE_PORT_NUM];
+    logic [$bits(mptw_transaction_t) - 1 : 0] rob_memory_rdata[RETIRE_PORT_NUM];
 
     /////////////////////
     // Bus Declaration //
     /////////////////////
+
+    `DECLARE_DATA_BUS( from_issue_bus   , PIPELINE_SLAVE_DATA_WIDTH );
+    `DECLARE_DATA_BUS( to_issue_bus     , PIPELINE_SLAVE_DATA_WIDTH );
+
+    //////////////////////////////////////////////////////
+    //    _   _                    _   _                //
+    //   | | | |_ _  _ __  __ _ __| |_(_)_ _  __ _      //
+    //   | |_| | ' \| '_ \/ _` / _| / / | ' \/ _` |     //
+    //    \___/|_||_| .__/\__,_\__|_\_\_|_||_\__, |     //
+    //              |_|                      |___/      //
+    //////////////////////////////////////////////////////
+
+    `ASSIGN_DATA_BUS( from_issue_bus, issue_stage_slave );
+    assign from_issue_transaction = from_issue_bus_data;
 
     //////////////////////////////////////////////////
     //    ___         _      _              _       //
@@ -70,9 +122,110 @@ module retire_stage #(
     //                                |___/         //
     //////////////////////////////////////////////////
 
-    // Free ID counter
-    // Pointer to last ID Pushed
-    // Pointer to last ID popped
+    // When a transaction request comes from the Issue stage,
+    // the retire stage returns an ID for that transaction, and
+    // pushes the transaction ID inside the ROB FIFO.
+    // It keeps track of the first valid ID.
+
+    assign to_issue_transaction.completed     = from_issue_transaction.completed;
+    assign to_issue_transaction.mmpt          = from_issue_transaction.mmpt;
+    assign to_issue_transaction.spa           = from_issue_transaction.spa;
+    assign to_issue_transaction.access_type   = from_issue_transaction.access_type;
+    assign to_issue_transaction.rpa           = from_issue_transaction.rpa;
+    assign to_issue_transaction.valid         = from_issue_transaction.valid;
+    assign to_issue_transaction.mpte          = from_issue_transaction.mpte;
+    assign to_issue_transaction.plb_hit       = from_issue_transaction.plb_hit;
+    assign to_issue_transaction.walking       = from_issue_transaction.walking;
+    assign to_issue_transaction.format_error  = from_issue_transaction.format_error;
+    assign to_issue_transaction.access_error  = from_issue_transaction.access_error;
+
+    always_comb begin: rob_push_process
+
+        // By default, the next valid id does not change
+        rob_next_valid_id_d = rob_next_valid_id_q;
+        // Keep the ID to non-valid value
+        to_issue_transaction.id = ( 2**$bits(rob_id_size_t)-1 );
+        // Tie to zero Issue Stage ports
+        from_issue_bus_ready = '0;
+        to_issue_bus_data = '0;
+        to_issue_bus_valid = '0;
+        // ROB input signals
+        rob_fifo_push = '0;
+        rob_fifo_data_in = '0;
+
+        case(rob_push_status_q)
+
+            ROB_PUSH_AVAILABLE: begin
+                // The ROB is not full
+                from_issue_bus_ready = ( to_issue_bus_ready ) ? 1'b1 : '0;
+                if( from_issue_bus_valid && to_issue_bus_ready ) begin
+                    // A new request is coming from Issue Stage
+                    // Since the ROB is not full, just assign the first valid ID
+                    to_issue_transaction.id = rob_next_valid_id_d;
+                    rob_next_valid_id_d = rob_next_valid_id_q + 1;
+                    // Then present the data to the Issue Stage
+                    to_issue_bus_data = to_issue_transaction;
+                    to_issue_bus_valid = 1'b1;
+                    // Raise the push signal
+                    rob_fifo_push = 1'b1;
+                    rob_fifo_data_in = to_issue_transaction.id;
+                    // Consume the request
+                    //from_issue_bus_ready = 1'b1;
+                end
+
+                // Check next state
+                if( rob_fifo_usage == ( REORDER_BUFFER_DEPTH - 1 ) && ~rob_fifo_pop ) begin
+                    // The current push is going to fill the FIFO and there is no pop
+                    rob_push_status_d = ROB_PUSH_FULL;
+                end else begin
+                    // Stay in here
+                    rob_push_status_d = ROB_PUSH_AVAILABLE;
+                end
+            end
+
+            ROB_PUSH_FULL: begin
+                // Wait untill a pop occurs
+                if( rob_fifo_pop ) begin
+                    rob_push_status_d = ROB_PUSH_AVAILABLE;
+                end else begin
+                    rob_push_status_d = ROB_PUSH_FULL;
+                end 
+            end
+
+            ROB_PUSH_FLUSH: begin end // TBD
+
+            default: begin end
+
+        endcase
+
+    end
+
+    always_ff @(posedge clk_i) begin
+        if ( ~rst_ni ) begin
+            rob_push_status_q <= '0;
+            rob_next_valid_id_q <= '0;
+        end else begin
+            rob_push_status_q <= rob_push_status_d;
+            // Reset the next valid ID if the maximum value is reached
+            rob_next_valid_id_q <= ( rob_next_valid_id_d == REORDER_BUFFER_DEPTH ) ? '0 : rob_next_valid_id_d;
+        end
+    end
+
+    // Then receive the answer from the backend (i.e. ID assigned to transaction)
+    if( ~PIPELINE_PASSTHROUGH ) begin: issue_pipeline_register_generate
+        pipeline_register # ( 
+            .DATA_WIDTH             ( PIPELINE_SLAVE_DATA_WIDTH    )
+        ) issue_reg (
+            .clk_i                  ( clk_i                         ),
+            .rst_ni                 ( rst_ni                        ),
+            `MAP_DATA_PORT          ( s_data, to_issue_bus          ),
+            `MAP_DATA_PORT          ( m_data, issue_stage_master    ),
+            `SINK_SLAVE_CTRL_PORT   ( s_ctrl                        ),
+            `SINK_MASTER_STATUS_PORT( s_status  )
+        );
+    end else begin: issue_pipeline_register_passthrough
+        `ASSIGN_DATA_BUS( issue_stage_master, to_issue_bus );
+    end
 
     //////////////////////////////////////////////////////////////////
     //    ___                _           ___       __  __           //
@@ -82,10 +235,10 @@ module retire_stage #(
     //                                                              //
     //////////////////////////////////////////////////////////////////
 
-    // The ROB is implemented as a FIFO. It enques transaction when they
+    // The ROB is implemented as a FIFO. It enques transaction IDs when they
     // are issued into the pipeline. At the same time, it reads from the
     // ROB memories; if any of the memories has a completed transaction
-    // At the head transaction ID, then a transaction is popped to commit.
+    // At the head value, then a popped happens.
 
     //////////////
     // ROB FIFO //
@@ -93,9 +246,9 @@ module retire_stage #(
 
     fifo_v3 #(
         .FALL_THROUGH   ( 1'b0                      ),  
-        .DATA_WIDTH     ( $bits(mptw_transaction_t) ),
-        .DEPTH          ( TRANSACTION_FIFO_DEPTH    ),   
-        .dtype          ( mptw_transaction_t        )
+        .DATA_WIDTH     ( $bits(rob_id_size_t)      ),
+        .DEPTH          ( REORDER_BUFFER_DEPTH      ),   
+        .dtype          ( rob_id_size_t             )
     ) rob_fifo_u (
         .clk_i          ( clk_i                     ),
         .rst_ni         ( rst_ni                    ),
@@ -114,6 +267,49 @@ module retire_stage #(
     // ROB Memories //
     //////////////////
 
+    // ROB memories are implemented as an addressable register file.
+    // The allowed operations are Write, Read and Clear.
+    // The number of ROB entries supported equals the ROB_PORT_NUM.
+    // ROB Memories are built using ROB Entries, which are as many
+    // As the ROB_DEPTH, and store an entire transaction
+
+    generate
+        for (genvar i = 0; i < RETIRE_PORT_NUM; i = i + 1) begin : gen_rob_memory
+
+
+            // Combinatorial
+            always_comb begin
+                // By default, do not update the selected entry
+                rob_memory_d[i][rob_memory_waddr] = rob_memory_q[i][rob_memory_waddr];
+                // If a valid retire request arrives, update the entry
+                if( retire_transaction_bus_valid[i] ) begin
+                    rob_memory_d[i][rob_memory_waddr] = rob_memory_wdata[i];
+                end
+                // Always read whatevere the top of the FIFO says
+                rob_memory_rdata[i] = rob_memory_d[i][rob_memory_raddr];
+                if( rob_memory_clean[i] ) begin
+                    // Here zero the register. We are assuming 
+                    // no CLEAR and WRITE operations are happening at
+                    // the same time on the same register because 
+                    // WRITEs are performed only to retire and CLEARs
+                    // are only performed on retired transactions
+                    rob_memory_d[i][rob_memory_waddr] = '0;
+                end
+            end
+
+            // Sequential
+            always_ff @(posedge clk_i) begin
+                if ( ~rst_ni ) begin
+                    rob_memory_q[i] <= '0;
+                end else begin
+                    rob_memory_q[i] <= rob_memory_d[i];
+                end
+            end
+
+
+        end
+    endgenerate
+
     //////////////////////////////////////////////
     //    ___            _              _       //
     //   | _ \___ _ __  | |   ___  __ _(_)__    //
@@ -131,18 +327,10 @@ module retire_stage #(
     //           |_|                      |___/     //
     //////////////////////////////////////////////////
 
-    pipeline_register # ( 
-        .DATA_WIDTH             ( PIPELINE_SLAVE_DATA_WIDTH    )
-    ) issue_reg (
-        .clk_i                  ( clk_i                         ),
-        .rst_ni                 ( rst_ni                        ),
-        `MAP_DATA_PORT          ( s_data, issue_stage_slave     ),
-        `MAP_DATA_PORT          ( m_data, issue_stage_master    ),
-        `SINK_SLAVE_CTRL_PORT   ( s_ctrl                        ),
-        `SINK_MASTER_STATUS_PORT( s_status  )
-    ); 
     
 endmodule : retire_stage
 
 // verilator lint_on PINCONNECTEMPTY
 // verilator lint_on UNDRIVEN
+// verilator lint_on WIDTH
+// verilator lint_on UNOPTFLAT

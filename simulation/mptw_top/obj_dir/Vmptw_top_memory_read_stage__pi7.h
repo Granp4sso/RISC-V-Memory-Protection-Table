@@ -2,8 +2,8 @@
 // DESCRIPTION: Verilator output: Design internal header
 // See Vmptw_top.h for the primary calling header
 
-#ifndef _VMPTW_TOP_MEMORY_READ_STAGE__PI6_H_
-#define _VMPTW_TOP_MEMORY_READ_STAGE__PI6_H_  // guard
+#ifndef _VMPTW_TOP_MEMORY_READ_STAGE__PI7_H_
+#define _VMPTW_TOP_MEMORY_READ_STAGE__PI7_H_  // guard
 
 #include "verilated.h"
 
@@ -15,7 +15,7 @@ class Vmptw_top_VerilatedVcd;
 
 //----------
 
-VL_MODULE(Vmptw_top_memory_read_stage__pi6) {
+VL_MODULE(Vmptw_top_memory_read_stage__pi7) {
   public:
     
     // PORTS
@@ -90,23 +90,24 @@ VL_MODULE(Vmptw_top_memory_read_stage__pi6) {
     
     // CONSTRUCTORS
   private:
-    VL_UNCOPYABLE(Vmptw_top_memory_read_stage__pi6);  ///< Copying not allowed
+    VL_UNCOPYABLE(Vmptw_top_memory_read_stage__pi7);  ///< Copying not allowed
   public:
-    Vmptw_top_memory_read_stage__pi6(const char* name = "TOP");
-    ~Vmptw_top_memory_read_stage__pi6();
+    Vmptw_top_memory_read_stage__pi7(const char* name = "TOP");
+    ~Vmptw_top_memory_read_stage__pi7();
     
     // INTERNAL METHODS
     void __Vconfigure(Vmptw_top__Syms* symsp, bool first);
-    void _combo__TOP__mptw_top__DOT__gen_walking_stages__BRA__0__KET____DOT__walking_stage_u__DOT__mem_stage_u__16(Vmptw_top__Syms* __restrict vlSymsp);
-    void _combo__TOP__mptw_top__DOT__gen_walking_stages__BRA__1__KET____DOT__walking_stage_u__DOT__mem_stage_u__17(Vmptw_top__Syms* __restrict vlSymsp);
-    void _combo__TOP__mptw_top__DOT__gen_walking_stages__BRA__2__KET____DOT__walking_stage_u__DOT__mem_stage_u__18(Vmptw_top__Syms* __restrict vlSymsp);
-    void _combo__TOP__mptw_top__DOT__gen_walking_stages__BRA__3__KET____DOT__walking_stage_u__DOT__mem_stage_u__19(Vmptw_top__Syms* __restrict vlSymsp);
-    void _combo__TOP__mptw_top__DOT__plb_lookup_stage_u__DOT__mem_stage_u__20(Vmptw_top__Syms* __restrict vlSymsp);
+    void _combo__TOP__mptw_top__DOT__gen_walking_stages__BRA__0__KET____DOT__walking_stage_u__DOT__mem_stage_u__17(Vmptw_top__Syms* __restrict vlSymsp);
+    void _combo__TOP__mptw_top__DOT__gen_walking_stages__BRA__1__KET____DOT__walking_stage_u__DOT__mem_stage_u__18(Vmptw_top__Syms* __restrict vlSymsp);
+    void _combo__TOP__mptw_top__DOT__gen_walking_stages__BRA__2__KET____DOT__walking_stage_u__DOT__mem_stage_u__19(Vmptw_top__Syms* __restrict vlSymsp);
+    void _combo__TOP__mptw_top__DOT__gen_walking_stages__BRA__3__KET____DOT__walking_stage_u__DOT__mem_stage_u__20(Vmptw_top__Syms* __restrict vlSymsp);
+    void _combo__TOP__mptw_top__DOT__plb_lookup_stage_u__DOT__mem_stage_u__16(Vmptw_top__Syms* __restrict vlSymsp);
   private:
     void _ctor_var_reset() VL_ATTR_COLD;
   public:
-    void _sequent__TOP__mptw_top__DOT__plb_lookup_stage_u__DOT__mem_stage_u__10(Vmptw_top__Syms* __restrict vlSymsp);
-    void _sequent__TOP__mptw_top__DOT__plb_lookup_stage_u__DOT__mem_stage_u__11(Vmptw_top__Syms* __restrict vlSymsp);
+    void _sequent__TOP__mptw_top__DOT__plb_lookup_stage_u__DOT__mem_stage_u__15(Vmptw_top__Syms* __restrict vlSymsp);
+    void _sequent__TOP__mptw_top__DOT__plb_lookup_stage_u__DOT__mem_stage_u__25(Vmptw_top__Syms* __restrict vlSymsp);
+    void _sequent__TOP__mptw_top__DOT__plb_lookup_stage_u__DOT__mem_stage_u__6(Vmptw_top__Syms* __restrict vlSymsp);
     void _settle__TOP__mptw_top__DOT__gen_walking_stages__BRA__0__KET____DOT__walking_stage_u__DOT__mem_stage_u__2(Vmptw_top__Syms* __restrict vlSymsp) VL_ATTR_COLD;
     void _settle__TOP__mptw_top__DOT__gen_walking_stages__BRA__1__KET____DOT__walking_stage_u__DOT__mem_stage_u__3(Vmptw_top__Syms* __restrict vlSymsp) VL_ATTR_COLD;
     void _settle__TOP__mptw_top__DOT__gen_walking_stages__BRA__2__KET____DOT__walking_stage_u__DOT__mem_stage_u__4(Vmptw_top__Syms* __restrict vlSymsp) VL_ATTR_COLD;

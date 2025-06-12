@@ -14,7 +14,7 @@
 
 class Vmptw_top__Syms;
 class Vmptw_top_VerilatedVcd;
-class Vmptw_top_memory_read_stage__pi6;
+class Vmptw_top_memory_read_stage__pi7;
 
 
 //----------
@@ -24,11 +24,11 @@ VL_MODULE(Vmptw_top) {
     // CELLS
     // Public to allow access to /*verilator_public*/ items;
     // otherwise the application code can consider these internals.
-    Vmptw_top_memory_read_stage__pi6* __PVT__mptw_top__DOT__plb_lookup_stage_u__DOT__mem_stage_u;
-    Vmptw_top_memory_read_stage__pi6* __PVT__mptw_top__DOT__gen_walking_stages__BRA__0__KET____DOT__walking_stage_u__DOT__mem_stage_u;
-    Vmptw_top_memory_read_stage__pi6* __PVT__mptw_top__DOT__gen_walking_stages__BRA__1__KET____DOT__walking_stage_u__DOT__mem_stage_u;
-    Vmptw_top_memory_read_stage__pi6* __PVT__mptw_top__DOT__gen_walking_stages__BRA__2__KET____DOT__walking_stage_u__DOT__mem_stage_u;
-    Vmptw_top_memory_read_stage__pi6* __PVT__mptw_top__DOT__gen_walking_stages__BRA__3__KET____DOT__walking_stage_u__DOT__mem_stage_u;
+    Vmptw_top_memory_read_stage__pi7* __PVT__mptw_top__DOT__plb_lookup_stage_u__DOT__mem_stage_u;
+    Vmptw_top_memory_read_stage__pi7* __PVT__mptw_top__DOT__gen_walking_stages__BRA__0__KET____DOT__walking_stage_u__DOT__mem_stage_u;
+    Vmptw_top_memory_read_stage__pi7* __PVT__mptw_top__DOT__gen_walking_stages__BRA__1__KET____DOT__walking_stage_u__DOT__mem_stage_u;
+    Vmptw_top_memory_read_stage__pi7* __PVT__mptw_top__DOT__gen_walking_stages__BRA__2__KET____DOT__walking_stage_u__DOT__mem_stage_u;
+    Vmptw_top_memory_read_stage__pi7* __PVT__mptw_top__DOT__gen_walking_stages__BRA__3__KET____DOT__walking_stage_u__DOT__mem_stage_u;
     
     // PORTS
     // The application code writes and reads these signals to
@@ -69,7 +69,6 @@ VL_MODULE(Vmptw_top) {
     // Anonymous structures to workaround compiler member-count bugs
     struct {
         CData/*0:0*/ mptw_top__DOT__fetch_to_issue_valid;
-        CData/*0:0*/ mptw_top__DOT__issue_to_backend_ready;
         CData/*0:0*/ mptw_top__DOT__plb_lookup_to_walking_valid;
         CData/*0:0*/ mptw_top__DOT__backend_to_issue_valid;
         CData/*0:0*/ mptw_top__DOT__retire_to_commit_valid;
@@ -82,8 +81,13 @@ VL_MODULE(Vmptw_top) {
         CData/*0:0*/ mptw_top__DOT__fetch_stage_u__DOT__fetch_reg__DOT__current_state;
         CData/*0:0*/ mptw_top__DOT__fetch_stage_u__DOT__fetch_reg__DOT__next_state;
         CData/*0:0*/ mptw_top__DOT__fetch_stage_u__DOT__fetch_reg__DOT__dummy;
+        CData/*0:0*/ mptw_top__DOT__issue_stage_u__DOT__fetch_to_issue_ready;
         CData/*0:0*/ mptw_top__DOT__issue_stage_u__DOT__backend_to_issue_ready;
+        CData/*0:0*/ mptw_top__DOT__issue_stage_u__DOT__issue_to_backend_valid;
         CData/*0:0*/ mptw_top__DOT__issue_stage_u__DOT__issue_to_plb_lookup_valid;
+        CData/*0:0*/ mptw_top__DOT__issue_stage_u__DOT__pipeline_register_generate__DOT__issue_backend_reg__DOT__current_state;
+        CData/*0:0*/ mptw_top__DOT__issue_stage_u__DOT__pipeline_register_generate__DOT__issue_backend_reg__DOT__next_state;
+        CData/*0:0*/ mptw_top__DOT__issue_stage_u__DOT__pipeline_register_generate__DOT__issue_backend_reg__DOT__dummy;
         CData/*0:0*/ mptw_top__DOT__issue_stage_u__DOT__pipeline_register_generate__DOT__issue_reg__DOT__current_state;
         CData/*0:0*/ mptw_top__DOT__issue_stage_u__DOT__pipeline_register_generate__DOT__issue_reg__DOT__next_state;
         CData/*0:0*/ mptw_top__DOT__issue_stage_u__DOT__pipeline_register_generate__DOT__issue_reg__DOT__dummy;
@@ -91,9 +95,25 @@ VL_MODULE(Vmptw_top) {
         CData/*0:0*/ mptw_top__DOT__plb_lookup_stage_u__DOT__plb_lookup_reg_u__DOT__current_state;
         CData/*0:0*/ mptw_top__DOT__plb_lookup_stage_u__DOT__plb_lookup_reg_u__DOT__next_state;
         CData/*0:0*/ mptw_top__DOT__plb_lookup_stage_u__DOT__plb_lookup_reg_u__DOT__dummy;
-        CData/*0:0*/ mptw_top__DOT__retire_stage_u__DOT__issue_reg__DOT__current_state;
-        CData/*0:0*/ mptw_top__DOT__retire_stage_u__DOT__issue_reg__DOT__next_state;
-        CData/*0:0*/ mptw_top__DOT__retire_stage_u__DOT__issue_reg__DOT__dummy;
+        CData/*1:0*/ mptw_top__DOT__retire_stage_u__DOT__rob_push_status_q;
+        CData/*1:0*/ mptw_top__DOT__retire_stage_u__DOT__rob_push_status_d;
+        CData/*5:0*/ mptw_top__DOT__retire_stage_u__DOT__rob_next_valid_id_q;
+        CData/*5:0*/ mptw_top__DOT__retire_stage_u__DOT__rob_next_valid_id_d;
+        CData/*0:0*/ mptw_top__DOT__retire_stage_u__DOT__rob_fifo_push;
+        CData/*0:0*/ mptw_top__DOT__retire_stage_u__DOT__rob_fifo_pop;
+        CData/*0:0*/ mptw_top__DOT__retire_stage_u__DOT__from_issue_bus_ready;
+        CData/*0:0*/ mptw_top__DOT__retire_stage_u__DOT__to_issue_bus_valid;
+        CData/*0:0*/ mptw_top__DOT__retire_stage_u__DOT__to_issue_bus_ready;
+        CData/*0:0*/ mptw_top__DOT__retire_stage_u__DOT__rob_fifo_u__DOT__gate_clock;
+        CData/*4:0*/ mptw_top__DOT__retire_stage_u__DOT__rob_fifo_u__DOT__read_pointer_n;
+        CData/*4:0*/ mptw_top__DOT__retire_stage_u__DOT__rob_fifo_u__DOT__read_pointer_q;
+        CData/*4:0*/ mptw_top__DOT__retire_stage_u__DOT__rob_fifo_u__DOT__write_pointer_n;
+        CData/*4:0*/ mptw_top__DOT__retire_stage_u__DOT__rob_fifo_u__DOT__write_pointer_q;
+        CData/*5:0*/ mptw_top__DOT__retire_stage_u__DOT__rob_fifo_u__DOT__status_cnt_n;
+        CData/*5:0*/ mptw_top__DOT__retire_stage_u__DOT__rob_fifo_u__DOT__status_cnt_q;
+        CData/*0:0*/ mptw_top__DOT__retire_stage_u__DOT__issue_pipeline_register_generate__DOT__issue_reg__DOT__current_state;
+        CData/*0:0*/ mptw_top__DOT__retire_stage_u__DOT__issue_pipeline_register_generate__DOT__issue_reg__DOT__next_state;
+        CData/*0:0*/ mptw_top__DOT__retire_stage_u__DOT__issue_pipeline_register_generate__DOT__issue_reg__DOT__dummy;
         CData/*2:0*/ mptw_top__DOT__commit_stage_u__DOT__format_error_cause_o;
         CData/*2:0*/ mptw_top__DOT__commit_stage_u__DOT__mpte_permissions;
         CData/*3:0*/ mptw_top__DOT__commit_stage_u__DOT__range_offset;
@@ -112,6 +132,8 @@ VL_MODULE(Vmptw_top) {
         CData/*0:0*/ mptw_top__DOT__gen_walking_stages__BRA__0__KET____DOT__walking_stage_u__DOT__parsing_stage_u__DOT__parsing_reg__DOT__dummy;
         CData/*0:0*/ mptw_top__DOT__gen_walking_stages__BRA__0__KET____DOT__walking_stage_u__DOT__walking_reg__DOT__current_state;
         CData/*0:0*/ mptw_top__DOT__gen_walking_stages__BRA__0__KET____DOT__walking_stage_u__DOT__walking_reg__DOT__next_state;
+    };
+    struct {
         CData/*0:0*/ mptw_top__DOT__gen_walking_stages__BRA__0__KET____DOT__walking_stage_u__DOT__walking_reg__DOT__dummy;
         CData/*2:0*/ mptw_top__DOT__gen_walking_stages__BRA__1__KET____DOT__walking_stage_u__DOT__format_error_cause_o;
         CData/*0:0*/ mptw_top__DOT__gen_walking_stages__BRA__1__KET____DOT__walking_stage_u__DOT__parsing_to_walking_valid;
@@ -132,8 +154,6 @@ VL_MODULE(Vmptw_top) {
         CData/*3:0*/ mptw_top__DOT__gen_walking_stages__BRA__2__KET____DOT__walking_stage_u__DOT__parsing_stage_u__DOT__range_offset;
         CData/*0:0*/ mptw_top__DOT__gen_walking_stages__BRA__2__KET____DOT__walking_stage_u__DOT__parsing_stage_u__DOT__slave_to_reg_bus_ready;
         CData/*0:0*/ mptw_top__DOT__gen_walking_stages__BRA__2__KET____DOT__walking_stage_u__DOT__parsing_stage_u__DOT__parsing_reg__DOT__current_state;
-    };
-    struct {
         CData/*0:0*/ mptw_top__DOT__gen_walking_stages__BRA__2__KET____DOT__walking_stage_u__DOT__parsing_stage_u__DOT__parsing_reg__DOT__next_state;
         CData/*0:0*/ mptw_top__DOT__gen_walking_stages__BRA__2__KET____DOT__walking_stage_u__DOT__parsing_stage_u__DOT__parsing_reg__DOT__dummy;
         CData/*0:0*/ mptw_top__DOT__gen_walking_stages__BRA__2__KET____DOT__walking_stage_u__DOT__walking_reg__DOT__current_state;
@@ -151,6 +171,9 @@ VL_MODULE(Vmptw_top) {
         CData/*0:0*/ mptw_top__DOT__gen_walking_stages__BRA__3__KET____DOT__walking_stage_u__DOT__walking_reg__DOT__current_state;
         CData/*0:0*/ mptw_top__DOT__gen_walking_stages__BRA__3__KET____DOT__walking_stage_u__DOT__walking_reg__DOT__next_state;
         CData/*0:0*/ mptw_top__DOT__gen_walking_stages__BRA__3__KET____DOT__walking_stage_u__DOT__walking_reg__DOT__dummy;
+        SData/*11:0*/ mptw_top__DOT__retire_stage_u__DOT__rob_fifo_data_in;
+        WData/*383:0*/ mptw_top__DOT__retire_stage_u__DOT__rob_fifo_u__DOT__mem_n[12];
+        WData/*383:0*/ mptw_top__DOT__retire_stage_u__DOT__rob_fifo_u__DOT__mem_q[12];
         SData/*8:0*/ mptw_top__DOT__commit_stage_u__DOT__spa_current_page_number;
         SData/*8:0*/ mptw_top__DOT__gen_walking_stages__BRA__0__KET____DOT__walking_stage_u__DOT__parsing_stage_u__DOT__spa_current_page_number;
         SData/*8:0*/ mptw_top__DOT__gen_walking_stages__BRA__1__KET____DOT__walking_stage_u__DOT__parsing_stage_u__DOT__spa_current_page_number;
@@ -159,12 +182,15 @@ VL_MODULE(Vmptw_top) {
         WData/*278:0*/ mptw_top__DOT__retire_to_commit_data[9];
         WData/*278:0*/ mptw_top__DOT__fetch_stage_u__DOT__fetch_reg__DOT__reg_data_q[9];
         WData/*278:0*/ mptw_top__DOT__fetch_stage_u__DOT__fetch_reg__DOT__reg_data_d[9];
+        WData/*278:0*/ mptw_top__DOT__issue_stage_u__DOT__pipeline_register_generate__DOT__issue_backend_reg__DOT__reg_data_q[9];
+        WData/*278:0*/ mptw_top__DOT__issue_stage_u__DOT__pipeline_register_generate__DOT__issue_backend_reg__DOT__reg_data_d[9];
         WData/*278:0*/ mptw_top__DOT__issue_stage_u__DOT__pipeline_register_generate__DOT__issue_reg__DOT__reg_data_q[9];
         WData/*278:0*/ mptw_top__DOT__issue_stage_u__DOT__pipeline_register_generate__DOT__issue_reg__DOT__reg_data_d[9];
         WData/*278:0*/ mptw_top__DOT__plb_lookup_stage_u__DOT__plb_lookup_reg_u__DOT__reg_data_q[9];
         WData/*278:0*/ mptw_top__DOT__plb_lookup_stage_u__DOT__plb_lookup_reg_u__DOT__reg_data_d[9];
-        WData/*278:0*/ mptw_top__DOT__retire_stage_u__DOT__issue_reg__DOT__reg_data_q[9];
-        WData/*278:0*/ mptw_top__DOT__retire_stage_u__DOT__issue_reg__DOT__reg_data_d[9];
+        WData/*278:0*/ mptw_top__DOT__retire_stage_u__DOT__to_issue_bus_data[9];
+        WData/*278:0*/ mptw_top__DOT__retire_stage_u__DOT__issue_pipeline_register_generate__DOT__issue_reg__DOT__reg_data_q[9];
+        WData/*278:0*/ mptw_top__DOT__retire_stage_u__DOT__issue_pipeline_register_generate__DOT__issue_reg__DOT__reg_data_d[9];
         WData/*278:0*/ mptw_top__DOT__commit_stage_u__DOT__parsing_reg__DOT__reg_data_q[9];
         WData/*278:0*/ mptw_top__DOT__commit_stage_u__DOT__parsing_reg__DOT__reg_data_d[9];
         WData/*278:0*/ mptw_top__DOT__gen_walking_stages__BRA__0__KET____DOT__walking_stage_u__DOT__parsing_stage_u__DOT__parsing_reg__DOT__reg_data_q[9];
@@ -172,6 +198,8 @@ VL_MODULE(Vmptw_top) {
         WData/*278:0*/ mptw_top__DOT__gen_walking_stages__BRA__0__KET____DOT__walking_stage_u__DOT__walking_reg__DOT__reg_data_q[9];
         WData/*278:0*/ mptw_top__DOT__gen_walking_stages__BRA__0__KET____DOT__walking_stage_u__DOT__walking_reg__DOT__reg_data_d[9];
         WData/*278:0*/ mptw_top__DOT__gen_walking_stages__BRA__1__KET____DOT__walking_stage_u__DOT__parsing_stage_u__DOT__parsing_reg__DOT__reg_data_q[9];
+    };
+    struct {
         WData/*278:0*/ mptw_top__DOT__gen_walking_stages__BRA__1__KET____DOT__walking_stage_u__DOT__parsing_stage_u__DOT__parsing_reg__DOT__reg_data_d[9];
         WData/*278:0*/ mptw_top__DOT__gen_walking_stages__BRA__1__KET____DOT__walking_stage_u__DOT__walking_reg__DOT__reg_data_q[9];
         WData/*278:0*/ mptw_top__DOT__gen_walking_stages__BRA__1__KET____DOT__walking_stage_u__DOT__walking_reg__DOT__reg_data_d[9];
@@ -187,6 +215,7 @@ VL_MODULE(Vmptw_top) {
         WData/*278:0*/ mptw_top__DOT__fetch_stage_u__DOT__output_transaction[9];
         WData/*278:0*/ mptw_top__DOT__plb_lookup_stage_u__DOT__post_local_transaction[9];
         WData/*71:0*/ mptw_top__DOT__plb_lookup_stage_u__DOT__plb_tag_req[3];
+        WData/*278:0*/ mptw_top__DOT__retire_stage_u__DOT__to_issue_transaction[9];
         WData/*278:0*/ mptw_top__DOT__commit_stage_u__DOT__output_transaction[9];
         QData/*63:0*/ mptw_top__DOT__commit_stage_u__DOT__base_phyisical_address;
         QData/*63:0*/ mptw_top__DOT__commit_stage_u__DOT__next_mpte_addr;
@@ -198,8 +227,6 @@ VL_MODULE(Vmptw_top) {
         QData/*63:0*/ mptw_top__DOT__gen_walking_stages__BRA__1__KET____DOT__walking_stage_u__DOT__parsing_stage_u__DOT__next_mpte_addr;
         WData/*278:0*/ mptw_top__DOT__gen_walking_stages__BRA__2__KET____DOT__walking_stage_u__DOT__parsing_stage_u__DOT__output_transaction[9];
         QData/*63:0*/ mptw_top__DOT__gen_walking_stages__BRA__2__KET____DOT__walking_stage_u__DOT__parsing_stage_u__DOT__base_phyisical_address;
-    };
-    struct {
         QData/*63:0*/ mptw_top__DOT__gen_walking_stages__BRA__2__KET____DOT__walking_stage_u__DOT__parsing_stage_u__DOT__next_mpte_addr;
         WData/*278:0*/ mptw_top__DOT__gen_walking_stages__BRA__3__KET____DOT__walking_stage_u__DOT__parsing_stage_u__DOT__output_transaction[9];
         QData/*63:0*/ mptw_top__DOT__gen_walking_stages__BRA__3__KET____DOT__walking_stage_u__DOT__parsing_stage_u__DOT__base_phyisical_address;
@@ -224,18 +251,19 @@ VL_MODULE(Vmptw_top) {
     CData/*0:0*/ __Vclklast__TOP__clk_i;
     CData/*0:0*/ __Vclklast__TOP__rst_ni;
     CData/*0:0*/ __Vchglast__TOP__mptw_top__DOT__plb_lookup_stage_u__DOT__local_to_reg_bus_ready;
+    CData/*0:0*/ __Vchglast__TOP__mptw_top__DOT__retire_stage_u__DOT__to_issue_bus_ready;
     CData/*0:0*/ __Vchglast__TOP__mptw_top__DOT__gen_walking_stages__BRA__0__KET____DOT__walking_stage_u__DOT__walking_to_pipe_ready;
     CData/*0:0*/ __Vchglast__TOP__mptw_top__DOT__gen_walking_stages__BRA__1__KET____DOT__walking_stage_u__DOT__walking_to_pipe_ready;
     CData/*0:0*/ __Vchglast__TOP__mptw_top__DOT__gen_walking_stages__BRA__2__KET____DOT__walking_stage_u__DOT__walking_to_pipe_ready;
     CData/*0:0*/ __Vchglast__TOP__mptw_top__DOT__gen_walking_stages__BRA__3__KET____DOT__walking_stage_u__DOT__walking_to_pipe_ready;
+    SData/*11:0*/ mptw_top__DOT__retire_stage_u__DOT__rob_fifo_u__DOT____Vlvbound1;
     CData/*0:0*/ mptw_top__DOT____Vcellinp__issue_stage_u__stage_master_ready[2];
     CData/*0:0*/ mptw_top__DOT____Vcellout__issue_stage_u__stage_master_valid[2];
     WData/*278:0*/ mptw_top__DOT____Vcellout__issue_stage_u__stage_master_data[2][9];
     CData/*0:0*/ mptw_top__DOT____Vcellout__issue_stage_u__stage_slave_ready[2];
     CData/*0:0*/ mptw_top__DOT____Vcellinp__issue_stage_u__stage_slave_valid[2];
     WData/*278:0*/ mptw_top__DOT____Vcellinp__issue_stage_u__stage_slave_data[2][9];
-    CData/*0:0*/ __Vchglast__TOP__mptw_top__DOT__issue_stage_master_ready[2];
-    CData/*0:0*/ __Vm_traceActivity[4];
+    CData/*0:0*/ __Vm_traceActivity[5];
     
     // INTERNAL VARIABLES
     // Internals; generally not touched by application code
@@ -290,6 +318,8 @@ VL_MODULE(Vmptw_top) {
     static void _initial__TOP__3(Vmptw_top__Syms* __restrict vlSymsp) VL_ATTR_COLD;
     static void _sequent__TOP__4(Vmptw_top__Syms* __restrict vlSymsp);
     static void _sequent__TOP__5(Vmptw_top__Syms* __restrict vlSymsp);
+    static void _sequent__TOP__8(Vmptw_top__Syms* __restrict vlSymsp);
+    static void _sequent__TOP__9(Vmptw_top__Syms* __restrict vlSymsp);
     static void _settle__TOP__1(Vmptw_top__Syms* __restrict vlSymsp) VL_ATTR_COLD;
     static void _settle__TOP__2(Vmptw_top__Syms* __restrict vlSymsp) VL_ATTR_COLD;
   private:

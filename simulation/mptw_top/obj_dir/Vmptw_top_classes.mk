@@ -25,13 +25,13 @@ VM_TRACE_FST_WRITER_THREAD = 0
 VM_CLASSES_FAST += \
 	Vmptw_top \
 	Vmptw_top___024unit \
-	Vmptw_top_memory_read_stage__pi6 \
+	Vmptw_top_memory_read_stage__pi7 \
 
 # Generated module classes, non-fast-path, compile with low/medium optimization
 VM_CLASSES_SLOW += \
 	Vmptw_top__Slow \
 	Vmptw_top___024unit__Slow \
-	Vmptw_top_memory_read_stage__pi6__Slow \
+	Vmptw_top_memory_read_stage__pi7__Slow \
 
 # Generated support classes, fast-path, compile with highest optimization
 VM_SUPPORT_FAST += \

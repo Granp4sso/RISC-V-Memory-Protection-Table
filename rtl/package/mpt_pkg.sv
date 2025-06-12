@@ -216,8 +216,11 @@
         // Transaction type is used as input for the MPT Walker
         // And propagated throughout the pipeline
 
+        localparam unsigned ROB_ID_SIZE = 12; 
+        typedef logic[ ROB_ID_SIZE - 1: 0 ] rob_id_size_t;
+
         typedef struct packed {
-            logic [11:0]        id;             // Transaction assigned ID (in the Issue Stage)
+            rob_id_size_t       id;             // Transaction assigned ID (in the Issue Stage)
             logic               completed;      // Transaction is ready to retire
             logic               valid;          // Transaction is valid (in the Fetch Stage)
             logic               access_error;   // Permissions match fail
