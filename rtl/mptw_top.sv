@@ -22,13 +22,14 @@ import mpt_pkg::*;
 
 module mptw_top #(
 
-    parameter unsigned NUM_STAGES                  = 3,                        // This depends on system mmpt
+    parameter unsigned NUM_STAGES                  = 4,                        // Four stages for SMMPT52
     parameter unsigned DATA_WIDTH                  = 64,
     parameter unsigned ADDR_WIDTH                  = 64,
     parameter unsigned PLB_STAGE_DEPTH             = 4,
     parameter unsigned PLB_TRANSACTION_DATA_WIDTH  = 64,                        // 8
     parameter unsigned PLB_TRANSACTION_ADDR_WIDTH  = 64,                        // $bits(plb_lookup_req_t)
-    parameter unsigned WALKING_STAGE_MEM_DEPTH     = PLB_STAGE_DEPTH
+    parameter unsigned WALKING_STAGE_MEM_DEPTH     = PLB_STAGE_DEPTH,
+    parameter unsigned REORDER_BUFFER_DEPTH        = 32
 
 ) (
     //////////////////
@@ -83,6 +84,7 @@ module mptw_top #(
     ////////////////////////////
 
     localparam fetch_stage_datawidth        = $bits(mptw_transaction_t);
+    localparam issue_stage_datawidth        = $bits(mptw_transaction_t);
     localparam plb_lookup_stage_datawidth   = $bits(mptw_transaction_t);
     localparam walking_stage_datawidth      = $bits(mptw_transaction_t);
 
@@ -105,11 +107,15 @@ module mptw_top #(
     // Bus Declaration //
     /////////////////////
 
-    `DECLARE_DATA_BUS( input_to_fetch       , fetch_stage_datawidth         );
-    `DECLARE_DATA_BUS( fetch_to_plb_lookup  , plb_lookup_stage_datawidth    );
-    `DECLARE_DATA_BUS( plb_lookup_to_walking   , walking_stage_datawidth    );
-    `DECLARE_DATA_BUS_ARRAY(walking_stage, NUM_STAGES + 1, walking_stage_datawidth);
-    `DECLARE_DATA_BUS( commit_to_output     , walking_stage_datawidth       );
+    `DECLARE_DATA_BUS       ( input_to_fetch            , fetch_stage_datawidth                         );
+    `DECLARE_DATA_BUS       ( fetch_to_issue            , issue_stage_datawidth                         );
+    `DECLARE_DATA_BUS       ( issue_to_backend          , issue_stage_datawidth                         );
+    `DECLARE_DATA_BUS       ( issue_to_plb_lookup       , plb_lookup_stage_datawidth                    );
+    `DECLARE_DATA_BUS       ( plb_lookup_to_walking     , walking_stage_datawidth                       );
+    `DECLARE_DATA_BUS_ARRAY ( walking_stage             , walking_stage_datawidth   , NUM_STAGES + 1    );
+    `DECLARE_DATA_BUS       ( backend_to_issue          , issue_stage_datawidth                         );
+    `DECLARE_DATA_BUS       ( retire_to_commit          , walking_stage_datawidth                       );
+    `DECLARE_DATA_BUS       ( commit_to_output          , walking_stage_datawidth                       );
 
     // Here declare the number of walking stages
 
@@ -118,16 +124,19 @@ module mptw_top #(
     `DECLARE_STATUS_BUS( plb_lookup_pipe_status );
 
     //////////////////////////////////////////////////////
-    //    ___    _      _      ___ _                    //
-    //   | __|__| |_ __| |_   / __| |_ __ _ __ _ ___    //
-    //   | _/ -_)  _/ _| ' \  \__ \  _/ _` / _` / -_)   //
-    //   |_|\___|\__\__|_||_| |___/\__\__,_\__, \___|   //
-    //                                     |___/        //
+    //    _____                _                 _      //
+    //   |  ___| __ ___  _ __ | |_ ___ _ __   __| |     //
+    //   | |_ | '__/ _ \| '_ \| __/ _ \ '_ \ / _` |     //
+    //   |  _|| | | (_) | | | | ||  __/ | | | (_| |     //
+    //   |_|  |_|  \___/|_| |_|\__\___|_| |_|\__,_|     //
+    //                                                  //
     //////////////////////////////////////////////////////
 
-    // Here starts the MPTW frontend. The fronted selects a transaction, checks if it 
-    // is valid and then lookup into the PLB (if any). The goal of the frontend is to
-    // decide wether a transaction has to be walked or not.
+    // Here starts the MPTW frontend. The fronted selects a transaction and checks if it 
+    // is valid. If it is, it communicates with the Backend to get a free ID for the current
+    // transaction. Finally, it looks if that transaction is inside the PLB.
+    // If it is, the transaction is already marked as completed, and pushed into the Backend.
+    // Otherwise walking must be performed for that transaction.
 
     //////////////////////////
     // Input Handling logic //
@@ -137,29 +146,34 @@ module mptw_top #(
     assign input_transaction.mmpt           = mmpt_reg_i;
     assign input_transaction.spa            = spa_i;
     assign input_transaction.access_type    = access_type_i;
+
+    // Inintially, we assume a transaction must be walked
     assign input_transaction.walking        = MPT_WALKING_DO;
+    assign input_transaction.valid          = mptw_transaction_valid_i; 
+    assign input_transaction.completed      = '0;
+    assign input_transaction.id             = '1; // ID 0xfff is reserved for non-issued transactions
+    assign input_transaction.rpa            = '1;
+    assign input_transaction.mpte           = '0;
+    assign input_transaction.format_error   = NO_ERROR ;
+    assign input_transaction.access_error   = '0 ;
 
-    assign input_transaction.rpa = '0;
-    assign input_transaction.valid = mptw_transaction_valid_i; 
-    assign input_transaction.mpte = '0;
-    assign input_transaction.format_error = NO_ERROR ;
-    assign input_transaction.access_error = '0 ;
+    // Connect to the fetch stage
+    assign input_to_fetch_data              = input_transaction;
+    assign input_to_fetch_valid             = mptw_transaction_valid_i;
+    assign mptw_ready_o                     = input_to_fetch_ready;     // TODO: make this depending on the whole pipeline conditions
 
-    // Build `input_to_fetch` signal
-    assign input_to_fetch_data  = input_transaction;
-    assign input_to_fetch_valid = mptw_transaction_valid_i;
-
-    // TODO: make this depending on the whole pipeline conditions
-    assign mptw_ready_o = input_to_fetch_ready; 
-
-    //////////////////////////
-    // Fetch Stage Instance //
-    //////////////////////////
+    //////////////////////////////////////////////////////
+    //    ___    _      _      ___ _                    //
+    //   | __|__| |_ __| |_   / __| |_ __ _ __ _ ___    //
+    //   | _/ -_)  _/ _| ' \  \__ \  _/ _` / _` / -_)   //
+    //   |_|\___|\__\__|_||_| |___/\__\__,_\__, \___|   //
+    //                                     |___/        //
+    //////////////////////////////////////////////////////
 
     fetch_stage # (
 
         .PIPELINE_SLAVE_DATA_WIDTH      ( fetch_stage_datawidth         ),
-        .PIPELINE_MASTER_DATA_WIDTH     ( plb_lookup_stage_datawidth    )
+        .PIPELINE_MASTER_DATA_WIDTH     ( issue_stage_datawidth         )
 
     ) fetch_stage_u (
 
@@ -167,10 +181,45 @@ module mptw_top #(
         .rst_ni                 ( rst_ni                            ),
 
         `MAP_DATA_PORT          ( stage_slave,  input_to_fetch      ),
-        `MAP_DATA_PORT          ( stage_master, fetch_to_plb_lookup ),
+        `MAP_DATA_PORT          ( stage_master, fetch_to_issue      ),
         `SINK_SLAVE_CTRL_PORT   ( stage_ctrl                        ),
 
         .exception_cause_o      ( fetch_exception_cause             )
+    );
+
+    //////////////////////////////////////////////////////
+    //    ___                  ___ _                    //
+    //   |_ _|_______  _ ___  / __| |_ __ _ __ _ ___    //
+    //    | |(_-<_-< || / -_) \__ \  _/ _` / _` / -_)   //
+    //   |___/__/__/\_,_\___| |___/\__\__,_\__, \___|   //
+    //                                     |___/        //
+    //////////////////////////////////////////////////////
+
+    // The issue stage requests an ID from the Backend for the current
+    // transactions, and move forward to the PLB lookup stage once
+    // the ID is assigned
+
+    `DECLARE_DATA_BUS_ARRAY( issue_stage_slave, issue_stage_datawidth, 2);
+    `DECLARE_DATA_BUS_ARRAY( issue_stage_master, issue_stage_datawidth, 2);
+
+    // Concat Master ports to Issue Slave Ports: Backend to Issue (1), Fetch to Issue (0)
+    `CONCAT_MASTER_DATA_ARRAY_2( issue_stage_slave, backend_to_issue, fetch_to_issue );
+    // Concat Slave ports to Master Ports: Issue to PLB Lookup (1), Issue to Backend (0)
+    `CONCAT_SLAVE_DATA_ARRAY_2( issue_stage_master, issue_to_plb_lookup, issue_to_backend );
+
+    issue_stage # (
+
+        .PIPELINE_SLAVE_DATA_WIDTH      ( issue_stage_datawidth         ),
+        .PIPELINE_MASTER_DATA_WIDTH     ( plb_lookup_stage_datawidth    ),
+        .PIPELINE_PASSTHROUGH           ( 1 ) // For now Passthrough
+
+    ) issue_stage_u (
+
+        .clk_i                  ( clk_i                             ),
+        .rst_ni                 ( rst_ni                            ),
+
+        `MAP_DATA_PORT          ( stage_slave,  issue_stage_slave      ),
+        `MAP_DATA_PORT          ( stage_master, issue_stage_master      )
     );
 
     //////////////////////////////////////////////////////////////////////////////
@@ -193,7 +242,7 @@ module mptw_top #(
         .rst_ni                 ( rst_ni                                    ),
 
         // Pipeline Ports
-        `MAP_DATA_PORT          ( stage_slave  , fetch_to_plb_lookup        ),
+        `MAP_DATA_PORT          ( stage_slave  , issue_to_plb_lookup        ),
         `MAP_DATA_PORT          ( stage_master , plb_lookup_to_walking      ),
         `SINK_SLAVE_CTRL_PORT   ( plb_lookup_ctrl                           ),
 
@@ -209,6 +258,15 @@ module mptw_top #(
         .plb_master_mem_error    
 
     ); 
+
+    //////////////////////////////////////////
+    //    __  __ _     _                _   //
+    //   |  \/  (_) __| | ___ _ __   __| |  //
+    //   | |\/| | |/ _` |/ _ \ '_ \ / _` |  //
+    //   | |  | | | (_| |  __/ | | | (_| |  //
+    //   |_|  |_|_|\__,_|\___|_| |_|\__,_|  //
+    //                                      //
+    //////////////////////////////////////////
 
     //////////////////////////////////////////////////////////////////////
     //   __      __    _ _   _             ___ _                        //
@@ -262,7 +320,45 @@ module mptw_top #(
 
         end
     endgenerate
-    
+
+    //////////////////////////////////////////////////
+    //    ____             _                  _     //
+    //   | __ )  __ _  ___| | _____ _ __   __| |    //
+    //   |  _ \ / _` |/ __| |/ / _ \ '_ \ / _` |    //
+    //   | |_) | (_| | (__|   <  __/ | | | (_| |    //
+    //   |____/ \__,_|\___|_|\_\___|_| |_|\__,_|    //  
+    //                                              //
+    //////////////////////////////////////////////////
+
+    //////////////////////////////////////////////////////////
+    //    ___     _   _           ___ _                     //
+    //   | _ \___| |_(_)_ _ ___  / __| |_ __ _ __ _ ___     //
+    //   |   / -_)  _| | '_/ -_) \__ \  _/ _` / _` / -_)    //
+    //   |_|_\___|\__|_|_| \___| |___/\__\__,_\__, \___|    //
+    //                                        |___/         //
+    //////////////////////////////////////////////////////////
+
+    retire_stage # (
+
+        .PIPELINE_SLAVE_DATA_WIDTH      ( issue_stage_datawidth         ),
+        .PIPELINE_MASTER_DATA_WIDTH     ( plb_lookup_stage_datawidth    ),
+        .REORDER_BUFFER_DEPTH           ( REORDER_BUFFER_DEPTH          )
+
+    ) retire_stage_u (
+
+        .clk_i                  ( clk_i                             ),
+        .rst_ni                 ( rst_ni                            ),
+
+        // Master/Slave interface to the Issue Stage
+        `MAP_DATA_PORT          ( issue_stage_slave,  issue_to_backend  ),
+        `MAP_DATA_PORT          ( issue_stage_master, backend_to_issue  ),
+
+        // Slave Interfaces to the PLB/Walking stages
+
+        // Master interface to the Commit Stage
+        `MAP_DATA_PORT          ( commit_stage_master, retire_to_commit )
+    );
+
     //////////////////////////////////////////////////////////////
     //     ___                 _ _     ___ _                    //
     //    / __|___ _ __  _ __ (_) |_  / __| |_ __ _ __ _ ___    //

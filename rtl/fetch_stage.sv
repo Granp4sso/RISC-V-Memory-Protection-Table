@@ -86,9 +86,13 @@ module fetch_stage #(
     // of exception generation
     assign stage_active = stage_slave_valid && input_transaction.valid;
 
-    ////////////
-    // Logics //
-    ////////////
+    //////////////////////////////////////////////////////////////
+    //     ___ _           _     ___                   _        //
+    //    / __| |_  ___ __| |__ | __|__ _ _ _ __  __ _| |_      //
+    //   | (__| ' \/ -_) _| / / | _/ _ \ '_| '  \/ _` |  _|     //  
+    //    \___|_||_\___\__|_\_\ |_|\___/_| |_|_|_\__,_|\__|     //
+    //                                                          //
+    //////////////////////////////////////////////////////////////
 
     assign mmpt = input_transaction.mmpt;
     assign spa = input_transaction.spa;
@@ -136,6 +140,8 @@ module fetch_stage #(
     end
 
     // Part of the transaction stay unchanged
+    assign output_transaction.completed     = input_transaction.completed;
+    assign output_transaction.id            = input_transaction.id;
     assign output_transaction.mmpt          = input_transaction.mmpt;
     assign output_transaction.spa           = input_transaction.spa;
     assign output_transaction.access_type   = input_transaction.access_type;

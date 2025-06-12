@@ -302,6 +302,8 @@ module memory_read_stage #(
     );
 
     // The response data can be saved into the current transaction
+    assign grant_fifo_to_valid_fifo.id            = grant_fifo_data_out.id;
+    assign grant_fifo_to_valid_fifo.completed     = grant_fifo_data_out.completed;
     assign grant_fifo_to_valid_fifo.valid         = grant_fifo_data_out.valid;
     assign grant_fifo_to_valid_fifo.access_error  = grant_fifo_data_out.access_error;
     assign grant_fifo_to_valid_fifo.format_error  = grant_fifo_data_out.format_error;

@@ -288,6 +288,8 @@ module parsing_stage #(
     ////////////////////////////////
 
     // Part of the transaction stay unchanged
+    assign output_transaction.id    = input_transaction.id;
+    assign output_transaction.completed = input_transaction.completed;
     assign output_transaction.mmpt  = input_transaction.mmpt;
     assign output_transaction.spa   = input_transaction.spa;
     assign output_transaction.access_type  = input_transaction.access_type;
