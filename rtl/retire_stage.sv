@@ -9,14 +9,13 @@
 
 // TODO: Handle exception/flush/stall logic
 
-/* verilator lint_off IMPORTSTAR */
-import mpt_pkg::*;
-/* verilator lint_on IMPORTSTAR */
-
+// verilator lint_off IMPORTSTAR
 // verilator lint_off PINCONNECTEMPTY
 // verilator lint_off UNDRIVEN
 // verilator lint_off WIDTH
 // verilator lint_off UNOPTFLAT
+
+import mpt_pkg::*;
 
 // Import headers
 `include "pipelining.svh" 
@@ -24,7 +23,7 @@ import mpt_pkg::*;
 module retire_stage #(
     parameter unsigned PIPELINE_SLAVE_DATA_WIDTH    = 32,
     parameter unsigned PIPELINE_MASTER_DATA_WIDTH   = 32,
-    parameter unsigned REORDER_BUFFER_DEPTH         = 32,
+    parameter unsigned REORDER_BUFFER_DEPTH         = 32,   // Never exceed 2**mpt_pkg::ROB_ID_SIZE
     parameter unsigned RETIRE_PORT_NUM              = 4,
     parameter unsigned PIPELINE_PASSTHROUGH         = 0   
 ) (
@@ -37,6 +36,7 @@ module retire_stage #(
     `DEFINE_MASTER_DATA_PORT(issue_stage_master, PIPELINE_MASTER_DATA_WIDTH),
 
     // Slave Interfaces to the PLB/Walking stages
+    `DEFINE_SLAVE_DATA_PORT_ARRAY(retire_stage_slave, PIPELINE_SLAVE_DATA_WIDTH, RETIRE_PORT_NUM),
 
     // Master interface to the Commit Stage
     `DEFINE_MASTER_DATA_PORT(commit_stage_master, PIPELINE_MASTER_DATA_WIDTH)
@@ -50,18 +50,19 @@ module retire_stage #(
     //         |___/                    //
     //////////////////////////////////////
 
+    // This assignment is required because we use ID = 2**(mpt_pkg::ROB_ID_SIZE) - 1 as the NON-valid ID.
+    // Therefore, the maximum usable size for the ROB is actually 2**(mpt_pkg::ROB_ID_SIZE) - 1,
+    // meaning the last valid ID being 2**(mpt_pkg::ROB_ID_SIZE) - 2.
+    localparam unsigned REORDER_BUFFER_LOCAL_DEPTH =    ( REORDER_BUFFER_DEPTH == ( 2**(mpt_pkg::ROB_ID_SIZE) - 1 ) ) ?
+                                                        ( REORDER_BUFFER_DEPTH - 1 ) :
+                                                        ( REORDER_BUFFER_DEPTH ) ;
+
+    // State Machine Enumerations
     typedef enum logic[1:0] { 
         ROB_PUSH_AVAILABLE,
         ROB_PUSH_FULL,
         ROB_PUSH_FLUSH
     } rob_push_status_e;
-
-    typedef enum logic[1:0] { 
-        ROB_MEM_READ,
-        ROB_MEM_WRITE,
-        ROB_MEM_CLEAR
-    } rob_mem_op_e;
-
 
     /////////////////////////
     // Signals Declaration //
@@ -70,6 +71,9 @@ module retire_stage #(
     // Issue Stage
     mptw_transaction_t from_issue_transaction;
     mptw_transaction_t to_issue_transaction;
+
+    // Retire Ports
+    mptw_transaction_t retire_transaction_bus[RETIRE_PORT_NUM];
 
     // Push Proces
     rob_push_status_e rob_push_status_q, rob_push_status_d;
@@ -90,18 +94,20 @@ module retire_stage #(
     logic [REORDER_BUFFER_DEPTH - 1 : 0][$bits(mptw_transaction_t) - 1 : 0] rob_memory_q[RETIRE_PORT_NUM];
     logic [REORDER_BUFFER_DEPTH - 1 : 0][$bits(mptw_transaction_t) - 1 : 0] rob_memory_d[RETIRE_PORT_NUM];
     // Addressing the ROB memories
-    logic [$clog2(REORDER_BUFFER_DEPTH) - 1] rob_memory_waddr[RETIRE_PORT_NUM];
-    logic [$clog2(REORDER_BUFFER_DEPTH) - 1] rob_memory_raddr[RETIRE_PORT_NUM];
+    logic [$clog2(REORDER_BUFFER_DEPTH) - 1 : 0] rob_memory_waddr[RETIRE_PORT_NUM];
+    logic [$clog2(REORDER_BUFFER_DEPTH) - 1 : 0] rob_memory_raddr[RETIRE_PORT_NUM];
     // Data from/to ROB memories
     logic [$bits(mptw_transaction_t) - 1 : 0] rob_memory_wdata[RETIRE_PORT_NUM];
     logic [$bits(mptw_transaction_t) - 1 : 0] rob_memory_rdata[RETIRE_PORT_NUM];
+    // Clear ROB memories
+    logic rob_memory_clear[RETIRE_PORT_NUM];
 
     /////////////////////
     // Bus Declaration //
     /////////////////////
 
-    `DECLARE_DATA_BUS( from_issue_bus   , PIPELINE_SLAVE_DATA_WIDTH );
-    `DECLARE_DATA_BUS( to_issue_bus     , PIPELINE_SLAVE_DATA_WIDTH );
+    `DECLARE_DATA_BUS( from_issue_bus   , PIPELINE_SLAVE_DATA_WIDTH                     );
+    `DECLARE_DATA_BUS( to_issue_bus     , PIPELINE_SLAVE_DATA_WIDTH                     );
 
     //////////////////////////////////////////////////////
     //    _   _                    _   _                //
@@ -112,7 +118,14 @@ module retire_stage #(
     //////////////////////////////////////////////////////
 
     `ASSIGN_DATA_BUS( from_issue_bus, issue_stage_slave );
+
     assign from_issue_transaction = from_issue_bus_data;
+
+    generate
+        for (genvar i = 0; i < RETIRE_PORT_NUM; i = i + 1) begin : gen_assign_retire_bus
+            assign retire_transaction_bus[i] = retire_stage_slave_data;
+        end
+    endgenerate
 
     //////////////////////////////////////////////////
     //    ___         _      _              _       //
@@ -235,10 +248,11 @@ module retire_stage #(
     //                                                              //
     //////////////////////////////////////////////////////////////////
 
-    // The ROB is implemented as a FIFO. It enques transaction IDs when they
-    // are issued into the pipeline. At the same time, it reads from the
-    // ROB memories; if any of the memories has a completed transaction
-    // At the head value, then a popped happens.
+    // The ROB is implemented as a FIFO-Registers combination.
+    // It enques transaction IDs when theya re issued into the pipeline.
+    // At the same time, it reads from the ROB memories; 
+    // if any of the memories has a completed transaction
+    // At the head value, then a pop happens.
 
     //////////////
     // ROB FIFO //
@@ -269,44 +283,52 @@ module retire_stage #(
 
     // ROB memories are implemented as an addressable register file.
     // The allowed operations are Write, Read and Clear.
-    // The number of ROB entries supported equals the ROB_PORT_NUM.
+    // The number of ROB Memories supported equals the ROB_PORT_NUM.
     // ROB Memories are built using ROB Entries, which are as many
     // As the ROB_DEPTH, and store an entire transaction
 
     generate
         for (genvar i = 0; i < RETIRE_PORT_NUM; i = i + 1) begin : gen_rob_memory
 
+            // The ROB is ready whenever it can receive a WRITE operation (always)
+            // Every time a valid WRITE is available on the retire port it is
+            // Propagated.
+            assign retire_stage_slave_ready[i] = 1'b1;
+            // waddr and wdata comes from the retire_data ports.
+            assign rob_memory_wdata[i] = retire_transaction_bus[i];
+            assign rob_memory_waddr[i] = retire_transaction_bus[i].id;
 
             // Combinatorial
-            always_comb begin
+            always_comb begin : rob_memory_logic 
                 // By default, do not update the selected entry
-                rob_memory_d[i][rob_memory_waddr] = rob_memory_q[i][rob_memory_waddr];
+                rob_memory_d[i][rob_memory_waddr[i]] = rob_memory_q[i][rob_memory_waddr[i]];
                 // If a valid retire request arrives, update the entry
-                if( retire_transaction_bus_valid[i] ) begin
-                    rob_memory_d[i][rob_memory_waddr] = rob_memory_wdata[i];
+                // NOTE: an ID of all '1 (e.g. 0xfff) is not a valid one
+                if( retire_stage_slave_valid[i] && ( rob_memory_waddr[i] != '1 ) ) begin
+                    rob_memory_d[i][rob_memory_waddr[i]] = rob_memory_wdata[i];
                 end
                 // Always read whatevere the top of the FIFO says
-                rob_memory_rdata[i] = rob_memory_d[i][rob_memory_raddr];
-                if( rob_memory_clean[i] ) begin
-                    // Here zero the register. We are assuming 
+                rob_memory_rdata[i] = rob_memory_q[i][rob_memory_raddr[i]];
+                if( rob_memory_clear[i] ) begin
+                    // Zero the register. We are assuming 
                     // no CLEAR and WRITE operations are happening at
                     // the same time on the same register because 
                     // WRITEs are performed only to retire and CLEARs
                     // are only performed on retired transactions
-                    rob_memory_d[i][rob_memory_waddr] = '0;
+                    rob_memory_d[i][rob_memory_waddr[i]] = '0;
                 end
             end
 
             // Sequential
-            always_ff @(posedge clk_i) begin
+            // verilator lint_off WIDTHCONCAT
+            always_ff @(posedge clk_i) begin : rob_memory_reg
                 if ( ~rst_ni ) begin
                     rob_memory_q[i] <= '0;
                 end else begin
                     rob_memory_q[i] <= rob_memory_d[i];
                 end
             end
-
-
+            // verilator lint_on WIDTHCONCAT
         end
     endgenerate
 
@@ -334,3 +356,4 @@ endmodule : retire_stage
 // verilator lint_on UNDRIVEN
 // verilator lint_on WIDTH
 // verilator lint_on UNOPTFLAT
+// verilator lint_on IMPORTSTAR

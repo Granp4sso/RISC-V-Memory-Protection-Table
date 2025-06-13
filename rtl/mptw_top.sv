@@ -115,11 +115,11 @@ module mptw_top #(
     `DECLARE_DATA_BUS_ARRAY ( walking_stage             , walking_stage_datawidth   , NUM_STAGES + 1    );
     `DECLARE_DATA_BUS       ( backend_to_issue          , issue_stage_datawidth                         );
     `DECLARE_DATA_BUS       ( retire_to_commit          , walking_stage_datawidth                       );
+    `DECLARE_DATA_BUS_ARRAY ( walking_to_retire         , walking_stage_datawidth   , NUM_STAGES + 1    );
+
     `DECLARE_DATA_BUS       ( commit_to_output          , walking_stage_datawidth                       );
 
-    // Here declare the number of walking stages
-
-
+    // Control and Status BUS
     `DECLARE_STATUS_BUS( fetch_pipe_status      );
     `DECLARE_STATUS_BUS( plb_lookup_pipe_status );
 
@@ -211,7 +211,7 @@ module mptw_top #(
 
         .PIPELINE_SLAVE_DATA_WIDTH      ( issue_stage_datawidth         ),
         .PIPELINE_MASTER_DATA_WIDTH     ( plb_lookup_stage_datawidth    ),
-        .PIPELINE_PASSTHROUGH           ( 1                             ) 
+        .PIPELINE_PASSTHROUGH           ( 0                             ) 
 
     ) issue_stage_u (
 
@@ -219,7 +219,7 @@ module mptw_top #(
         .rst_ni                 ( rst_ni                            ),
 
         `MAP_DATA_PORT          ( stage_slave,  issue_stage_slave      ),
-        `MAP_DATA_PORT          ( stage_master, issue_stage_master      )
+        `MAP_DATA_PORT          ( stage_master, issue_stage_master     )
     );
 
     //////////////////////////////////////////////////////////////////////////////
@@ -258,6 +258,14 @@ module mptw_top #(
         .plb_master_mem_error    
 
     ); 
+
+    ////////////////////////
+    // Retire Multiplexer //
+    ////////////////////////
+
+    // PLB Lookup retire port is port 0
+
+    // TODO
 
     //////////////////////////////////////////
     //    __  __ _     _                _   //
@@ -318,6 +326,16 @@ module mptw_top #(
 
             ); 
 
+            ////////////////////////
+            // Retire Multiplexer //
+            ////////////////////////
+
+            // The first walking stage is never producing a complete transaction because
+            // Such a choice is taken by the parsing stage. However the first parsing stage
+            // just builds the first root-MPT Entry address. Only from the second onward
+            // The complete bit might be filled
+
+            // TODO
         end
     endgenerate
 
@@ -347,6 +365,13 @@ module mptw_top #(
 
     ); 
 
+    ///////////////////////
+    // Retire Forwarding //
+    ///////////////////////
+
+    // Here there is no actual multiplexer; data going out from Last Parsing Stage
+    // Is always meant to go to retire as this is the last stage
+
     //////////////////////////////////////////////////
     //    ____             _                  _     //
     //   | __ )  __ _  ___| | _____ _ __   __| |    //
@@ -364,13 +389,30 @@ module mptw_top #(
     //                                        |___/         //
     //////////////////////////////////////////////////////////
 
+    /////////////////////
+    // Concatenate Bus //
+    /////////////////////
+
+    // TODO: use SMMTP43, SMMTP52, SMMTP64
+    if( NUM_STAGES == 1 + 3 ) begin
+        
+    end else if( NUM_STAGES == 1 + 4 ) begin
+
+    end else begin
+
+    end
+
+    ///////////////////////////
+    // Retire Stage Instance //
+    ///////////////////////////
+
     retire_stage # (
 
         .PIPELINE_SLAVE_DATA_WIDTH      ( issue_stage_datawidth         ),
         .PIPELINE_MASTER_DATA_WIDTH     ( plb_lookup_stage_datawidth    ),
         .REORDER_BUFFER_DEPTH           ( REORDER_BUFFER_DEPTH          ),
         .RETIRE_PORT_NUM                ( 1 + NUM_STAGES                ),
-        .PIPELINE_PASSTHROUGH           ( 1                             ) 
+        .PIPELINE_PASSTHROUGH           ( 0                             ) 
 
     ) retire_stage_u (
 
@@ -382,7 +424,9 @@ module mptw_top #(
         `MAP_DATA_PORT          ( issue_stage_master, backend_to_issue  ),
 
         // Slave Interfaces to the PLB/Walking stages
-
+        .retire_stage_slave_data ( ),
+        .retire_stage_slave_valid ( ),
+        .retire_stage_slave_ready ( ),
         // Master interface to the Commit Stage
         `MAP_DATA_PORT          ( commit_stage_master, retire_to_commit )
     );
