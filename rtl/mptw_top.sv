@@ -439,7 +439,7 @@ module mptw_top #(
     // Retire Stage Instance //
     ///////////////////////////
 
-    if( REORDER_BUFFER_ENABLE ) begin
+    if( REORDER_BUFFER_ENABLE ) begin: retire_stage_gen
         retire_stage # (
 
             .PIPELINE_SLAVE_DATA_WIDTH      ( issue_stage_datawidth         ),

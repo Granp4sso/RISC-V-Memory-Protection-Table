@@ -35,16 +35,6 @@
 # Verilator
 *.vcd
 
-# Build artifacts
-simulation/obj_dir/
-simulation/waves/*
-simulation/logfile
-simulation/simulation_output_rv32.csv
-simulation/simulation_output_rv64.csv
-simulation/test_cases_results_rv64.csv
-simulation/test_cases_rv32.csv
-simulation/test_cases_rv64.csv
-
 
 # VS Code settings
 .vscode/

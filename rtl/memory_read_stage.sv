@@ -152,8 +152,7 @@ module memory_read_stage #(
     // A transaction is accepted only if we can guarantee for it to be
     // entirely served. It means that there must be enough space in
     // both space combined to accomodate all possible transaction movements
-    assign stage_usage = ( {1'b0, grant_fifo_usage} /*+ {2'b0, grant_fifo_push} - {2'b0, grant_fifo_pop}*/ ) 
-                       + ( {1'b0, valid_fifo_usage} /*+ {2'b0, valid_fifo_push} - {2'b0, valid_fifo_pop}*/ );
+    assign stage_usage = ( {1'b0, grant_fifo_usage}  )  + ( {1'b0, valid_fifo_usage}  );
 
     /////////
     // FSM //
@@ -167,20 +166,22 @@ module memory_read_stage #(
 
     always_comb begin
 
+        // By default, no memory transaction is issued
+        memory_master_mem_req   = '0;
+        memory_master_mem_addr  = '0;
+        req_bus_ready           = 1'b0;
+        grant_fifo_push         = '0;
+        grant_fifo_status_d     = GNT_IDLE;
+
         case(grant_fifo_status_q)
             // No transaction is waiting for a Grant
             GNT_IDLE: begin
-                memory_master_mem_req = '0;
-                memory_master_mem_addr = '0;
-                grant_fifo_push = '0;
-                req_bus_ready = 1'b0;
-                grant_fifo_status_d = GNT_IDLE;
                 if( req_bus_valid && ( stage_usage < TRANSACTION_FIFO_DEPTH && ~grant_fifo_full && ~valid_fifo_full ) ) begin
                     // If the current transaction requires a walk
                     // Perform the memory protocol
                     if( grant_do_walk ) begin
-                        memory_master_mem_req = 1'b1;
-                        memory_master_mem_addr = req_to_grant_fifo.spa;
+                        memory_master_mem_req   = 1'b1;
+                        memory_master_mem_addr  = req_to_grant_fifo.spa;
                         // The grant signal is not necessarily an answer to a request.
                         // The memory could always keep the grant signal high
                         if( memory_master_mem_gnt ) begin
@@ -212,8 +213,6 @@ module memory_read_stage #(
             // A transaction is waiting for the grant signal
             GNT_WAIT_FOR_GRANT: begin
 
-                grant_fifo_push = 1'b0;
-                req_bus_ready = 1'b0;
                 memory_master_mem_req = req_bus_valid;
                 memory_master_mem_addr = req_to_grant_fifo.spa;
 
@@ -238,9 +237,6 @@ module memory_read_stage #(
             // To put the state in ready
             GNT_WAIT_FOR_USAGE: begin
                 // When here, ensure no other memory transaction is initiated
-                memory_master_mem_req = '0;
-                memory_master_mem_addr = '0;
-                grant_fifo_push = '0;
                 if( stage_usage < TRANSACTION_FIFO_DEPTH ) begin
                     // As soon as resources free
                     req_bus_ready = 1'b1;
@@ -251,14 +247,7 @@ module memory_read_stage #(
                 end
             end
 
-            default begin
-                memory_master_mem_req = '0;
-                memory_master_mem_addr = '0;
-                grant_fifo_push = '0;
-                req_bus_ready = '0;
-                grant_fifo_status_d = GNT_IDLE;
-            end
-
+            default begin end
         endcase
 
     end
@@ -340,21 +329,20 @@ module memory_read_stage #(
     // signal is high for exactly one clock cycle.
     always_comb begin
 
-        valid_do_walk = 1'b1;
-        valid_counter_d = valid_counter_q;
+        valid_do_walk           = 1'b1;
+        valid_counter_d         = valid_counter_q;
 
-        case(valid_fifo_status_q)
+        grant_fifo_pop          = '0;
+        valid_fifo_push         = '0;
+        valid_fifo_pop          = '0;
+        valid_fifo_to_master    = '0;
+        stage_master_valid      = '0;
+        valid_fifo_status_d     = VALID_IDLE;
+
+        case( valid_fifo_status_q )
             // We are in the VALID_IDLE state as long as no transaction
             // is inside the the stage
             VALID_IDLE: begin
-
-                grant_fifo_pop = '0;
-                valid_fifo_push = '0;
-                valid_fifo_pop = '0;
-                valid_fifo_to_master = '0;
-                stage_master_valid = '0;
-                valid_fifo_status_d = VALID_IDLE;
-
                 if( grant_fifo_push && grant_fifo_empty ) begin
                     // When the first transaction is granted,
                     // We move to the passthrough stage
@@ -366,22 +354,18 @@ module memory_read_stage #(
                 // We are in Passthrough as long as the next stage is ready.
                 // It means that transactions can be sent to the output straight
                 // from grant fifo
-                grant_fifo_pop = '0;
-                valid_fifo_push = '0;
-                valid_fifo_pop = '0;
-                valid_fifo_to_master = '0;
-                stage_master_valid = '0;
                 valid_fifo_status_d = VALID_PASSTHROUGH;
 
-                // This tells us if the transaction is waiting for a valid or not
+                // Check if the current transaction in the grant fifo is
+                // was walking ( i.e. it is waiting for a valid now? )
                 valid_do_walk = ( grant_fifo_data_out.walking == MPT_WALKING_DO );
 
                 if( valid_do_walk ) begin
                     // The transaction is waiting for a valid
                     if( memory_master_mem_valid || ( valid_counter_q != '0 ) ) begin
+                        // A valid signal arrived, or one was
+                        // Buffered before ( therefore the valid counter is used )
                         if( ~valid_fifo_full && ~grant_fifo_empty ) begin
-                            // A valid signal arrived, or one was
-                            // Buffered before
                             grant_fifo_pop = ( ~grant_fifo_empty ) ? 1'b1 : '0 ;
                             if( ~stage_master_ready && ~valid_fifo_full ) begin
                                 // The next stage is not ready. We need to buffer
@@ -434,11 +418,6 @@ module memory_read_stage #(
             VALID_BUFFER: begin
                 // In the buffering stage, all valid transactions are buffered
                 // Untill the next stage is ready
-                grant_fifo_pop = '0;
-                valid_fifo_push = '0;
-                valid_fifo_pop = '0;
-                valid_fifo_to_master = '0;
-                stage_master_valid = '0;
                 valid_fifo_status_d = VALID_BUFFER;
 
                 // This tells us if the transaction on top of the valid buffer is valid or not
@@ -492,14 +471,7 @@ module memory_read_stage #(
                 end          
             end
 
-            default begin
-                grant_fifo_pop = '0;
-                valid_fifo_push = '0;
-                valid_fifo_pop = '0;
-                valid_fifo_to_master = '0;
-                stage_master_valid = '0;
-                valid_fifo_status_d = VALID_IDLE;
-            end
+            default begin end
 
         endcase
 
