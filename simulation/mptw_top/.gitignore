@@ -1,0 +1,4 @@
+
+# Build artifacts
+obj_dir/
+waves/*
