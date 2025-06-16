@@ -125,6 +125,9 @@ module plb_lookup_stage #(
     // Currently, we assume the PLB to use the SRAM protocol, and packs the
     // HIT or MISS into the data field for a transaction
 
+    // A transaction is completed if we had a hit
+    assign post_local_transaction.completed     = plb_hit;
+    assign post_local_transaction.id            = pre_local_transaction.id;
     assign post_local_transaction.valid         = pre_local_transaction.valid;
     assign post_local_transaction.access_error  = pre_local_transaction.access_error;
     assign post_local_transaction.format_error  = pre_local_transaction.format_error;

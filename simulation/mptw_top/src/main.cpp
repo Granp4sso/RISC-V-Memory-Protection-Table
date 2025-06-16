@@ -6,18 +6,18 @@
 #include "sim.hpp"
 
 #define PLB_PORTS_NUM 1
-#define MEM_PORTS_NUM 3
+#define MEM_PORTS_NUM 4
 
 #define BACK_TO_BACK 0
 
-#define TRANSACTION_NUM 16
+#define TRANSACTION_NUM 64
 #define TRANSACTION_RANDOM_FACTOR 1
 #define PLB_GRANT_RANDOM_FACTOR 1
 #define PLB_VALID_RANDOM_FACTOR 2
-#define MEM_GRANT_RANDOM_FACTOR 64
-#define MEM_VALID_RANDOM_FACTOR 96
+#define MEM_GRANT_RANDOM_FACTOR 12
+#define MEM_VALID_RANDOM_FACTOR 36
 
-#define PLB_MISS_RATE 0
+#define PLB_MISS_RATE 0.00001
 
 const uint32_t TOT_PORTS_NUM = PLB_PORTS_NUM + MEM_PORTS_NUM;
 
@@ -248,7 +248,8 @@ void gen_memory_valid( uint8_t port_id, uint8_t * valid, uint64_t * rdata, uint3
         valid[port_id] = 1;
         if( port_id == 0 ){
             // PLB Miss or Hit
-            rdata[port_id] = valid_counters[port_id] % 2; // PLB_MISS_RATE
+            float plb_miss_factor = 1/PLB_MISS_RATE;
+            rdata[port_id] = ( valid_counters[port_id] % (int)plb_miss_factor == 0 ) ? 0 : 1;
         } else {
             rdata[port_id] = 0xffffffff;
         }

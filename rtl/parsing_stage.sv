@@ -218,7 +218,7 @@ module parsing_stage #(
                         SMMPT52_WALKING_LEVELS - 1  : range_offset = spa.spa52.PN2[8:9-NUMPGINRANGE];               // Tera-Pages
                         SMMPT52_WALKING_LEVELS - 2  : range_offset = spa.spa52.PN1[8:9-NUMPGINRANGE];               // Giga-Pages
                         SMMPT52_WALKING_LEVELS - 3  : range_offset = spa.spa52.PN0[8:9-NUMPGINRANGE];               // Mega-Pages
-                        SMMPT52_WALKING_LEVELS - 3  : range_offset = spa.spa52.RANGE_OFFSET[15:16-NUMPGINRANGE];    // Kilo-Pages
+                        SMMPT52_WALKING_LEVELS - 4  : range_offset = spa.spa52.RANGE_OFFSET[15:16-NUMPGINRANGE];    // Kilo-Pages
                         default                     : range_offset = '0;
                     endcase
                 end
@@ -228,7 +228,7 @@ module parsing_stage #(
                         SMMPT64_WALKING_LEVELS - 2  : range_offset = spa.spa64.PN2[8:9-NUMPGINRANGE];               // Tera-Pages
                         SMMPT64_WALKING_LEVELS - 3  : range_offset = spa.spa64.PN1[8:9-NUMPGINRANGE];               // Giga-Pages
                         SMMPT64_WALKING_LEVELS - 4  : range_offset = spa.spa64.PN0[8:9-NUMPGINRANGE];               // Mega-Pages
-                        SMMPT64_WALKING_LEVELS - 4  : range_offset = spa.spa64.RANGE_OFFSET[15:16-NUMPGINRANGE];    // Kilo-Pages
+                        SMMPT64_WALKING_LEVELS - 5  : range_offset = spa.spa64.RANGE_OFFSET[15:16-NUMPGINRANGE];    // Kilo-Pages
                         default                     : range_offset = '0;
                     endcase
                 end
@@ -288,27 +288,40 @@ module parsing_stage #(
     ////////////////////////////////
 
     // Part of the transaction stay unchanged
-    assign output_transaction.mmpt  = input_transaction.mmpt;
-    assign output_transaction.spa   = input_transaction.spa;
-    assign output_transaction.access_type  = input_transaction.access_type;
-    assign output_transaction.rpa = input_transaction.rpa;
-    assign output_transaction.valid = input_transaction.valid;
-    assign output_transaction.plb_hit = input_transaction.plb_hit;
+    assign output_transaction.id            = input_transaction.id;
+    assign output_transaction.mmpt          = input_transaction.mmpt;
+    assign output_transaction.spa           = input_transaction.spa;
+    assign output_transaction.access_type   = input_transaction.access_type;
+    assign output_transaction.rpa           = input_transaction.rpa;
+    assign output_transaction.valid         = input_transaction.valid;
+    assign output_transaction.plb_hit       = input_transaction.plb_hit;
+
+    // Complete transaction
+    // A transaction is completed if (a) an error occurs, (b) if it is a leaf
+    assign output_transaction.completed     = ( ( mpt_entry.L ) ||
+                                                /*( format_error_cause != NO_ERROR || access_page_fault ) ||*/ // For testing purposes comment
+                                                ( WALKING_LEVEL == 0 )
+                                              ) ? 1'b1 : input_transaction.completed;
+
+    // If a transaction is completed, it doesn't have to be walked in the next stage
+    assign output_transaction.walking = ( 
+                                            ( output_transaction.completed ) ||
+                                            ( format_error_cause != NO_ERROR || access_page_fault ) 
+                                        ) ? MPT_WALKING_SKIP : input_transaction.walking ;
 
     // Update the other fields
-    assign output_transaction.mpte = next_mpte_addr;
-    assign output_transaction.walking = ( format_error_cause != NO_ERROR || access_page_fault ) ? MPT_WALKING_SKIP : input_transaction.walking ;
-    assign output_transaction.format_error = ( input_transaction.valid ) ? input_transaction.format_error : NO_ERROR ;
-    assign output_transaction.access_error = ( input_transaction.valid ) ? input_transaction.access_error : '0 ;
+    assign output_transaction.mpte          = next_mpte_addr;
+    assign output_transaction.format_error  = ( input_transaction.valid ) ? input_transaction.format_error : NO_ERROR ;
+    assign output_transaction.access_error  = ( input_transaction.valid ) ? input_transaction.access_error : '0 ;
 
     // Error Signals
     assign format_error_cause_o = ( input_transaction.valid ) ? format_error_cause : NO_ERROR ;
-    assign access_page_fault_o =( input_transaction.valid ) ?  access_page_fault : '0 ;
+    assign access_page_fault_o  =( input_transaction.valid ) ?  access_page_fault : '0 ;
 
     // Pipeline Register
     assign slave_to_reg_bus_data    = output_transaction;
     assign slave_to_reg_bus_valid   = stage_slave_valid;
-    assign stage_slave_ready    = slave_to_reg_bus_ready;
+    assign stage_slave_ready        = slave_to_reg_bus_ready;
 
     pipeline_register # ( 
         .DATA_WIDTH             ( PIPELINE_SLAVE_DATA_WIDTH         )

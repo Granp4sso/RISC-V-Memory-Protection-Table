@@ -2,10 +2,10 @@
 #define VL_INCLUDE_OPT include
 #include "Vmptw_top.cpp"
 #include "Vmptw_top___024unit.cpp"
-#include "Vmptw_top_memory_read_stage__pi5.cpp"
+#include "Vmptw_top_memory_read_stage__pi6.cpp"
 #include "Vmptw_top__Trace.cpp"
 #include "Vmptw_top__Slow.cpp"
 #include "Vmptw_top___024unit__Slow.cpp"
-#include "Vmptw_top_memory_read_stage__pi5__Slow.cpp"
+#include "Vmptw_top_memory_read_stage__pi6__Slow.cpp"
 #include "Vmptw_top__Syms.cpp"
 #include "Vmptw_top__Trace__Slow.cpp"

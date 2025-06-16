@@ -216,17 +216,22 @@
         // Transaction type is used as input for the MPT Walker
         // And propagated throughout the pipeline
 
+        localparam unsigned ROB_ID_SIZE = 12; 
+        typedef logic[ ROB_ID_SIZE - 1: 0 ] rob_id_size_t;
+
         typedef struct packed {
-            logic               valid;
-            logic               access_error;
-            page_format_fault_e format_error; 
-            logic               plb_hit;
-            logic [XLEN-1:0]    rpa;    
-            mpt_entry_t         mpte;
-            mpt_walking_e       walking;
-            mpt_access_e        access_type;
-            spa_t_u             spa;
-            mmpt_reg_t          mmpt;
+            rob_id_size_t       id;             // Transaction assigned ID (in the Issue Stage)
+            logic               completed;      // Transaction is ready to retire
+            logic               valid;          // Transaction is valid (in the Fetch Stage)
+            logic               access_error;   // Permissions match fail
+            page_format_fault_e format_error;   // Format error in transaction or MPT entries
+            logic               plb_hit;        // This transaction hit on the PLB
+            logic [XLEN-1:0]    rpa;            // Request Phyisical Address (Will be removed)
+            mpt_entry_t         mpte;           // Last MPT Entry retrieved for this transaction
+            mpt_walking_e       walking;        // If the transaction should perform the walking or not
+            mpt_access_e        access_type;    // Input transaction access typre (RXW)
+            spa_t_u             spa;            // Input transaction phyisical address
+            mmpt_reg_t          mmpt;           // Input transaction mmpt CSR value
         } mptw_transaction_t;
 
         typedef struct packed {
