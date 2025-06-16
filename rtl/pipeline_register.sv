@@ -36,7 +36,6 @@ module pipeline_register #(
 
     pipe_status_e current_state, next_state; 
     logic [DATA_WIDTH - 1 : 0] reg_data_q, reg_data_d;
-    logic dummy;
     always_comb begin
 
         reg_data_d = reg_data_q;
@@ -48,6 +47,7 @@ module pipeline_register #(
                 // We can ask for a new production
                 m_data_valid = 1'b0;
                 s_data_ready = 1'b1;
+                reg_data_d = '0;
                 if( s_data_valid ) begin
                     // A new valid data is available
                     // But we currently have no available product
@@ -74,7 +74,7 @@ module pipeline_register #(
                     next_state = EMPTY;
                 end else begin
                     // In all other cases
-                    s_data_ready = 1'b0;
+                    s_data_ready = '0;
                     next_state = FULL;
                 end
             end

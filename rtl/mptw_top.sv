@@ -18,7 +18,6 @@ import mpt_pkg::*;
 // verilator lint_off UNOPTFLAT
 
 // TODO: Check READY LOGIC IN THE PIPELINE
-// TODO: MEM REQ must be high until MEM GRNT is high
 
 module mptw_top #(
 
@@ -29,7 +28,8 @@ module mptw_top #(
     parameter unsigned PLB_TRANSACTION_DATA_WIDTH  = 64,                        // 8
     parameter unsigned PLB_TRANSACTION_ADDR_WIDTH  = 64,                        // $bits(plb_lookup_req_t)
     parameter unsigned WALKING_STAGE_MEM_DEPTH     = PLB_STAGE_DEPTH,
-    parameter unsigned REORDER_BUFFER_DEPTH        = 32
+    parameter unsigned REORDER_BUFFER_DEPTH        = 16,
+    parameter unsigned PIPELINE_PASSTHROUGH        = 0                   // Experimental: remove some pipeline registers
 
 ) (
     //////////////////
@@ -83,6 +83,8 @@ module mptw_top #(
     // Localparam Declaration //
     ////////////////////////////
 
+    localparam REORDER_BUFFER_ENABLE = ( REORDER_BUFFER_DEPTH == 0 ) ? 0 : 1;
+
     localparam fetch_stage_datawidth        = $bits(mptw_transaction_t);
     localparam issue_stage_datawidth        = $bits(mptw_transaction_t);
     localparam plb_lookup_stage_datawidth   = $bits(mptw_transaction_t);
@@ -102,21 +104,27 @@ module mptw_top #(
 
     mptw_transaction_t      input_transaction;
     page_format_fault_e     fetch_exception_cause;
+    mptw_transaction_t      plb_output_transaction;
+    mptw_transaction_t      walking_output_transaction[ NUM_STAGES ];
+    logic                   retire_demux_select[ NUM_STAGES ];
 
     /////////////////////
     // Bus Declaration //
     /////////////////////
 
+    // Frontend Buses
     `DECLARE_DATA_BUS       ( input_to_fetch            , fetch_stage_datawidth                         );
     `DECLARE_DATA_BUS       ( fetch_to_issue            , issue_stage_datawidth                         );
     `DECLARE_DATA_BUS       ( issue_to_backend          , issue_stage_datawidth                         );
     `DECLARE_DATA_BUS       ( issue_to_plb_lookup       , plb_lookup_stage_datawidth                    );
-    `DECLARE_DATA_BUS       ( plb_lookup_to_walking     , walking_stage_datawidth                       );
-    `DECLARE_DATA_BUS_ARRAY ( walking_stage             , walking_stage_datawidth   , NUM_STAGES + 1    );
+    `DECLARE_DATA_BUS       ( plb_lookup_to_demux       , walking_stage_datawidth                       );
+    // Midend Buses
+    `DECLARE_DATA_BUS_ARRAY ( to_walking_stage          , walking_stage_datawidth   , NUM_STAGES + 1    );
+    `DECLARE_DATA_BUS_ARRAY ( walking_to_demux          , walking_stage_datawidth   , NUM_STAGES + 1    );   
+    `DECLARE_DATA_BUS_ARRAY ( walking_to_retire         , walking_stage_datawidth   , NUM_STAGES + 1    );
+    // Backend Buses
     `DECLARE_DATA_BUS       ( backend_to_issue          , issue_stage_datawidth                         );
     `DECLARE_DATA_BUS       ( retire_to_commit          , walking_stage_datawidth                       );
-    `DECLARE_DATA_BUS_ARRAY ( walking_to_retire         , walking_stage_datawidth   , NUM_STAGES + 1    );
-
     `DECLARE_DATA_BUS       ( commit_to_output          , walking_stage_datawidth                       );
 
     // Control and Status BUS
@@ -211,7 +219,7 @@ module mptw_top #(
 
         .PIPELINE_SLAVE_DATA_WIDTH      ( issue_stage_datawidth         ),
         .PIPELINE_MASTER_DATA_WIDTH     ( plb_lookup_stage_datawidth    ),
-        .PIPELINE_PASSTHROUGH           ( 0                             ) 
+        .PIPELINE_PASSTHROUGH           ( PIPELINE_PASSTHROUGH          ) 
 
     ) issue_stage_u (
 
@@ -243,7 +251,7 @@ module mptw_top #(
 
         // Pipeline Ports
         `MAP_DATA_PORT          ( stage_slave  , issue_to_plb_lookup        ),
-        `MAP_DATA_PORT          ( stage_master , plb_lookup_to_walking      ),
+        `MAP_DATA_PORT          ( stage_master , plb_lookup_to_demux        ),
         `SINK_SLAVE_CTRL_PORT   ( plb_lookup_ctrl                           ),
 
         // PLB Cache Port
@@ -259,13 +267,30 @@ module mptw_top #(
 
     ); 
 
-    ////////////////////////
-    // Retire Multiplexer //
-    ////////////////////////
+    //////////////////////////
+    // Retire Demultiplexer //
+    //////////////////////////
+
+    // The PLB Lookup result can go either to the retire stage or the 
+    // walking stages. If no reorder buffer is implemented, go straight to walking.
+
+    assign plb_output_transaction = plb_lookup_to_demux_data;
+    assign retire_demux_select[0] = plb_output_transaction.completed && plb_output_transaction.valid;
 
     // PLB Lookup retire port is port 0
-
-    // TODO
+    always_comb begin: plb_lookup_retire_demux
+        if( retire_demux_select[0] && REORDER_BUFFER_ENABLE ) begin
+            // Map the output to the corresponding retire stage
+            `ASSIGN_DATA_BUS_SCALAR_TO_ARRAY( walking_to_retire , 0 , plb_lookup_to_demux );
+            to_walking_stage_valid[0] = '0;
+            to_walking_stage_data[0] = '0; 
+        end else begin
+            // Forward to the Midend
+            `ASSIGN_DATA_BUS_SCALAR_TO_ARRAY( to_walking_stage , 0 , plb_lookup_to_demux );
+            walking_to_retire_valid[0] = '0;
+            walking_to_retire_data[0] = '0; 
+        end
+    end
 
     //////////////////////////////////////////
     //    __  __ _     _                _   //
@@ -285,12 +310,14 @@ module mptw_top #(
     //////////////////////////////////////////////////////////////////////
 
     // We assign the output of the plb lookup stage to the first walking stage
-    `ASSIGN_DATA_BUS_SCALAR_TO_ARRAY(walking_stage, 0, plb_lookup_to_walking);
 
     generate
         for (genvar i = 0; i < NUM_STAGES; i = i + 1) begin : gen_walking_stages
 
-            // Replace this with the walking stages
+            ///////////////////
+            // Walking Stage //
+            ///////////////////
+
             walking_stage #(
 
                 .PIPELINE_SLAVE_DATA_WIDTH      ( walking_stage_datawidth   ),
@@ -306,8 +333,8 @@ module mptw_top #(
                 .rst_ni                 ( rst_ni                                    ),
 
                 // Pipeline Ports
-                `MAP_DATA_INDEX_PORT    ( stage_slave, walking_stage, i             ),
-                `MAP_DATA_INDEX_PORT    ( stage_master, walking_stage, i+1          ),
+                `MAP_DATA_INDEX_PORT    ( stage_slave, to_walking_stage, i          ),
+                `MAP_DATA_INDEX_PORT    ( stage_master, walking_to_demux, i         ),
 
                 // Walker Memory Port
                 .memory_master_mem_req      ( walking_mem_master_mem_req[i]     ),
@@ -326,16 +353,36 @@ module mptw_top #(
 
             ); 
 
-            ////////////////////////
-            // Retire Multiplexer //
-            ////////////////////////
+            //////////////////////////
+            // Retire Demultiplexer //
+            //////////////////////////
 
             // The first walking stage is never producing a complete transaction because
-            // Such a choice is taken by the parsing stage. However the first parsing stage
+            // Such a choice is taken by the parsing stage. The first parsing stage
             // just builds the first root-MPT Entry address. Only from the second onward
-            // The complete bit might be filled
+            // The complete bit might be filled (as walking happened)
+            assign walking_output_transaction[i] = walking_to_demux_data[i];
 
-            // TODO
+            if( i != 0 ) begin: retire_demux_gen
+                assign retire_demux_select[i] = walking_output_transaction[i].completed && walking_output_transaction[i].valid;
+                always_comb begin: walking_stage_retire_demux
+                    if( retire_demux_select[i] && REORDER_BUFFER_ENABLE ) begin
+                        // Map the output to the corresponding retire stage
+                        `ASSIGN_DATA_BUS_ARRAY_TO_ARRAY( walking_to_retire , i , walking_to_demux , i );
+                        to_walking_stage_valid[i + 1] = '0;
+                        to_walking_stage_data[i + 1] = '0; 
+                    end else begin
+                        // Forward to the next walking stage
+                        `ASSIGN_DATA_BUS_ARRAY_TO_ARRAY( to_walking_stage , i + 1 , walking_to_demux , i );
+                        walking_to_retire_valid[i] = '0;
+                        walking_to_retire_data[i] = '0; 
+                    end
+                end
+            end else begin: no_retire_demux_gen
+                // In case of the first walking stage, just passthrough
+                `ASSIGN_DATA_BUS_ARRAY_TO_ARRAY( to_walking_stage , i + 1 , walking_to_demux , i );
+            end
+            
         end
     endgenerate
 
@@ -351,26 +398,25 @@ module mptw_top #(
         .PIPELINE_SLAVE_DATA_WIDTH   ( walking_stage_datawidth      ),
         .PIPELINE_MASTER_DATA_WIDTH  ( walking_stage_datawidth      ),
         .WALKING_LEVEL               ( 0                            )
-    ) commit_stage_u (
+    ) last_parsing_stage_u (
         .clk_i                      ( clk_i                         ),
         .rst_ni                     ( rst_ni                        ),
 
         // Pipeline Ports
-        `MAP_DATA_INDEX_PORT        ( stage_slave  , walking_stage, NUM_STAGES ),
-        `MAP_DATA_PORT              ( stage_master , commit_to_output          ), // This must go to the Retire Stage
+        `MAP_DATA_INDEX_PORT        ( stage_slave  , to_walking_stage   , NUM_STAGES ),
+        `MAP_DATA_INDEX_PORT        ( stage_master , walking_to_retire  , NUM_STAGES ), // This must go to the Retire Stage
 
         // Error Port
         .access_page_fault_o        ( ),
         .format_error_cause_o       ( )
-
     ); 
 
     ///////////////////////
     // Retire Forwarding //
     ///////////////////////
 
-    // Here there is no actual multiplexer; data going out from Last Parsing Stage
-    // Is always meant to go to retire as this is the last stage
+    // If the reorder buffer is enabled, data is to the last retire stage port.
+    // Otherwise, the output goes directly to output.
 
     //////////////////////////////////////////////////
     //    ____             _                  _     //
@@ -389,47 +435,37 @@ module mptw_top #(
     //                                        |___/         //
     //////////////////////////////////////////////////////////
 
-    /////////////////////
-    // Concatenate Bus //
-    /////////////////////
-
-    // TODO: use SMMTP43, SMMTP52, SMMTP64
-    if( NUM_STAGES == 1 + 3 ) begin
-        
-    end else if( NUM_STAGES == 1 + 4 ) begin
-
-    end else begin
-
-    end
-
     ///////////////////////////
     // Retire Stage Instance //
     ///////////////////////////
 
-    retire_stage # (
+    if( REORDER_BUFFER_ENABLE ) begin
+        retire_stage # (
 
-        .PIPELINE_SLAVE_DATA_WIDTH      ( issue_stage_datawidth         ),
-        .PIPELINE_MASTER_DATA_WIDTH     ( plb_lookup_stage_datawidth    ),
-        .REORDER_BUFFER_DEPTH           ( REORDER_BUFFER_DEPTH          ),
-        .RETIRE_PORT_NUM                ( 1 + NUM_STAGES                ),
-        .PIPELINE_PASSTHROUGH           ( 0                             ) 
+            .PIPELINE_SLAVE_DATA_WIDTH      ( issue_stage_datawidth         ),
+            .PIPELINE_MASTER_DATA_WIDTH     ( plb_lookup_stage_datawidth    ),
+            .REORDER_BUFFER_DEPTH           ( REORDER_BUFFER_DEPTH          ),
+            .RETIRE_PORT_NUM                ( NUM_STAGES + 1                ),
+            .PIPELINE_PASSTHROUGH           ( PIPELINE_PASSTHROUGH          ) 
 
-    ) retire_stage_u (
+        ) retire_stage_u (
 
-        .clk_i                  ( clk_i                             ),
-        .rst_ni                 ( rst_ni                            ),
+            .clk_i                  ( clk_i                             ),
+            .rst_ni                 ( rst_ni                            ),
 
-        // Master/Slave interface to the Issue Stage
-        `MAP_DATA_PORT          ( issue_stage_slave,  issue_to_backend  ),
-        `MAP_DATA_PORT          ( issue_stage_master, backend_to_issue  ),
+            // Master/Slave interface to the Issue Stage
+            `MAP_DATA_PORT          ( issue_stage_slave,  issue_to_backend  ),
+            `MAP_DATA_PORT          ( issue_stage_master, backend_to_issue  ),
+            // Slave Interfaces to the PLB/Walking stages
+            `MAP_DATA_PORT          ( retire_stage_slave, walking_to_retire ),
 
-        // Slave Interfaces to the PLB/Walking stages
-        .retire_stage_slave_data ( ),
-        .retire_stage_slave_valid ( ),
-        .retire_stage_slave_ready ( ),
-        // Master interface to the Commit Stage
-        `MAP_DATA_PORT          ( commit_stage_master, retire_to_commit )
-    );
+            // Master interface to the Commit Stage
+            `MAP_DATA_PORT          ( commit_stage_master, retire_to_commit )
+        );
+    end else begin
+        `ASSIGN_DATA_BUS( backend_to_issue, issue_to_backend );
+        `ASSIGN_DATA_BUS_ARRAY_TO_SCALAR( retire_to_commit, NUM_STAGES, walking_to_retire );
+    end
 
     //////////////////////////////////////////////////////////////
     //     ___                 _ _     ___ _                    //
@@ -444,13 +480,12 @@ module mptw_top #(
     // the system output.
 
 
-
     // Currently, we tie the last stage to be always ready
     // Future stall logic will deal with this
-    assign commit_to_output_ready = 1;
+    assign retire_to_commit_ready = 1;
     // Also, this allows the valid signal to be high for exactly one
     // clock cycle every time a new data is available on the commit stage
-    assign mptw_transaction_valid_o = commit_to_output_valid;
+    assign mptw_transaction_valid_o = retire_to_commit_valid;
 
 endmodule : mptw_top
 

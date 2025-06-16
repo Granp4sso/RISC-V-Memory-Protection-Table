@@ -9,11 +9,16 @@
 
 // TODO: Handle exception/flush/stall logic
 
+// TODO: Optimize resource usage. Currently transactions are entirely stored inside the ROB memories.
+//       This can be heavily optimized by putting static info inside the ROB fifo, and only dynamic
+//       Ones inside the ROB memories.
+
 // verilator lint_off IMPORTSTAR
 // verilator lint_off PINCONNECTEMPTY
 // verilator lint_off UNDRIVEN
 // verilator lint_off WIDTH
 // verilator lint_off UNOPTFLAT
+// verilator lint_off LITENDIAN
 
 import mpt_pkg::*;
 
@@ -64,6 +69,12 @@ module retire_stage #(
         ROB_PUSH_FLUSH
     } rob_push_status_e;
 
+    typedef enum logic[1:0] { 
+        ROB_POP_IDLE,
+        ROB_POP_WAIT_FOR_COMPLETED,
+        ROB_POP_FLUSH
+    } rob_pop_status_e;
+
     /////////////////////////
     // Signals Declaration //
     /////////////////////////
@@ -75,7 +86,7 @@ module retire_stage #(
     // Retire Ports
     mptw_transaction_t retire_transaction_bus[RETIRE_PORT_NUM];
 
-    // Push Proces
+    // Push Process
     rob_push_status_e rob_push_status_q, rob_push_status_d;
     logic [$clog2(REORDER_BUFFER_DEPTH):0] rob_next_valid_id_q, rob_next_valid_id_d;
 
@@ -97,10 +108,16 @@ module retire_stage #(
     logic [$clog2(REORDER_BUFFER_DEPTH) - 1 : 0] rob_memory_waddr[RETIRE_PORT_NUM];
     logic [$clog2(REORDER_BUFFER_DEPTH) - 1 : 0] rob_memory_raddr[RETIRE_PORT_NUM];
     // Data from/to ROB memories
-    logic [$bits(mptw_transaction_t) - 1 : 0] rob_memory_wdata[RETIRE_PORT_NUM];
-    logic [$bits(mptw_transaction_t) - 1 : 0] rob_memory_rdata[RETIRE_PORT_NUM];
+    mptw_transaction_t rob_memory_wdata[RETIRE_PORT_NUM];
+    mptw_transaction_t rob_memory_rdata[RETIRE_PORT_NUM];
     // Clear ROB memories
-    logic rob_memory_clear[RETIRE_PORT_NUM];
+    logic [RETIRE_PORT_NUM - 1 : 0] rob_memory_clear;
+
+    // Pop Process
+    rob_pop_status_e rob_pop_status_q, rob_pop_status_d;
+    mptw_transaction_t eldest_transaction;
+    logic [$clog2(REORDER_BUFFER_DEPTH):0] eldest_transaction_id;
+    logic [RETIRE_PORT_NUM - 1 : 0] eldest_transaction_completed_mask;
 
     /////////////////////
     // Bus Declaration //
@@ -108,6 +125,7 @@ module retire_stage #(
 
     `DECLARE_DATA_BUS( from_issue_bus   , PIPELINE_SLAVE_DATA_WIDTH                     );
     `DECLARE_DATA_BUS( to_issue_bus     , PIPELINE_SLAVE_DATA_WIDTH                     );
+    `DECLARE_DATA_BUS( to_commit_bus    , PIPELINE_MASTER_DATA_WIDTH                   );
 
     //////////////////////////////////////////////////////
     //    _   _                    _   _                //
@@ -123,7 +141,7 @@ module retire_stage #(
 
     generate
         for (genvar i = 0; i < RETIRE_PORT_NUM; i = i + 1) begin : gen_assign_retire_bus
-            assign retire_transaction_bus[i] = retire_stage_slave_data;
+            assign retire_transaction_bus[i] = retire_stage_slave_data[i];
         end
     endgenerate
 
@@ -182,8 +200,6 @@ module retire_stage #(
                     // Raise the push signal
                     rob_fifo_push = 1'b1;
                     rob_fifo_data_in = to_issue_transaction.id;
-                    // Consume the request
-                    //from_issue_bus_ready = 1'b1;
                 end
 
                 // Check next state
@@ -224,7 +240,7 @@ module retire_stage #(
         end
     end
 
-    // Then receive the answer from the backend (i.e. ID assigned to transaction)
+    // Register to communicate with the issue stage
     if( ~PIPELINE_PASSTHROUGH ) begin: issue_pipeline_register_generate
         pipeline_register # ( 
             .DATA_WIDTH             ( PIPELINE_SLAVE_DATA_WIDTH    )
@@ -293,29 +309,38 @@ module retire_stage #(
             // The ROB is ready whenever it can receive a WRITE operation (always)
             // Every time a valid WRITE is available on the retire port it is
             // Propagated.
-            assign retire_stage_slave_ready[i] = 1'b1;
-            // waddr and wdata comes from the retire_data ports.
-            assign rob_memory_wdata[i] = retire_transaction_bus[i];
-            assign rob_memory_waddr[i] = retire_transaction_bus[i].id;
+            assign retire_stage_slave_ready[i] = ( ~rob_memory_clear[i] ) ? 1'b1 : 1'b0;
 
-            // Combinatorial
-            always_comb begin : rob_memory_logic 
+            // ROB Write
+            always_comb begin : rob_memory_write_logic 
+                // waddr and wdata comes from the retire_data ports.
+                rob_memory_wdata[i] = retire_transaction_bus[i];
+                rob_memory_waddr[i] = retire_transaction_bus[i].id;
                 // By default, do not update the selected entry
                 rob_memory_d[i][rob_memory_waddr[i]] = rob_memory_q[i][rob_memory_waddr[i]];
                 // If a valid retire request arrives, update the entry
-                // NOTE: an ID of all '1 (e.g. 0xfff) is not a valid one
-                if( retire_stage_slave_valid[i] && ( rob_memory_waddr[i] != '1 ) ) begin
+                if( retire_stage_slave_valid[i] && ( ~rob_memory_clear[i] ) ) begin
                     rob_memory_d[i][rob_memory_waddr[i]] = rob_memory_wdata[i];
                 end
-                // Always read whatevere the top of the FIFO says
+            end
+
+            // ROB Read and Clean
+            always_comb begin : rob_memory_read_and_clean_logic
+                // Always read whatevere the top of the FIFO says ( if it contains a valid data )
+                rob_memory_raddr[i] = ( eldest_transaction_id == '1 || rob_fifo_empty ) ? '0 : eldest_transaction_id ;
                 rob_memory_rdata[i] = rob_memory_q[i][rob_memory_raddr[i]];
+
+                // Check if the selected rdata is completed
+                if( rob_memory_rdata[i].completed ) begin
+                    eldest_transaction_completed_mask[i] = 1'b1;
+                end else begin
+                    eldest_transaction_completed_mask[i] = 1'b0;
+                end
+
                 if( rob_memory_clear[i] ) begin
-                    // Zero the register. We are assuming 
-                    // no CLEAR and WRITE operations are happening at
-                    // the same time on the same register because 
-                    // WRITEs are performed only to retire and CLEARs
-                    // are only performed on retired transactions
-                    rob_memory_d[i][rob_memory_waddr[i]] = '0;
+                    // Zero the register. This operation is mutually exclusive
+                    // with writes. To improve in the future
+                    rob_memory_d[i][rob_memory_raddr[i]] = '0;
                 end
             end
 
@@ -332,6 +357,17 @@ module retire_stage #(
         end
     endgenerate
 
+    // Assign the eldest_transaction value depending on the mask
+    // Using a one-hot encoder
+    always_comb begin: eldest_transaction_encoder
+        eldest_transaction = '0;
+        for ( int i = 0; i < RETIRE_PORT_NUM; i++ ) begin
+            if ( eldest_transaction_completed_mask[i] ) begin
+                eldest_transaction = rob_memory_rdata[i];
+            end
+        end
+    end
+
     //////////////////////////////////////////////
     //    ___            _              _       //
     //   | _ \___ _ __  | |   ___  __ _(_)__    //
@@ -339,6 +375,66 @@ module retire_stage #(
     //   |_| \___/ .__/ |____\___/\__, |_\__|   //
     //           |_|              |___/         //
     //////////////////////////////////////////////
+
+    // Drive commit port signals
+    // Pop the first valid entry and generate clear signal
+
+    always_comb begin: rob_pop_process
+
+        to_commit_bus_data = '0;
+        to_commit_bus_valid = '0;
+        rob_fifo_pop = '0;
+        eldest_transaction_id = '0;
+        rob_memory_clear = '0;
+
+        // commit_stage_master
+        case(rob_pop_status_q)
+
+            ROB_POP_IDLE: begin
+                // We are in idle if the fifo if the ROB is empty
+                // As soon as one entry arrives, move to runnig
+                if( rob_fifo_push ) begin
+                    rob_pop_status_d = ROB_POP_WAIT_FOR_COMPLETED;
+                end else begin
+                    rob_pop_status_d = ROB_POP_IDLE;
+                end
+            end
+
+            ROB_POP_WAIT_FOR_COMPLETED: begin
+                // Read the eldest transaction ID
+                eldest_transaction_id = rob_fifo_data_out;
+                // If the eldest transaction was completed on some retire port
+                // and the next stage is ready, we can send it to the commit stage
+                if( |eldest_transaction_completed_mask && to_commit_bus_ready ) begin
+                    to_commit_bus_data = eldest_transaction;
+                    to_commit_bus_valid = 1'b1;
+                    rob_fifo_pop = 1'b1;
+                    rob_memory_clear = '1; // Clear all rob registers that matched
+                end
+
+                // If the fifo is going to be empty, go back to idle
+                if( rob_fifo_empty || ( rob_fifo_usage == 1 && rob_fifo_pop && ~rob_fifo_push ) ) begin
+                    rob_pop_status_d = ROB_POP_IDLE;
+                end else begin
+                    rob_pop_status_d = ROB_POP_WAIT_FOR_COMPLETED;
+                end
+            end
+
+            ROB_POP_FLUSH: begin end // TBD
+
+            default: begin end
+
+        endcase
+
+    end
+
+    always_ff @(posedge clk_i) begin
+        if ( ~rst_ni ) begin
+            rob_pop_status_q <= ROB_POP_IDLE;
+        end else begin
+            rob_pop_status_q <= rob_pop_status_d;
+        end
+    end
 
 
     //////////////////////////////////////////////////
@@ -349,6 +445,21 @@ module retire_stage #(
     //           |_|                      |___/     //
     //////////////////////////////////////////////////
 
+    // Register to commit stage
+    if( ~PIPELINE_PASSTHROUGH ) begin: commit_stage_register_generate
+        pipeline_register # ( 
+            .DATA_WIDTH             ( PIPELINE_SLAVE_DATA_WIDTH    )
+        ) issue_reg (
+            .clk_i                  ( clk_i                         ),
+            .rst_ni                 ( rst_ni                        ),
+            `MAP_DATA_PORT          ( s_data, to_commit_bus         ),
+            `MAP_DATA_PORT          ( m_data, commit_stage_master   ),
+            `SINK_SLAVE_CTRL_PORT   ( s_ctrl                        ),
+            `SINK_MASTER_STATUS_PORT( s_status  )
+        );
+    end else begin: commit_stage_register_generate
+        `ASSIGN_DATA_BUS( commit_stage_master, to_commit_bus );
+    end
     
 endmodule : retire_stage
 
@@ -357,3 +468,4 @@ endmodule : retire_stage
 // verilator lint_on WIDTH
 // verilator lint_on UNOPTFLAT
 // verilator lint_on IMPORTSTAR
+// verilator lint_on LITENDIAN

@@ -18,7 +18,7 @@ import mpt_pkg::*;
 module issue_stage #(
     parameter unsigned PIPELINE_SLAVE_DATA_WIDTH    = 32,
     parameter unsigned PIPELINE_MASTER_DATA_WIDTH   = 32,
-    parameter unsigned PIPELINE_PASSTHROUGH         = 0
+    parameter unsigned PIPELINE_PASSTHROUGH         = 1
 ) (
     // Generic Signals
     input  logic                clk_i,

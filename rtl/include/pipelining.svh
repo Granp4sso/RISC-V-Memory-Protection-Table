@@ -69,6 +69,19 @@
     assign ``dest``_valid           = ``src``_valid[``index``] ;   \
     assign ``src``_ready[``index``] = ``dest``_ready ;   
 
+`define ASSIGN_DATA_BUS_ARRAY_TO_ARRAY(dest, index_dest, src, index_src) \
+    assign ``dest``_data    [``index_dest``] = ``src``_data     [``index_src``] ;    \
+    assign ``dest``_valid   [``index_dest``] = ``src``_valid    [``index_src``] ;   \
+    assign ``src``_ready    [``index_src``] = ``dest``_ready   [``index_dest``];   
+
+// Assign to Zero
+
+`define SINK_DATA_BUS() \
+    assign ``src``_data    = '0 ;    \
+    assign ``src``_valid   = '0 ;    \
+    assign ``src``_ready   = '0 ;   
+
+
 //////////////////
 //  Bus Ports   //
 //////////////////
@@ -90,7 +103,7 @@
     input  logic                   ``port_name``_ready     
 
 `define DEFINE_MASTER_DATA_PORT_ARRAY(port_name, data_width, size)   \
-    output logic [data_width-1     : 0] ``port_name``_data  [``size`` -1 : 0],       \
+    output logic [``data_width``-1     : 0] ``port_name``_data  [``size`` -1 : 0],       \
     output logic                        ``port_name``_valid [``size`` -1 : 0],       \
     input  logic                        ``port_name``_ready [``size`` -1 : 0]
 
@@ -111,7 +124,7 @@
     output logic                   ``port_name``_ready  
 
 `define DEFINE_SLAVE_DATA_PORT_ARRAY(port_name, data_width, size)   \
-    input  logic [data_width-1     : 0] ``port_name``_data  [``size`` -1 : 0],       \
+    input  logic [``data_width``-1     : 0] ``port_name``_data  [``size`` -1 : 0],       \
     input  logic                        ``port_name``_valid [``size`` -1 : 0],       \
     output logic                        ``port_name``_ready [``size`` -1 : 0]       
 
@@ -146,13 +159,68 @@
 // Concatenation //
 ///////////////////
 
+// Slaves
 `define CONCAT_SLAVE_DATA_ARRAY_2(array_name, bus_name_1, bus_name_0) \
     `ASSIGN_DATA_BUS_ARRAY_TO_SCALAR(``bus_name_0``, 0, ``array_name``); \
     `ASSIGN_DATA_BUS_ARRAY_TO_SCALAR(``bus_name_1``, 1, ``array_name``); 
 
+`define CONCAT_SLAVE_DATA_ARRAY_3(array_name, bus_name_2, bus_name_1, bus_name_0) \
+    `ASSIGN_DATA_BUS_ARRAY_TO_SCALAR(``bus_name_0``, 0, ``array_name``); \
+    `ASSIGN_DATA_BUS_ARRAY_TO_SCALAR(``bus_name_1``, 1, ``array_name``); \
+    `ASSIGN_DATA_BUS_ARRAY_TO_SCALAR(``bus_name_2``, 2, ``array_name``);
+
+`define CONCAT_SLAVE_DATA_ARRAY_4(array_name, bus_name_3, bus_name_2, bus_name_1, bus_name_0) \
+    `ASSIGN_DATA_BUS_ARRAY_TO_SCALAR(``bus_name_0``, 0, ``array_name``); \
+    `ASSIGN_DATA_BUS_ARRAY_TO_SCALAR(``bus_name_1``, 1, ``array_name``); \
+    `ASSIGN_DATA_BUS_ARRAY_TO_SCALAR(``bus_name_2``, 2, ``array_name``); \
+    `ASSIGN_DATA_BUS_ARRAY_TO_SCALAR(``bus_name_3``, 3, ``array_name``);
+
+`define CONCAT_SLAVE_DATA_ARRAY_5(array_name, bus_name_4, bus_name_3, bus_name_2, bus_name_1, bus_name_0) \
+    `ASSIGN_DATA_BUS_ARRAY_TO_SCALAR(``bus_name_0``, 0, ``array_name``); \
+    `ASSIGN_DATA_BUS_ARRAY_TO_SCALAR(``bus_name_1``, 1, ``array_name``); \
+    `ASSIGN_DATA_BUS_ARRAY_TO_SCALAR(``bus_name_2``, 2, ``array_name``); \
+    `ASSIGN_DATA_BUS_ARRAY_TO_SCALAR(``bus_name_3``, 3, ``array_name``); \
+    `ASSIGN_DATA_BUS_ARRAY_TO_SCALAR(``bus_name_4``, 4, ``array_name``);
+
+`define CONCAT_SLAVE_DATA_ARRAY_6(array_name, bus_name_5, bus_name_4, bus_name_3, bus_name_2, bus_name_1, bus_name_0) \
+    `ASSIGN_DATA_BUS_ARRAY_TO_SCALAR(``bus_name_0``, 0, ``array_name``); \
+    `ASSIGN_DATA_BUS_ARRAY_TO_SCALAR(``bus_name_1``, 1, ``array_name``); \
+    `ASSIGN_DATA_BUS_ARRAY_TO_SCALAR(``bus_name_2``, 2, ``array_name``); \
+    `ASSIGN_DATA_BUS_ARRAY_TO_SCALAR(``bus_name_3``, 3, ``array_name``); \
+    `ASSIGN_DATA_BUS_ARRAY_TO_SCALAR(``bus_name_4``, 4, ``array_name``); \
+    `ASSIGN_DATA_BUS_ARRAY_TO_SCALAR(``bus_name_5``, 5, ``array_name``);
+
+// Masters
 `define CONCAT_MASTER_DATA_ARRAY_2(array_name, bus_name_1, bus_name_0) \
     `ASSIGN_DATA_BUS_SCALAR_TO_ARRAY(``array_name``, 0, ``bus_name_0``); \
     `ASSIGN_DATA_BUS_SCALAR_TO_ARRAY(``array_name``, 1, ``bus_name_1``); 
+
+`define CONCAT_MASTER_DATA_ARRAY_3(array_name, bus_name_2, bus_name_1, bus_name_0) \
+    `ASSIGN_DATA_BUS_SCALAR_TO_ARRAY(``array_name``, 0, ``bus_name_0``); \
+    `ASSIGN_DATA_BUS_SCALAR_TO_ARRAY(``array_name``, 1, ``bus_name_1``); \
+    `ASSIGN_DATA_BUS_SCALAR_TO_ARRAY(``array_name``, 2, ``bus_name_2``);
+
+`define CONCAT_MASTER_DATA_ARRAY_4(array_name, bus_name_3, bus_name_2, bus_name_1, bus_name_0) \
+    `ASSIGN_DATA_BUS_SCALAR_TO_ARRAY(``array_name``, 0, ``bus_name_0``); \
+    `ASSIGN_DATA_BUS_SCALAR_TO_ARRAY(``array_name``, 1, ``bus_name_1``); \
+    `ASSIGN_DATA_BUS_SCALAR_TO_ARRAY(``array_name``, 2, ``bus_name_2``); \
+    `ASSIGN_DATA_BUS_SCALAR_TO_ARRAY(``array_name``, 3, ``bus_name_3``);
+
+`define CONCAT_MASTER_DATA_ARRAY_5(array_name, bus_name_4, bus_name_3, bus_name_2, bus_name_1, bus_name_0) \
+    `ASSIGN_DATA_BUS_SCALAR_TO_ARRAY(``array_name``, 0, ``bus_name_0``); \
+    `ASSIGN_DATA_BUS_SCALAR_TO_ARRAY(``array_name``, 1, ``bus_name_1``); \
+    `ASSIGN_DATA_BUS_SCALAR_TO_ARRAY(``array_name``, 2, ``bus_name_2``); \
+    `ASSIGN_DATA_BUS_SCALAR_TO_ARRAY(``array_name``, 3, ``bus_name_3``); \
+    `ASSIGN_DATA_BUS_SCALAR_TO_ARRAY(``array_name``, 4, ``bus_name_4``);
+
+`define CONCAT_MASTER_DATA_ARRAY_6(array_name, bus_name_5, bus_name_4, bus_name_3, bus_name_2, bus_name_1, bus_name_0) \
+    `ASSIGN_DATA_BUS_SCALAR_TO_ARRAY(``array_name``, 0, ``bus_name_0``); \
+    `ASSIGN_DATA_BUS_SCALAR_TO_ARRAY(``array_name``, 1, ``bus_name_1``); \
+    `ASSIGN_DATA_BUS_SCALAR_TO_ARRAY(``array_name``, 2, ``bus_name_2``); \
+    `ASSIGN_DATA_BUS_SCALAR_TO_ARRAY(``array_name``, 3, ``bus_name_3``); \
+    `ASSIGN_DATA_BUS_SCALAR_TO_ARRAY(``array_name``, 4, ``bus_name_4``); \
+    `ASSIGN_DATA_BUS_SCALAR_TO_ARRAY(``array_name``, 5, ``bus_name_5``);
+
 
 //////////////////////////
 // Sink Buses and Ports //

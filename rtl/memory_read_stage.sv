@@ -79,7 +79,7 @@ module memory_read_stage #(
     logic grant_fifo_empty;
     logic grant_fifo_push;
     logic grant_fifo_pop;
-    logic [$bits(TRANSACTION_FIFO_DEPTH)-1:0] grant_fifo_usage;
+    logic [$clog2(TRANSACTION_FIFO_DEPTH)-1:0] grant_fifo_usage;
     mptw_transaction_t grant_fifo_data_in;
     mptw_transaction_t grant_fifo_data_out;
 
@@ -87,12 +87,12 @@ module memory_read_stage #(
     logic valid_fifo_empty;
     logic valid_fifo_push;
     logic valid_fifo_pop;
-    logic [$bits(TRANSACTION_FIFO_DEPTH)-1:0] valid_fifo_usage;
+    logic [$clog2(TRANSACTION_FIFO_DEPTH)-1:0] valid_fifo_usage;
     mptw_transaction_t valid_fifo_data_in;
     mptw_transaction_t valid_fifo_data_out;
-    logic [$bits(TRANSACTION_FIFO_DEPTH):0] valid_counter_q, valid_counter_d;
+    logic [$clog2(TRANSACTION_FIFO_DEPTH):0] valid_counter_q, valid_counter_d;
 
-    logic [$bits(TRANSACTION_FIFO_DEPTH):0] stage_usage;
+    logic [$clog2(TRANSACTION_FIFO_DEPTH):0] stage_usage;
     grant_fifo_status_e grant_fifo_status_q, grant_fifo_status_d;
     valid_fifo_status_e valid_fifo_status_q, valid_fifo_status_d;
 
