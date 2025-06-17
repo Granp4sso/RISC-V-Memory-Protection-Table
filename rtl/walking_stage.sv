@@ -50,18 +50,24 @@ module walking_stage #(
     //         |___/                    //
     //////////////////////////////////////
 
+    localparam FORWARDING_BUFFER_ENABLE = ( FORWARDING_BUFFER_DEPTH == 0 ) ? 0 : 1;
+
     /////////////////////////
     // Signals Declaration //
     /////////////////////////
 
+    mptw_transaction_t walking_output_transaction;
+    mptw_transaction_t output_transaction;
+
+    /////////////////////
+    // Bus Declaration //
+    /////////////////////
+
     `DECLARE_DATA_BUS( parsing_to_forwarding    , PIPELINE_SLAVE_DATA_WIDTH );
     `DECLARE_DATA_BUS( forwarding_to_walking    , PIPELINE_SLAVE_DATA_WIDTH );
+    `DECLARE_DATA_BUS( from_walking             , PIPELINE_SLAVE_DATA_WIDTH );
     `DECLARE_DATA_BUS( walking_to_forwarding    , PIPELINE_SLAVE_DATA_WIDTH );
     `DECLARE_DATA_BUS( walking_to_pipe          , PIPELINE_SLAVE_DATA_WIDTH );
-
-    ///////////////////////
-    // Bus Concatenation //
-    ///////////////////////
 
     //////////////////////////////////////////////////////
     //    _   _                    _   _                //
@@ -110,22 +116,26 @@ module walking_stage #(
     // if an MPTE is already available for this transaction, hence
     // Marking it as NON-WALKING for the Memory Stage
 
-    forwarding_buffer #(
-        .TRANSACTION_DATA_WIDTH     ( PIPELINE_SLAVE_DATA_WIDTH                 ),
-        .FORWARDING_BUFFER_DEPTH    ( FORWARDING_BUFFER_DEPTH                   )
-    ) forwarding_buffer_u (
-        .clk_i                      ( clk_i                                     ),
-        .rst_ni                     ( rst_ni                                    ),
+    if( FORWARDING_BUFFER_ENABLE ) begin: gen_forwarding_buffer
+        forwarding_buffer #(
+            .TRANSACTION_DATA_WIDTH     ( PIPELINE_SLAVE_DATA_WIDTH                 ),
+            .FORWARDING_BUFFER_DEPTH    ( FORWARDING_BUFFER_DEPTH                   )
+        ) forwarding_buffer_u (
+            .clk_i                      ( clk_i                                     ),
+            .rst_ni                     ( rst_ni                                    ),
 
-        // Slave Port from the MPTE_parsiing
-        `MAP_DATA_PORT              ( mpte_slave_stage  , parsing_to_forwarding ),
+            // Slave Port from the MPTE_parsiing
+            `MAP_DATA_PORT              ( parsing_slave_stage   , parsing_to_forwarding ),
 
-        // Slave Port to the Memory Stage update
-        `MAP_DATA_PORT              ( mem_slave_stage   , walking_to_forwarding ),
+            // Slave Port to the Memory Stage update
+            `MAP_DATA_PORT              ( mem_slave_stage       , walking_to_forwarding ),
 
-        // Master Port to the Memory Stage
-        `MAP_DATA_PORT              ( mem_master_stage  , forwarding_to_walking )
-    ); 
+            // Master Port to the Memory Stage
+            `MAP_DATA_PORT              ( mem_master_stage      , forwarding_to_walking )
+        ); 
+    end else begin: no_forwarding_buffer
+        `ASSIGN_DATA_BUS( forwarding_to_walking, parsing_to_forwarding );
+    end
 
     //////////////////////////////////////////////////////////////////
     //    __  __                          ___ _                     //
@@ -149,7 +159,7 @@ module walking_stage #(
 
         // Pipeline Ports
         `MAP_DATA_PORT              ( stage_slave  , forwarding_to_walking  ),
-        `MAP_DATA_PORT              ( stage_master , walking_to_pipe        ),
+        `MAP_DATA_PORT              ( stage_master , from_walking           ),
 
         // PLB Cache Port
         .memory_master_mem_req      ( memory_master_mem_req                 ),
@@ -163,8 +173,28 @@ module walking_stage #(
         .memory_master_mem_error    ( memory_master_mem_error               )    
     );
 
-    // The Memory Stage output is used to update the Forwarding Buffer
-    // If the transaction was walked, meaning that a "miss" occurred
+    //////////////////////////
+    // To Forwarding Buffer //
+    //////////////////////////
+
+    assign walking_output_transaction = from_walking_data;
+    // By default, the output transaction is just the output of the walking
+    assign output_transaction           = walking_output_transaction;
+    assign output_transaction.walking   = ( walking_output_transaction.walking == MPT_WALKING_FWD ) ? MPT_WALKING_DO : walking_output_transaction.walking ;
+
+    // If the output transaction matched in the fwd buffer, it skipped the walking.
+    // It is marked with MPT_WALKING_FWD. We need to reset it to MPT_WALKING_DO.
+    // Otherwise, if the value was MPT_WALKING_DO, we can update the fwd buffer
+    // With the current transaction mpte value
+    always_comb begin: forward_transaction_process
+        if( walking_output_transaction.walking == MPT_WALKING_DO && walking_output_transaction.valid && walking_to_forwarding_ready ) begin
+            walking_to_forwarding_valid = from_walking_valid;
+            walking_to_forwarding_data = walking_output_transaction;
+        end else begin
+            walking_to_forwarding_valid = '0;
+            walking_to_forwarding_data = '0;
+        end
+    end
 
     //////////////////////////////////////////////////
     //    ___                   _   _               //
@@ -173,6 +203,10 @@ module walking_stage #(
     //   |_|_\___| .__/\__,_\__|_\_\_|_||_\__, |    //
     //           |_|                      |___/     //
     //////////////////////////////////////////////////
+
+    assign walking_to_pipe_valid    = from_walking_valid;
+    assign walking_to_pipe_data     = output_transaction;
+    assign from_walking_ready       = walking_to_pipe_ready;
 
     pipeline_register # ( 
         .DATA_WIDTH             ( PIPELINE_SLAVE_DATA_WIDTH         )

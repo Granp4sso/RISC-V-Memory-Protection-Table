@@ -291,11 +291,13 @@ module mpte_parsing_stage #(
 
     // Part of the transaction stay unchanged
     assign output_transaction.id            = input_transaction.id;
+    assign output_transaction.speculative   = input_transaction.speculative;
     assign output_transaction.mmpt          = input_transaction.mmpt;
     assign output_transaction.spa           = input_transaction.spa;
     assign output_transaction.access_type   = input_transaction.access_type;
     assign output_transaction.valid         = input_transaction.valid;
     assign output_transaction.plb_hit       = input_transaction.plb_hit;
+    assign output_transaction.mpte          = input_transaction.mpte;
 
     // Complete transaction
     // A transaction is completed if (a) an error occurs, (b) if it is a leaf
@@ -313,7 +315,7 @@ module mpte_parsing_stage #(
     // After a parsing stage the mpte field is updatet with a pointer;
     // Which is the address to the next mpte. The memory stage will use this
     // To lookup in memory and then updated with the actual value of the mpte
-    assign output_transaction.mpte          = next_mpte_addr;
+    assign output_transaction.mpte_ptr          = next_mpte_addr;
 
     // Update error fields and output signals
     assign output_transaction.format_error  = ( input_transaction.valid ) ? input_transaction.format_error : NO_ERROR ;

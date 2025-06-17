@@ -94,10 +94,10 @@ module plb_lookup_stage #(
 
     // The PLB stage reuses the memory read stage.
     // The main difference is that the mem stage assumes
-    // That the read address is transaction.mpte, and the
-    // answer will be saved into the same field on the output
-    // We build the read address as the SDID + SPA (for now we only use SPA)
-    assign input_transaction.mpte = input_transaction.spa;
+    // That the read address is transaction.mpte_ptr, and the
+    // answer will be saved into the mpte field.
+    // We build the PLB read address as the SDID + SPA (for now we only use SPA)
+    assign input_transaction.mpte_ptr = input_transaction.spa;
     assign input_to_mem_bus_data = input_transaction;
 
     memory_read_stage #(
@@ -134,14 +134,14 @@ module plb_lookup_stage #(
     // Currently, we assume the PLB to use the SRAM protocol, and packs the
     // HIT or MISS into the data field for a transaction
 
+    // Unchanged signals
+    assign output_transaction               = intermedate_transaction;     
+
     // A transaction is completed if we had a hit
     assign output_transaction.completed     = plb_hit;
-    assign output_transaction.id            = intermedate_transaction.id;
-    assign output_transaction.valid         = intermedate_transaction.valid;
-    assign output_transaction.access_error  = intermedate_transaction.access_error;
-    assign output_transaction.format_error  = intermedate_transaction.format_error;
     assign output_transaction.plb_hit       = plb_hit ;
     assign output_transaction.mpte          = '0; // Zero-out MPTE as this is not real walking
+    assign output_transaction.mpte_ptr      = '0; // Zero-out MPTE ptr as this is not real walking
 
     // If no error occurred, and a hit does not occur, then walk
     assign output_transaction.walking       =   ( 
@@ -149,10 +149,6 @@ module plb_lookup_stage #(
                                                     ( ( intermedate_transaction.valid ) && ( plb_hit ) )
                                                 ) 
                                                     ? MPT_WALKING_SKIP : intermedate_transaction.walking ;
-
-    assign output_transaction.access_type   = intermedate_transaction.access_type;
-    assign output_transaction.spa           = intermedate_transaction.spa;
-    assign output_transaction.mmpt          = intermedate_transaction.mmpt;
 
     //////////////////////////////////////////////////
     //    ___                   _   _               //

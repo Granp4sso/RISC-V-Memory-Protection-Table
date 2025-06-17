@@ -28,7 +28,7 @@ module mptw_top #(
     parameter unsigned PLB_TRANSACTION_DATA_WIDTH  = 64,                        // 8
     parameter unsigned PLB_TRANSACTION_ADDR_WIDTH  = 64,                        // $bits(plb_lookup_req_t)
     parameter unsigned WALKING_STAGE_MEM_DEPTH     = PLB_STAGE_DEPTH,
-    parameter unsigned FORWARDING_BUFFER_DEPTH     = 4,
+    parameter unsigned FORWARDING_BUFFER_DEPTH     = 0,
     parameter unsigned REORDER_BUFFER_DEPTH        = 16,
     parameter unsigned PIPELINE_PASSTHROUGH        = 0                   // Experimental: remove some pipeline registers
 
@@ -49,6 +49,7 @@ module mptw_top #(
     input  spa_t_u              spa_i,                      // Supervisor physical address input
     input  mmpt_reg_t           mmpt_reg_i,                 // Memory Protection Table Register input (coming from CSRs)
     input  mpt_access_e         access_type_i,              // Memory access type (read, write, execute)
+    input  logic                speculative_i,              // This transaction comes from speculative execution
     input  logic                mptw_transaction_valid_i,   // Input Data are Valid
     output logic                mptw_ready_o,               // The MPT Walker is ready to serve a transaction
     output logic                mptw_transaction_valid_o,   // Output Data is Valid (for one clock cycle)
@@ -155,6 +156,7 @@ module mptw_top #(
     assign input_transaction.mmpt           = mmpt_reg_i;
     assign input_transaction.spa            = spa_i;
     assign input_transaction.access_type    = access_type_i;
+    assign input_transaction.speculative    = speculative_i;
 
     // Inintially, we assume a transaction must be walked
     assign input_transaction.walking        = MPT_WALKING_DO;
@@ -162,6 +164,7 @@ module mptw_top #(
     assign input_transaction.completed      = '0;
     assign input_transaction.id             = '1; // ID 0xfff is reserved for non-issued transactions
     assign input_transaction.mpte           = '0;
+    assign input_transaction.mpte_ptr       = '0;
     assign input_transaction.format_error   = NO_ERROR ;
     assign input_transaction.access_error   = '0 ;
 

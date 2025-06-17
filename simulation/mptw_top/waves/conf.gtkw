@@ -1,19 +1,20 @@
 [*]
 [*] GTKWave Analyzer v3.3.104 (w)1999-2020 BSI
-[*] Tue Jun 17 11:11:08 2025
+[*] Tue Jun 17 14:43:21 2025
 [*]
 [dumpfile] "/home/stefano/Desktop/Work/Projects/smmtt/b_fwd/simulation/mptw_top/waves/trace.vcd"
-[dumpfile_mtime] "Tue Jun 17 11:09:18 2025"
-[dumpfile_size] 578061
+[dumpfile_mtime] "Tue Jun 17 14:42:46 2025"
+[dumpfile_size] 714757
 [savefile] "/home/stefano/Desktop/Work/Projects/smmtt/b_fwd/simulation/mptw_top/waves/conf.gtkw"
 [timestart] 1
 [size] 1850 1016
 [pos] 70 47
-*-7.733255 630 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+*-8.733255 953 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
 [treeopen] TOP.
 [treeopen] TOP.mptw_top.
 [treeopen] TOP.mptw_top.fetch_stage_u.
 [treeopen] TOP.mptw_top.gen_walking_stages(0).
+[treeopen] TOP.mptw_top.gen_walking_stages(0).walking_stage_u.
 [treeopen] TOP.mptw_top.gen_walking_stages(0).walking_stage_u.mem_stage_u.
 [treeopen] TOP.mptw_top.gen_walking_stages(1).
 [treeopen] TOP.mptw_top.gen_walking_stages(1).walking_stage_u.
@@ -49,18 +50,11 @@ TOP.mptw_top.plb_master_mem_valid
 @200
 -# FRONTEND #
 -Fetch Stage
-@22
-[color] 7
-TOP.mptw_top.fetch_stage_u.slave_to_reg_bus_data[214:0]
 @28
 [color] 7
 TOP.mptw_top.fetch_stage_u.stage_slave_ready
 [color] 7
 TOP.mptw_top.fetch_stage_u.stage_slave_valid
-@22
-[color] 7
-TOP.mptw_top.fetch_stage_u.stage_master_data[214:0]
-@28
 [color] 7
 TOP.mptw_top.fetch_stage_u.stage_master_ready
 [color] 7
@@ -77,8 +71,6 @@ TOP.mptw_top.issue_stage_u.backend_to_issue_ready
 TOP.mptw_top.issue_stage_u.backend_to_issue_valid
 TOP.mptw_top.issue_stage_u.issue_to_plb_lookup_ready
 TOP.mptw_top.issue_stage_u.issue_to_plb_lookup_valid
-@22
-TOP.mptw_top.issue_stage_u.stage_master_data(0)[214:0]
 @200
 -PLB Lookup Stage
 @28
@@ -90,9 +82,6 @@ TOP.mptw_top.plb_lookup_stage_u.stage_slave_valid
 TOP.mptw_top.plb_lookup_stage_u.stage_master_ready
 [color] 5
 TOP.mptw_top.plb_lookup_stage_u.stage_master_valid
-@22
-[color] 5
-TOP.mptw_top.plb_lookup_stage_u.stage_master_data[214:0]
 @200
 -# MIDEND #
 -Walking Stage 0
@@ -107,7 +96,9 @@ TOP.mptw_top.gen_walking_stages(0).walking_stage_u.stage_master_valid
 TOP.mptw_top.gen_walking_stages(0).walking_stage_u.stage_master_ready
 @22
 [color] 3
-TOP.mptw_top.gen_walking_stages(0).walking_stage_u.stage_master_data[214:0]
+TOP.mptw_top.gen_walking_stages(0).walking_stage_u.forwarding_buffer_u.fwd_buffer_match_mask[3:0]
+@24
+TOP.mptw_top.gen_walking_stages(0).walking_stage_u.forwarding_buffer_u.fwd_buffer_match_addr[1:0]
 @200
 -Walking Stage 1
 @28
@@ -121,11 +112,8 @@ TOP.mptw_top.gen_walking_stages(1).walking_stage_u.stage_master_valid
 TOP.mptw_top.gen_walking_stages(1).walking_stage_u.stage_master_ready
 @22
 TOP.mptw_top.gen_walking_stages(1).walking_stage_u.parsing_stage_u.mpt_entry[63:0]
-TOP.mptw_top.gen_walking_stages(1).walking_stage_u.parsing_stage_u.stage_slave_data[214:0]
-TOP.mptw_top.gen_walking_stages(1).walking_stage_u.parsing_stage_u.stage_master_data[214:0]
-[color] 1
-TOP.mptw_top.gen_walking_stages(1).walking_stage_u.stage_master_data[214:0]
 @28
+[color] 1
 TOP.mptw_top.gen_walking_stages(1).walking_stage_u.parsing_stage_u.format_error_cause[2:0]
 TOP.mptw_top.gen_walking_stages(1).walking_stage_u.parsing_stage_u.access_page_fault
 @200
@@ -139,9 +127,6 @@ TOP.mptw_top.gen_walking_stages(2).walking_stage_u.stage_slave_ready
 TOP.mptw_top.gen_walking_stages(2).walking_stage_u.stage_master_valid
 [color] 6
 TOP.mptw_top.gen_walking_stages(2).walking_stage_u.stage_master_ready
-@22
-[color] 6
-TOP.mptw_top.gen_walking_stages(2).walking_stage_u.stage_master_data[214:0]
 @200
 -Walking Stage 3
 @28
@@ -154,14 +139,24 @@ TOP.mptw_top.gen_walking_stages(3).walking_stage_u.stage_master_ready
 [color] 2
 TOP.mptw_top.gen_walking_stages(3).walking_stage_u.stage_master_valid
 @22
-[color] 2
-TOP.mptw_top.gen_walking_stages(3).walking_stage_u.stage_master_data[214:0]
+TOP.mptw_top.to_walking_stage_data(4)[279:0]
+TOP.mptw_top.walking_to_retire_data(4)[279:0]
+@28
+TOP.mptw_top.walking_to_retire_valid(4)
+@22
+TOP.mptw_top.retire_stage_gen.retire_stage_u.rob_fifo_usage[3:0]
+@28
+TOP.mptw_top.retire_stage_gen.retire_stage_u.rob_fifo_pop
+@22
+TOP.mptw_top.retire_stage_gen.retire_stage_u.eldest_transaction_completed_mask[4:0]
+@28
+TOP.mptw_top.retire_stage_gen.retire_stage_u.to_commit_bus_ready
 @200
 -# BACKEND #
 -Retire Stage
 -Commit Stage
 @23
-TOP.mptw_top.commit_to_output_data[214:0]
+TOP.mptw_top.commit_to_output_data[279:0]
 @28
 TOP.mptw_top.mptw_transaction_valid_o
 [pattern_trace] 1
