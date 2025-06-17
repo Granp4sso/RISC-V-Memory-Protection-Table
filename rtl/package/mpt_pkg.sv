@@ -210,7 +210,9 @@
 
         typedef enum logic [1:0] {
             MPT_WALKING_DO      = 2'b00,
-            MPT_WALKING_SKIP    = 2'b11
+            MPT_WALKING_FWD     = 2'b01,
+            MPT_WALKING_SKIP    = 2'b10,
+            MPT_WALKING_UNUSED  = 2'b11
         } mpt_walking_e;
 
         // Transaction type is used as input for the MPT Walker
@@ -226,7 +228,6 @@
             logic               access_error;   // Permissions match fail
             page_format_fault_e format_error;   // Format error in transaction or MPT entries
             logic               plb_hit;        // This transaction hit on the PLB
-            logic [XLEN-1:0]    rpa;            // Request Phyisical Address (Will be removed)
             mpt_entry_t         mpte;           // Last MPT Entry retrieved for this transaction
             mpt_walking_e       walking;        // If the transaction should perform the walking or not
             mpt_access_e        access_type;    // Input transaction access typre (RXW)

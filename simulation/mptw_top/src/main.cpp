@@ -14,8 +14,8 @@
 #define TRANSACTION_RANDOM_FACTOR 1
 #define PLB_GRANT_RANDOM_FACTOR 1
 #define PLB_VALID_RANDOM_FACTOR 2
-#define MEM_GRANT_RANDOM_FACTOR 12
-#define MEM_VALID_RANDOM_FACTOR 36
+#define MEM_GRANT_RANDOM_FACTOR 2
+#define MEM_VALID_RANDOM_FACTOR 4
 
 #define PLB_MISS_RATE 1
 
@@ -251,7 +251,7 @@ void gen_memory_valid( uint8_t port_id, uint8_t * valid, uint64_t * rdata, uint3
             float plb_miss_factor = 1/PLB_MISS_RATE;
             rdata[port_id] = ( valid_counters[port_id] % (int)plb_miss_factor == 0 ) ? 0 : 1;
         } else {
-            rdata[port_id] = 0xffffffff;
+            rdata[port_id] = 0xfffffffffffffffd;//0x0000000000000001;
         }
     }
 }

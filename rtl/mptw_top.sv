@@ -28,6 +28,7 @@ module mptw_top #(
     parameter unsigned PLB_TRANSACTION_DATA_WIDTH  = 64,                        // 8
     parameter unsigned PLB_TRANSACTION_ADDR_WIDTH  = 64,                        // $bits(plb_lookup_req_t)
     parameter unsigned WALKING_STAGE_MEM_DEPTH     = PLB_STAGE_DEPTH,
+    parameter unsigned FORWARDING_BUFFER_DEPTH     = 4,
     parameter unsigned REORDER_BUFFER_DEPTH        = 16,
     parameter unsigned PIPELINE_PASSTHROUGH        = 0                   // Experimental: remove some pipeline registers
 
@@ -160,7 +161,6 @@ module mptw_top #(
     assign input_transaction.valid          = mptw_transaction_valid_i; 
     assign input_transaction.completed      = '0;
     assign input_transaction.id             = '1; // ID 0xfff is reserved for non-issued transactions
-    assign input_transaction.rpa            = '1;
     assign input_transaction.mpte           = '0;
     assign input_transaction.format_error   = NO_ERROR ;
     assign input_transaction.access_error   = '0 ;
@@ -323,6 +323,7 @@ module mptw_top #(
                 .PIPELINE_SLAVE_DATA_WIDTH      ( walking_stage_datawidth   ),
                 .PIPELINE_MASTER_DATA_WIDTH     ( walking_stage_datawidth   ),
                 .TRANSACTION_FIFO_DEPTH         ( WALKING_STAGE_MEM_DEPTH   ),
+                .FORWARDING_BUFFER_DEPTH        ( FORWARDING_BUFFER_DEPTH   ),
                 .MEMORY_TRANSACTION_DATA_WIDTH  ( DATA_WIDTH                ),           
                 .MEMORY_TRANSACTION_ADDR_WIDTH  ( ADDR_WIDTH                ),
                 .WALKING_LEVEL                  ( NUM_STAGES - i            )
@@ -394,7 +395,7 @@ module mptw_top #(
     //                                             |___/               |___/        //
     //////////////////////////////////////////////////////////////////////////////////
 
-    parsing_stage #(
+    mpte_parsing_stage #(
         .PIPELINE_SLAVE_DATA_WIDTH   ( walking_stage_datawidth      ),
         .PIPELINE_MASTER_DATA_WIDTH  ( walking_stage_datawidth      ),
         .WALKING_LEVEL               ( 0                            )
@@ -479,7 +480,7 @@ module mptw_top #(
     // Instead, it just maps the output of the retire stage to
     // the system output.
 
-
+    assign commit_to_output_data = retire_to_commit_data;
     // Currently, we tie the last stage to be always ready
     // Future stall logic will deal with this
     assign retire_to_commit_ready = 1;

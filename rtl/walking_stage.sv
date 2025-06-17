@@ -18,6 +18,7 @@ module walking_stage #(
     parameter unsigned  PIPELINE_SLAVE_DATA_WIDTH       = 32,
     parameter unsigned  PIPELINE_MASTER_DATA_WIDTH      = 32,
     parameter unsigned  TRANSACTION_FIFO_DEPTH          = 4,
+    parameter unsigned  FORWARDING_BUFFER_DEPTH         = 4,
     parameter unsigned  MEMORY_TRANSACTION_DATA_WIDTH   = 64,                       
     parameter unsigned  MEMORY_TRANSACTION_ADDR_WIDTH   = 64,
     parameter unsigned  WALKING_LEVEL                   = 0
@@ -53,8 +54,10 @@ module walking_stage #(
     // Signals Declaration //
     /////////////////////////
 
-    `DECLARE_DATA_BUS( parsing_to_walking, PIPELINE_SLAVE_DATA_WIDTH );
-    `DECLARE_DATA_BUS( walking_to_pipe, PIPELINE_SLAVE_DATA_WIDTH );
+    `DECLARE_DATA_BUS( parsing_to_forwarding    , PIPELINE_SLAVE_DATA_WIDTH );
+    `DECLARE_DATA_BUS( forwarding_to_walking    , PIPELINE_SLAVE_DATA_WIDTH );
+    `DECLARE_DATA_BUS( walking_to_forwarding    , PIPELINE_SLAVE_DATA_WIDTH );
+    `DECLARE_DATA_BUS( walking_to_pipe          , PIPELINE_SLAVE_DATA_WIDTH );
 
     ///////////////////////
     // Bus Concatenation //
@@ -76,22 +79,52 @@ module walking_stage #(
     //                                                 |___/               |___/        //
     //////////////////////////////////////////////////////////////////////////////////////
 
-    parsing_stage #(
-        .PIPELINE_SLAVE_DATA_WIDTH   ( PIPELINE_SLAVE_DATA_WIDTH    ),
-        .PIPELINE_MASTER_DATA_WIDTH  ( PIPELINE_MASTER_DATA_WIDTH   ),
-        .WALKING_LEVEL               ( WALKING_LEVEL                )
+    mpte_parsing_stage #(
+        .PIPELINE_SLAVE_DATA_WIDTH  ( PIPELINE_SLAVE_DATA_WIDTH             ),
+        .PIPELINE_MASTER_DATA_WIDTH ( PIPELINE_MASTER_DATA_WIDTH            ),
+        .WALKING_LEVEL              ( WALKING_LEVEL                         )
     ) parsing_stage_u (
-        .clk_i                      ( clk_i                         ),
-        .rst_ni                     ( rst_ni                        ),
+        .clk_i                      ( clk_i                                 ),
+        .rst_ni                     ( rst_ni                                ),
 
         // Pipeline Ports
-        `MAP_DATA_PORT              ( stage_slave  , stage_slave        ),
-        `MAP_DATA_PORT              ( stage_master , parsing_to_walking ),
+        `MAP_DATA_PORT              ( stage_slave  , stage_slave            ),
+        `MAP_DATA_PORT              ( stage_master , parsing_to_forwarding  ),
 
         // Error Port
         .access_page_fault_o,
         .format_error_cause_o
 
+    ); 
+
+    //////////////////////////////////////////////////////////////////////////////////
+    //    ___                           _ _              ___       __  __           //
+    //   | __|__ _ ___ __ ____ _ _ _ __| (_)_ _  __ _   | _ )_  _ / _|/ _|___ _ _   //
+    //   | _/ _ \ '_\ V  V / _` | '_/ _` | | ' \/ _` |  | _ \ || |  _|  _/ -_) '_|  //
+    //   |_|\___/_|  \_/\_/\__,_|_| \__,_|_|_||_\__, |  |___/\_,_|_| |_| \___|_|    //
+    //                                          |___/                               //
+    //////////////////////////////////////////////////////////////////////////////////
+
+    // The forwarding buffer acts as a simple MPTE cache.
+    // It takes transactions out of the MPTE Parsing Stage and lookups
+    // if an MPTE is already available for this transaction, hence
+    // Marking it as NON-WALKING for the Memory Stage
+
+    forwarding_buffer #(
+        .TRANSACTION_DATA_WIDTH     ( PIPELINE_SLAVE_DATA_WIDTH                 ),
+        .FORWARDING_BUFFER_DEPTH    ( FORWARDING_BUFFER_DEPTH                   )
+    ) forwarding_buffer_u (
+        .clk_i                      ( clk_i                                     ),
+        .rst_ni                     ( rst_ni                                    ),
+
+        // Slave Port from the MPTE_parsiing
+        `MAP_DATA_PORT              ( mpte_slave_stage  , parsing_to_forwarding ),
+
+        // Slave Port to the Memory Stage update
+        `MAP_DATA_PORT              ( mem_slave_stage   , walking_to_forwarding ),
+
+        // Master Port to the Memory Stage
+        `MAP_DATA_PORT              ( mem_master_stage  , forwarding_to_walking )
     ); 
 
     //////////////////////////////////////////////////////////////////
@@ -105,30 +138,41 @@ module walking_stage #(
     // The Walking Stage supports a memory read stage.
 
     memory_read_stage #(
-        .PIPELINE_SLAVE_DATA_WIDTH   ( PIPELINE_SLAVE_DATA_WIDTH    ),
-        .PIPELINE_MASTER_DATA_WIDTH  ( PIPELINE_MASTER_DATA_WIDTH   ),
-        .TRANSACTION_FIFO_DEPTH      ( TRANSACTION_FIFO_DEPTH       ),
-        .MEMORY_DATA_WIDTH           ( MEMORY_TRANSACTION_DATA_WIDTH   ),                      
-        .MEMORY_ADDR_WIDTH           ( MEMORY_TRANSACTION_ADDR_WIDTH   )
+        .PIPELINE_SLAVE_DATA_WIDTH  ( PIPELINE_SLAVE_DATA_WIDTH             ),
+        .PIPELINE_MASTER_DATA_WIDTH ( PIPELINE_MASTER_DATA_WIDTH            ),
+        .TRANSACTION_FIFO_DEPTH     ( TRANSACTION_FIFO_DEPTH                ),
+        .MEMORY_DATA_WIDTH          ( MEMORY_TRANSACTION_DATA_WIDTH         ),                      
+        .MEMORY_ADDR_WIDTH          ( MEMORY_TRANSACTION_ADDR_WIDTH         )
     ) mem_stage_u (
-        .clk_i                  ( clk_i                                     ),
-        .rst_ni                 ( rst_ni                                    ),
+        .clk_i                      ( clk_i                                 ),
+        .rst_ni                     ( rst_ni                                ),
 
         // Pipeline Ports
-        `MAP_DATA_PORT          ( stage_slave  , parsing_to_walking ),
-        `MAP_DATA_PORT          ( stage_master , walking_to_pipe    ),
+        `MAP_DATA_PORT              ( stage_slave  , forwarding_to_walking  ),
+        `MAP_DATA_PORT              ( stage_master , walking_to_pipe        ),
 
         // PLB Cache Port
-        .memory_master_mem_req      ( memory_master_mem_req     ),
-        .memory_master_mem_gnt      ( memory_master_mem_gnt     ),
-        .memory_master_mem_valid    ( memory_master_mem_valid   ),
-        .memory_master_mem_addr     ( memory_master_mem_addr    ),
-        .memory_master_mem_rdata    ( memory_master_mem_rdata   ),
-        .memory_master_mem_wdata    ( memory_master_mem_wdata   ),
-        .memory_master_mem_we       ( memory_master_mem_we      ),
-        .memory_master_mem_be       ( memory_master_mem_be      ),
-        .memory_master_mem_error    ( memory_master_mem_error   )    
+        .memory_master_mem_req      ( memory_master_mem_req                 ),
+        .memory_master_mem_gnt      ( memory_master_mem_gnt                 ),
+        .memory_master_mem_valid    ( memory_master_mem_valid               ),
+        .memory_master_mem_addr     ( memory_master_mem_addr                ),
+        .memory_master_mem_rdata    ( memory_master_mem_rdata               ),
+        .memory_master_mem_wdata    ( memory_master_mem_wdata               ),
+        .memory_master_mem_we       ( memory_master_mem_we                  ),
+        .memory_master_mem_be       ( memory_master_mem_be                  ),
+        .memory_master_mem_error    ( memory_master_mem_error               )    
     );
+
+    // The Memory Stage output is used to update the Forwarding Buffer
+    // If the transaction was walked, meaning that a "miss" occurred
+
+    //////////////////////////////////////////////////
+    //    ___                   _   _               //
+    //   | _ \___ _ __  __ _ __| |_(_)_ _  __ _     //
+    //   |   / -_) '_ \/ _` / _| / / | ' \/ _` |    //
+    //   |_|_\___| .__/\__,_\__|_\_\_|_||_\__, |    //
+    //           |_|                      |___/     //
+    //////////////////////////////////////////////////
 
     pipeline_register # ( 
         .DATA_WIDTH             ( PIPELINE_SLAVE_DATA_WIDTH         )
@@ -140,15 +184,6 @@ module walking_stage #(
         `SINK_SLAVE_CTRL_PORT   ( s_ctrl                            ),
         `SINK_MASTER_STATUS_PORT( s_status  )
     );
-
-    //////////////////////////////////////////////////
-    //    ___                   _   _               //
-    //   | _ \___ _ __  __ _ __| |_(_)_ _  __ _     //
-    //   |   / -_) '_ \/ _` / _| / / | ' \/ _` |    //
-    //   |_|_\___| .__/\__,_\__|_\_\_|_||_\__, |    //
-    //           |_|                      |___/     //
-    //////////////////////////////////////////////////
-
     
 endmodule : walking_stage
 

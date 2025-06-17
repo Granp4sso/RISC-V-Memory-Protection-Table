@@ -145,7 +145,6 @@ module fetch_stage #(
     assign output_transaction.mmpt          = input_transaction.mmpt;
     assign output_transaction.spa           = input_transaction.spa;
     assign output_transaction.access_type   = input_transaction.access_type;
-    assign output_transaction.rpa           = input_transaction.rpa;
     assign output_transaction.valid         = input_transaction.valid;
     assign output_transaction.mpte          = input_transaction.mpte;
     assign output_transaction.plb_hit       = input_transaction.plb_hit;

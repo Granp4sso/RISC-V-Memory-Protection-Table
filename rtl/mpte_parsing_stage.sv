@@ -2,7 +2,11 @@
 // Author: Valerio Di Domenico <didomenico.valerio@virgilio.it>
 
 // Description:
-//  TBD
+//  The MPTE Parsing stage takes as input a transaction
+//  Containing an MPTE. It parses the MPTE and updates
+//  Transaction state (error, walking and completed fields)
+//  If the input MPTE is a leaf, then the transaction if completed
+//  Otherwise the next walking address is computed for the memory stage.
 
 /* verilator lint_off IMPORTSTAR */
 import mpt_pkg::*;
@@ -16,7 +20,7 @@ import mpt_pkg::*;
 // verilator lint_off PINCONNECTEMPTY
 // verilator lint_off UNDRIVEN
 
-module parsing_stage #(
+module mpte_parsing_stage #(
     parameter unsigned  PIPELINE_SLAVE_DATA_WIDTH       = 32,
     parameter unsigned  PIPELINE_MASTER_DATA_WIDTH      = 32,
     parameter unsigned  WALKING_LEVEL                   = 0
@@ -91,20 +95,17 @@ module parsing_stage #(
     //                          |___/   //
     //////////////////////////////////////
 
-    // In this stage the input transaction is storing the
-    // response from the walking stage (namely an MPT Entry).
-
-    assign mmpt_mode = input_transaction.mmpt.MODE;
-    assign spa = input_transaction.spa;
-    assign access_type = input_transaction.access_type;
+    // In this stage the input transaction is storing an MPTE entry.
+    // First, we need to parse the content of the MMPT register
+    assign mmpt_mode    = input_transaction.mmpt.MODE;
+    assign spa          = input_transaction.spa;
+    assign access_type  = input_transaction.access_type;
 
     ///////////////////////////////
     // Checking MPT Entry Format //
     ///////////////////////////////
 
-    // Format error process is required to guarantee correct MPT entries
-    // Are walked. 
-
+    // Format error process is required to guarantee correct MPTEs are walked
     // if the WALKING_LEVEL equals the maximum level for the MODE
     // the mmpt CSR is used instead of the MPT entry.
     assign use_mmpt_csr =   ( mmpt_mode == SMMPT43_MODE && WALKING_LEVEL == SMMPT43_WALKING_LEVELS ) ||
@@ -143,18 +144,18 @@ module parsing_stage #(
     //////////////////////////////////
 
     // If the current entry is not a leaf, we must build the
-    // phyisical address to access the next MPT level in the next walking stage.
+    // phyisical address to access the next MPT level during walking.
     // The next phyisical address is built depending on the MODE
     // and the current Walking Level.
 
-    assign mpt_entry = input_transaction.mpte;
-    assign mmpt_csr = input_transaction.mmpt;
+    assign mpt_entry    = input_transaction.mpte;
+    assign mmpt_csr     = input_transaction.mmpt;
 
     always_comb begin: build_next_ppn
 
         spa_current_page_number = '0;
-        base_phyisical_address = '0;
-        next_mpte_addr = '0;
+        base_phyisical_address  = '0;
+        next_mpte_addr          = '0;
 
         if( ~mpt_entry.L ) begin
             // Using mmpt CSR as base addr
@@ -190,8 +191,8 @@ module parsing_stage #(
                     endcase
             end
                 default: begin
-                    format_error_cause_o = UNSUPPORTED_MODE;
-                    spa_current_page_number = '0;
+                    format_error_cause_o        = UNSUPPORTED_MODE;
+                    spa_current_page_number     = '0;
                 end
             endcase
 
@@ -233,8 +234,8 @@ module parsing_stage #(
                     endcase
                 end
                 default: begin
-                    format_error_cause_o = UNSUPPORTED_MODE;
-                    range_offset = '0;
+                    format_error_cause_o    = UNSUPPORTED_MODE;
+                    range_offset            = '0;
                 end
             endcase
         end
@@ -249,8 +250,8 @@ module parsing_stage #(
 
     always_comb begin: access_permission_check_process
 
-        mpte_permissions = '0;
-        access_page_fault = '0;
+        mpte_permissions    = '0;
+        access_page_fault   = '0;
 
         if( mpt_entry.L ) begin
 
@@ -281,7 +282,8 @@ module parsing_stage #(
     //////////////////////////////////
     // FOR TESTING PURPOSES - BEGIN //
     //////////////////////////////////
-    assign format_error_cause = '0;
+    // Let's assume no error happens
+    assign format_error_cause = NO_ERROR;
     assign access_page_fault = '0;
     ////////////////////////////////
     // FOR TESTING PURPOSES - END //
@@ -292,14 +294,13 @@ module parsing_stage #(
     assign output_transaction.mmpt          = input_transaction.mmpt;
     assign output_transaction.spa           = input_transaction.spa;
     assign output_transaction.access_type   = input_transaction.access_type;
-    assign output_transaction.rpa           = input_transaction.rpa;
     assign output_transaction.valid         = input_transaction.valid;
     assign output_transaction.plb_hit       = input_transaction.plb_hit;
 
     // Complete transaction
     // A transaction is completed if (a) an error occurs, (b) if it is a leaf
-    assign output_transaction.completed     = ( ( mpt_entry.L ) ||
-                                                /*( format_error_cause != NO_ERROR || access_page_fault ) ||*/ // For testing purposes comment
+    assign output_transaction.completed     = ( ( mpt_entry.L )                                         ||
+                                                ( format_error_cause != NO_ERROR || access_page_fault ) ||
                                                 ( WALKING_LEVEL == 0 )
                                               ) ? 1'b1 : input_transaction.completed;
 
@@ -309,14 +310,17 @@ module parsing_stage #(
                                             ( format_error_cause != NO_ERROR || access_page_fault ) 
                                         ) ? MPT_WALKING_SKIP : input_transaction.walking ;
 
-    // Update the other fields
+    // After a parsing stage the mpte field is updatet with a pointer;
+    // Which is the address to the next mpte. The memory stage will use this
+    // To lookup in memory and then updated with the actual value of the mpte
     assign output_transaction.mpte          = next_mpte_addr;
+
+    // Update error fields and output signals
     assign output_transaction.format_error  = ( input_transaction.valid ) ? input_transaction.format_error : NO_ERROR ;
     assign output_transaction.access_error  = ( input_transaction.valid ) ? input_transaction.access_error : '0 ;
 
-    // Error Signals
-    assign format_error_cause_o = ( input_transaction.valid ) ? format_error_cause : NO_ERROR ;
-    assign access_page_fault_o  =( input_transaction.valid ) ?  access_page_fault : '0 ;
+    assign format_error_cause_o = output_transaction.format_error;
+    assign access_page_fault_o  = output_transaction.access_error;
 
     // Pipeline Register
     assign slave_to_reg_bus_data    = output_transaction;
@@ -335,7 +339,7 @@ module parsing_stage #(
     );
 
     
-endmodule : parsing_stage
+endmodule : mpte_parsing_stage
 
 // verilator lint_on UNOPTFLAT
 // verilator lint_on PINCONNECTEMPTY
