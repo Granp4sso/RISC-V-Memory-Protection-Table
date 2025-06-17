@@ -16,6 +16,7 @@
 // verilator lint_off UNDRIVEN
 // verilator lint_off UNOPTFLAT
 // verilator lint_off WIDTH
+// verilator lint_off WIDTHCONCAT
 
 import mpt_pkg::*;
 
@@ -62,10 +63,11 @@ module forwarding_buffer #(
 
     mptw_fwd_buff_entry_t [FORWARDING_BUFFER_DEPTH - 1 : 0] fwd_buffer_mem_q ;
     mptw_fwd_buff_entry_t [FORWARDING_BUFFER_DEPTH - 1 : 0] fwd_buffer_mem_d ;
-    logic [FORWARDING_BUFFER_DEPTH - 1 : 0]                 fwd_buffer_match_mask;
-    logic [$clog2(FORWARDING_BUFFER_DEPTH) - 1 : 0]         fwd_buffer_match_addr;
+    logic [FORWARDING_BUFFER_DEPTH : 0]                     fwd_buffer_match_mask;
+    logic [$clog2(FORWARDING_BUFFER_DEPTH + 1) - 1 : 0]     fwd_buffer_match_addr;
     mpt_entry_t                                             fwd_buffer_match_data;
     logic                                                   fwd_match_seen;
+    logic                                                   fwd_select_next_data;
 
     logic [$clog2(FORWARDING_BUFFER_DEPTH) - 1 : 0]         next_victim_line_q;
     logic [$clog2(FORWARDING_BUFFER_DEPTH) - 1 : 0]         next_victim_line_d;
@@ -119,13 +121,21 @@ module forwarding_buffer #(
     ///////////////////
 
     // If the lookup is enabled, check the forward buffer entries
-    // against the input MPTE address
+    // against the input MPTE address. We also include the current
+    // forwarded data that is not yet written.
     always_comb begin: fwd_buffer_lookup_match
-        for(int i = 0; i < FORWARDING_BUFFER_DEPTH; i++) begin
-            if( input_transaction.mpte_ptr == fwd_buffer_mem_q[i].mpte_tag && lookup_enable ) begin
-                fwd_buffer_match_mask[i] = 1'b1;
+        for(int i = 0; i < FORWARDING_BUFFER_DEPTH + 1; i++) begin
+            fwd_buffer_match_mask[i] = 1'b0;
+            if( i < FORWARDING_BUFFER_DEPTH ) begin
+                // Check inside the forwarded buffer
+                if( input_transaction.mpte_ptr == fwd_buffer_mem_q[i].mpte_tag && lookup_enable ) begin
+                    fwd_buffer_match_mask[i] = 1'b1;
+                end     
             end else begin
-                fwd_buffer_match_mask[i] = 1'b0;
+                // Check for the forwarded signal
+                if( input_transaction.mpte_ptr == fwd_buffer_next_data.mpte_tag && update_enable ) begin
+                    fwd_buffer_match_mask[i] = 1'b1;
+                end
             end
         end
     end
@@ -135,9 +145,9 @@ module forwarding_buffer #(
     // line is added. Therefore, It is not possible to have more
     // than one match. We can use a one-hot encoder
     always_comb begin: fwd_buffer_lookup_address
-        fwd_buffer_match_addr = '0;
-        fwd_match_seen = '0;
-        for(int i = 0; i < FORWARDING_BUFFER_DEPTH; i++) begin
+        fwd_buffer_match_addr   = '0;
+        fwd_match_seen          = '0;
+        for(int i = 0; i < FORWARDING_BUFFER_DEPTH + 1; i++) begin
             if ( !fwd_match_seen && fwd_buffer_match_mask[i] ) begin
                 fwd_buffer_match_addr = i;
                 fwd_match_seen = 1;
@@ -145,9 +155,12 @@ module forwarding_buffer #(
         end
     end
 
+    // If the match only happened with the forwarded data, acknowledge it
+    assign fwd_select_next_data = ( fwd_match_seen && fwd_buffer_match_mask[FORWARDING_BUFFER_DEPTH] ) ? 1'b1 : 1'b0;
+
     always_comb begin: fwd_buffer_lookup_data
         if( fwd_match_seen ) begin
-            fwd_buffer_match_data = fwd_buffer_mem_q[fwd_buffer_match_addr].mpte_content;
+            fwd_buffer_match_data = ( fwd_select_next_data ) ? fwd_buffer_next_data.mpte_content : fwd_buffer_mem_q[fwd_buffer_match_addr].mpte_content;
         end else begin
             fwd_buffer_match_data = input_transaction.mpte;
         end
@@ -162,10 +175,10 @@ module forwarding_buffer #(
     // Buffer Update //
     ///////////////////
 
-    assign fwd_buffer_mem_d = fwd_buffer_mem_q;
-    assign mem_slave_stage_ready = 1'b1;
-    assign update_enable = mem_slave_stage_valid;
-    assign fwd_buffer_update_transaction = mem_slave_stage_data;
+    assign fwd_buffer_mem_d                 = fwd_buffer_mem_q;
+    assign mem_slave_stage_ready            = 1'b1;
+    assign update_enable                    = mem_slave_stage_valid;
+    assign fwd_buffer_update_transaction    = mem_slave_stage_data;
 
     // When a write arrives on the mem_slave_stage, next victim line is incremented and wdata is written
     always_comb begin: fwd_buffer_update
@@ -221,3 +234,4 @@ endmodule : forwarding_buffer
 // verilator lint_on UNDRIVEN
 // verilator lint_on UNOPTFLAT
 // verilator lint_on WIDTH
+// verilator lint_on WIDTHCONCAT

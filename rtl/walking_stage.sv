@@ -126,10 +126,8 @@ module walking_stage #(
 
             // Slave Port from the MPTE_parsiing
             `MAP_DATA_PORT              ( parsing_slave_stage   , parsing_to_forwarding ),
-
             // Slave Port to the Memory Stage update
             `MAP_DATA_PORT              ( mem_slave_stage       , walking_to_forwarding ),
-
             // Master Port to the Memory Stage
             `MAP_DATA_PORT              ( mem_master_stage      , forwarding_to_walking )
         ); 

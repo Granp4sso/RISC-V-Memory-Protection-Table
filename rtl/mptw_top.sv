@@ -21,14 +21,14 @@ import mpt_pkg::*;
 
 module mptw_top #(
 
-    parameter unsigned NUM_STAGES                  = 4,                        // Four stages for SMMPT52
+    parameter unsigned NUM_STAGES                  = 4,                  // Four stages for SMMPT52
     parameter unsigned DATA_WIDTH                  = 64,
     parameter unsigned ADDR_WIDTH                  = 64,
     parameter unsigned PLB_STAGE_DEPTH             = 4,
-    parameter unsigned PLB_TRANSACTION_DATA_WIDTH  = 64,                        // 8
-    parameter unsigned PLB_TRANSACTION_ADDR_WIDTH  = 64,                        // $bits(plb_lookup_req_t)
+    parameter unsigned PLB_TRANSACTION_DATA_WIDTH  = 64,                 // 8
+    parameter unsigned PLB_TRANSACTION_ADDR_WIDTH  = 64,                 // $bits(plb_lookup_req_t)
     parameter unsigned WALKING_STAGE_MEM_DEPTH     = PLB_STAGE_DEPTH,
-    parameter unsigned FORWARDING_BUFFER_DEPTH     = 0,
+    parameter unsigned FORWARDING_BUFFER_DEPTH     = 4,
     parameter unsigned REORDER_BUFFER_DEPTH        = 16,
     parameter unsigned PIPELINE_PASSTHROUGH        = 0                   // Experimental: remove some pipeline registers
 
@@ -39,8 +39,8 @@ module mptw_top #(
 
     input  logic                clk_i,
     input  logic                rst_ni,
-    input  logic                flush_i,                // Flush signal to reset internal state             <TODO>
-    input  logic                mptw_enable_i,          // Enable the MPT (i.e. only for non M-mode code)   <TODO>
+    input  logic                flush_i,                    // Flush signal to reset internal state             <TODO>
+    input  logic                mptw_enable_i,              // Enable the MPT (i.e. only for non M-mode code)   <TODO>
 
     //////////////////////
     // Transaction Port //
@@ -226,11 +226,11 @@ module mptw_top #(
 
     ) issue_stage_u (
 
-        .clk_i                  ( clk_i                             ),
-        .rst_ni                 ( rst_ni                            ),
+        .clk_i                  ( clk_i                                 ),
+        .rst_ni                 ( rst_ni                                ),
 
-        `MAP_DATA_PORT          ( stage_slave,  issue_stage_slave      ),
-        `MAP_DATA_PORT          ( stage_master, issue_stage_master     )
+        `MAP_DATA_PORT          ( stage_slave,  issue_stage_slave       ),
+        `MAP_DATA_PORT          ( stage_master, issue_stage_master      )
     );
 
     //////////////////////////////////////////////////////////////////////////////
@@ -333,23 +333,23 @@ module mptw_top #(
 
             ) walking_stage_u (
                 
-                .clk_i                  ( clk_i                                     ),
-                .rst_ni                 ( rst_ni                                    ),
+                .clk_i                      ( clk_i                                 ),
+                .rst_ni                     ( rst_ni                                ),
 
                 // Pipeline Ports
-                `MAP_DATA_INDEX_PORT    ( stage_slave, to_walking_stage, i          ),
-                `MAP_DATA_INDEX_PORT    ( stage_master, walking_to_demux, i         ),
+                `MAP_DATA_INDEX_PORT        ( stage_slave   , to_walking_stage  , i ),
+                `MAP_DATA_INDEX_PORT        ( stage_master  , walking_to_demux  , i ),
 
                 // Walker Memory Port
-                .memory_master_mem_req      ( walking_mem_master_mem_req[i]     ),
-                .memory_master_mem_gnt      ( walking_mem_master_mem_gnt[i]     ),
-                .memory_master_mem_valid    ( walking_mem_master_mem_valid[i]   ),
-                .memory_master_mem_addr     ( walking_mem_master_mem_addr[i]    ),
-                .memory_master_mem_rdata    ( walking_mem_master_mem_rdata[i]   ),
-                .memory_master_mem_wdata    ( walking_mem_master_mem_wdata[i]   ),
-                .memory_master_mem_we       ( walking_mem_master_mem_we[i]      ),
-                .memory_master_mem_be       ( walking_mem_master_mem_be[i]      ),
-                .memory_master_mem_error    ( walking_mem_master_mem_error[i]   ),
+                .memory_master_mem_req      ( walking_mem_master_mem_req[i]         ),
+                .memory_master_mem_gnt      ( walking_mem_master_mem_gnt[i]         ),
+                .memory_master_mem_valid    ( walking_mem_master_mem_valid[i]       ),
+                .memory_master_mem_addr     ( walking_mem_master_mem_addr[i]        ),
+                .memory_master_mem_rdata    ( walking_mem_master_mem_rdata[i]       ),
+                .memory_master_mem_wdata    ( walking_mem_master_mem_wdata[i]       ),
+                .memory_master_mem_we       ( walking_mem_master_mem_we[i]          ),
+                .memory_master_mem_be       ( walking_mem_master_mem_be[i]          ),
+                .memory_master_mem_error    ( walking_mem_master_mem_error[i]       ),
 
                 // Error ports
                 .access_page_fault_o        (),
