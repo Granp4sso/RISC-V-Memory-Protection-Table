@@ -214,7 +214,7 @@ module walking_stage #(
         `MAP_DATA_PORT          ( s_data, walking_to_pipe           ),
         `MAP_DATA_PORT          ( m_data, stage_master              ),
         `SINK_SLAVE_CTRL_PORT   ( s_ctrl                            ),
-        `SINK_MASTER_STATUS_PORT( s_status  )
+        `SINK_MASTER_STATUS_PORT( m_status  )
     );
     
 endmodule : walking_stage

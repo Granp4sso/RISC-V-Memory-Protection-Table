@@ -129,7 +129,7 @@ module memory_read_stage #(
         `MAP_DATA_PORT          ( s_data, stage_slave               ),
         `MAP_DATA_PORT          ( m_data, req_bus                   ),
         `SINK_SLAVE_CTRL_PORT   ( s_ctrl                            ),
-        `SINK_MASTER_STATUS_PORT( s_status  )
+        `SINK_MASTER_STATUS_PORT( m_status  )
     );
 
     assign grant_do_walk = ( req_to_grant_fifo.walking == MPT_WALKING_DO );

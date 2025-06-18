@@ -17,29 +17,42 @@
 //  Bus Declaration   //
 ////////////////////////
 
-// Declare Control Bus
-`define DECLARE_CTRL_BUS(bus_name)          \
-                                            \
-    logic       ``bus_name``_flush;         \
-    logic       ``bus_name``_stall;         
-
 // Declare Data Bus
-`define DECLARE_DATA_BUS(bus_name, data_width)        \
-                                                \
-    logic [``data_width`` -1 : 0] ``bus_name``_data; \
-    logic                   ``bus_name``_valid; \
-    logic                   ``bus_name``_ready;     
-
-// Declare Status Bus
-`define DECLARE_STATUS_BUS(bus_name)            \
-                                                \
-    logic                   ``bus_name``_busy;    
+`define DECLARE_DATA_BUS(bus_name, data_width)          \
+                                                        \
+    logic [``data_width`` -1 : 0]   ``bus_name``_data;  \
+    logic                           ``bus_name``_valid; \
+    logic                           ``bus_name``_ready;   
 
 // Declare Data Array
 `define DECLARE_DATA_BUS_ARRAY(bus_name, data_width, size)   \
     logic                       [data_width-1     : 0] ``bus_name``_data    [``size`` -1 : 0];     \
     logic                                              ``bus_name``_valid   [``size`` -1 : 0];     \
     logic                                              ``bus_name``_ready   [``size`` -1 : 0];    
+
+// Declare Control Bus
+`define DECLARE_CTRL_BUS(bus_name, flush_width)         \
+                                                        \
+    logic [``flush_width`` -1 : 0]  ``bus_name``_flush; \
+    logic                           ``bus_name``_stall;     
+
+`define DECLARE_CTRL_BUS_ARRAY(bus_name, flush_width, size)         \
+                                                        \
+    logic [``flush_width`` -1 : 0]  ``bus_name``_flush  [``size`` -1 : 0]; \
+    logic                           ``bus_name``_stall  [``size`` -1 : 0];     
+
+// Declare Status Bus
+`define DECLARE_STATUS_BUS(bus_name, flush_width)            \
+                                                \
+    logic                           ``bus_name``_busy;  \
+    logic [``flush_width`` -1 : 0]  ``bus_name``_flushed;  \
+    logic                           ``bus_name``_stalled;  \
+
+`define DECLARE_STATUS_BUS_ARRAY(bus_name, flush_width, size)            \
+                                                \
+    logic                           ``bus_name``_busy       [``size`` -1 : 0];  \
+    logic [``flush_width`` -1 : 0]  ``bus_name``_flushed    [``size`` -1 : 0];  \
+    logic                           ``bus_name``_stalled    [``size`` -1 : 0];  \
 
 ///////////////////////
 //  Bus Assignment   //
@@ -87,14 +100,16 @@
 //////////////////
 
 // Master Ports
-`define DEFINE_MASTER_CTRL_PORT(port_name)  \
-                                            \
-    output logic       ``port_name``_flush, \
-    output logic       ``port_name``_stall         
+`define DEFINE_MASTER_CTRL_PORT(port_name, flush_width)              \
+                                                                    \
+    output logic [``flush_width`` -1 : 0]    ``port_name``_flush,    \
+    output logic                            ``port_name``_stall         
 
-`define DEFINE_MASTER_STATUS_PORT(port_name)    \
-                                                \
-    output logic       ``port_name``_busy     
+`define DEFINE_MASTER_STATUS_PORT(port_name, flush_width)    \
+                                                                \
+    output logic                           ``port_name``_busy,  \
+    output logic [``flush_width`` -1 : 0]  ``port_name``_flushed,  \
+    output logic                           ``port_name``_stalled   \
 
 `define DEFINE_MASTER_DATA_PORT(port_name, data_width)        \
                                                         \
@@ -102,31 +117,44 @@
     output logic                   ``port_name``_valid, \
     input  logic                   ``port_name``_ready     
 
+`define DEFINE_MASTER_CTRL_PORT_ARRAY(port_name, data_width, size)        \
+                                                                                    \
+    output logic [``data_width`` -1 : 0]    ``port_name``_flush [``size`` -1 : 0],  \
+    output logic                            ``port_name``_stall [``size`` -1 : 0]         
+
 `define DEFINE_MASTER_DATA_PORT_ARRAY(port_name, data_width, size)   \
     output logic [``data_width``-1     : 0] ``port_name``_data  [``size`` -1 : 0],       \
-    output logic                        ``port_name``_valid [``size`` -1 : 0],       \
-    input  logic                        ``port_name``_ready [``size`` -1 : 0]
+    output logic                            ``port_name``_valid [``size`` -1 : 0],       \
+    input  logic                            ``port_name``_ready [``size`` -1 : 0]
 
 // Slave Ports
-`define DEFINE_SLAVE_CTRL_PORT(port_name)   \
-                                            \
-    input  logic       ``port_name``_flush, \
-    input  logic       ``port_name``_stall        
+`define DEFINE_SLAVE_CTRL_PORT(port_name, flush_width)               \
+                                                                    \
+    input  logic [``flush_width`` -1 : 0]   ``port_name``_flush,    \
+    input  logic                            ``port_name``_stall        
 
-`define DEFINE_SLAVE_STATUS_PORT(port_name)    \
+`define DEFINE_SLAVE_STATUS_PORT(port_name, flush_width)    \
                                                \
-    input  logic       ``port_name``_busy      
+    input  logic                           ``port_name``_busy,  \
+    input  logic [``flush_width`` -1 : 0]  ``port_name``_flushed,  \
+    input  logic                           ``port_name``_stalled  \
 
 `define DEFINE_SLAVE_DATA_PORT(port_name, data_width)         \
                                                         \
-    input  logic [``data_width`` -1 : 0] ``port_name``_data, \
-    input  logic                   ``port_name``_valid, \
-    output logic                   ``port_name``_ready  
+    input  logic [``data_width`` -1 : 0]    ``port_name``_data, \
+    input  logic                            ``port_name``_valid, \
+    output logic                            ``port_name``_ready  
 
 `define DEFINE_SLAVE_DATA_PORT_ARRAY(port_name, data_width, size)   \
     input  logic [``data_width``-1     : 0] ``port_name``_data  [``size`` -1 : 0],       \
-    input  logic                        ``port_name``_valid [``size`` -1 : 0],       \
-    output logic                        ``port_name``_ready [``size`` -1 : 0]       
+    input  logic                            ``port_name``_valid [``size`` -1 : 0],       \
+    output logic                            ``port_name``_ready [``size`` -1 : 0]       
+
+`define DEFINE_SLAVE_STATUS_PORT_ARRAY(port_name, flush_width, size)    \
+                                               \
+    input  logic                           ``port_name``_busy    [``size`` -1 : 0],  \
+    input  logic [``flush_width`` -1 : 0]  ``port_name``_flushed [``size`` -1 : 0],  \
+    input  logic                           ``port_name``_stalled [``size`` -1 : 0]   \
 
 
 //////////////////

@@ -39,7 +39,7 @@ module plb_lookup_stage #(
     `DEFINE_MASTER_DATA_PORT(stage_master, PIPELINE_MASTER_DATA_WIDTH),
 
     // PLB Lookup Control Port (Unused atm)
-    `DEFINE_SLAVE_CTRL_PORT(plb_lookup_ctrl),
+    `DEFINE_SLAVE_CTRL_PORT(plb_lookup_ctrl, $bits(mptw_flush_ctrl_e)),
 
     // Cache memory interface
     `DEFINE_MEM_MASTER_PORTS(plb_master, PLB_TRANSACTION_DATA_WIDTH, PLB_TRANSACTION_ADDR_WIDTH)
@@ -174,7 +174,7 @@ module plb_lookup_stage #(
         `MAP_DATA_PORT          ( s_data, local_to_reg_bus          ),
         `MAP_DATA_PORT          ( m_data, stage_master              ),
         `SINK_SLAVE_CTRL_PORT   ( s_ctrl                            ),
-        `SINK_MASTER_STATUS_PORT( s_status                          )
+        `SINK_MASTER_STATUS_PORT( m_status                          )
 
     ); 
 

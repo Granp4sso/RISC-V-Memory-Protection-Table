@@ -249,7 +249,7 @@ module retire_stage #(
             `MAP_DATA_PORT          ( s_data, to_issue_bus          ),
             `MAP_DATA_PORT          ( m_data, issue_stage_master    ),
             `SINK_SLAVE_CTRL_PORT   ( s_ctrl                        ),
-            `SINK_MASTER_STATUS_PORT( s_status  )
+            `SINK_MASTER_STATUS_PORT( m_status  )
         );
     end else begin: issue_pipeline_register_passthrough
         `ASSIGN_DATA_BUS( issue_stage_master, to_issue_bus );
@@ -454,7 +454,7 @@ module retire_stage #(
             `MAP_DATA_PORT          ( s_data, to_commit_bus         ),
             `MAP_DATA_PORT          ( m_data, commit_stage_master   ),
             `SINK_SLAVE_CTRL_PORT   ( s_ctrl                        ),
-            `SINK_MASTER_STATUS_PORT( s_status  )
+            `SINK_MASTER_STATUS_PORT( m_status  )
         );
     end else begin: commit_stage_register_generate
         `ASSIGN_DATA_BUS( commit_stage_master, to_commit_bus );

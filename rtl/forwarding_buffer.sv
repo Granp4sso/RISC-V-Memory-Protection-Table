@@ -223,7 +223,7 @@ module forwarding_buffer #(
         `MAP_DATA_PORT          ( s_data, to_mem_bus                ),
         `MAP_DATA_PORT          ( m_data, mem_master_stage          ),
         `SINK_SLAVE_CTRL_PORT   ( s_ctrl                            ),
-        `SINK_MASTER_STATUS_PORT( s_status  )
+        `SINK_MASTER_STATUS_PORT( m_status  )
     );
 
     

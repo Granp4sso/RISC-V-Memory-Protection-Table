@@ -1,17 +1,18 @@
 [*]
 [*] GTKWave Analyzer v3.3.104 (w)1999-2020 BSI
-[*] Tue Jun 17 14:43:21 2025
+[*] Wed Jun 18 11:36:34 2025
 [*]
-[dumpfile] "/home/stefano/Desktop/Work/Projects/smmtt/b_fwd/simulation/mptw_top/waves/trace.vcd"
-[dumpfile_mtime] "Tue Jun 17 14:42:46 2025"
-[dumpfile_size] 714757
-[savefile] "/home/stefano/Desktop/Work/Projects/smmtt/b_fwd/simulation/mptw_top/waves/conf.gtkw"
+[dumpfile] "/home/stefano/Desktop/Work/Projects/smmtt/b_flush/simulation/mptw_top/waves/trace.vcd"
+[dumpfile_mtime] "Wed Jun 18 11:35:51 2025"
+[dumpfile_size] 662448
+[savefile] "/home/stefano/Desktop/Work/Projects/smmtt/b_flush/simulation/mptw_top/waves/conf.gtkw"
 [timestart] 1
 [size] 1850 1016
 [pos] 70 47
 *-8.733255 953 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
 [treeopen] TOP.
 [treeopen] TOP.mptw_top.
+[treeopen] TOP.mptw_top.control_unit_u.
 [treeopen] TOP.mptw_top.fetch_stage_u.
 [treeopen] TOP.mptw_top.gen_walking_stages(0).
 [treeopen] TOP.mptw_top.gen_walking_stages(0).walking_stage_u.
@@ -47,6 +48,10 @@ TOP.plb_master_mem_addr[63:0]
 TOP.mptw_top.plb_master_mem_req
 TOP.mptw_top.plb_master_mem_gnt
 TOP.mptw_top.plb_master_mem_valid
+@200
+-Control Unit
+@29
+TOP.mptw_top.control_unit_u.ctrl_status_q[2:0]
 @200
 -# FRONTEND #
 -Fetch Stage
@@ -94,11 +99,6 @@ TOP.mptw_top.gen_walking_stages(0).walking_stage_u.stage_slave_valid
 TOP.mptw_top.gen_walking_stages(0).walking_stage_u.stage_master_valid
 [color] 3
 TOP.mptw_top.gen_walking_stages(0).walking_stage_u.stage_master_ready
-@22
-[color] 3
-TOP.mptw_top.gen_walking_stages(0).walking_stage_u.forwarding_buffer_u.fwd_buffer_match_mask[3:0]
-@24
-TOP.mptw_top.gen_walking_stages(0).walking_stage_u.forwarding_buffer_u.fwd_buffer_match_addr[1:0]
 @200
 -Walking Stage 1
 @28
@@ -155,9 +155,7 @@ TOP.mptw_top.retire_stage_gen.retire_stage_u.to_commit_bus_ready
 -# BACKEND #
 -Retire Stage
 -Commit Stage
-@23
+@22
 TOP.mptw_top.commit_to_output_data[279:0]
-@28
-TOP.mptw_top.mptw_transaction_valid_o
 [pattern_trace] 1
 [pattern_trace] 0

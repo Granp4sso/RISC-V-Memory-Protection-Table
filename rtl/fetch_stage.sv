@@ -31,7 +31,7 @@ module fetch_stage #(
     `DEFINE_MASTER_DATA_PORT(stage_master, PIPELINE_MASTER_DATA_WIDTH),
 
     // Control Port (Unused atm)
-    `DEFINE_SLAVE_CTRL_PORT(stage_ctrl),
+    `DEFINE_SLAVE_CTRL_PORT (stage_ctrl, $bits(mptw_flush_ctrl_e)),
 
     // Extra Logics
     output page_format_fault_e  exception_cause_o
@@ -175,7 +175,7 @@ module fetch_stage #(
         `MAP_DATA_PORT          ( s_data, slave_to_reg_bus      ),
         `MAP_DATA_PORT          ( m_data, stage_master          ),
         `SINK_SLAVE_CTRL_PORT   ( s_ctrl                        ),
-        `SINK_MASTER_STATUS_PORT( s_status  )
+        `SINK_MASTER_STATUS_PORT( m_status                      )
 
     ); 
     

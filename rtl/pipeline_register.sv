@@ -18,14 +18,14 @@ module pipeline_register #(
     input  logic                rst_ni,
 
     // Data Ports
-    `DEFINE_SLAVE_DATA_PORT(s_data, DATA_WIDTH),
-    `DEFINE_MASTER_DATA_PORT(m_data, DATA_WIDTH),
+    `DEFINE_SLAVE_DATA_PORT     ( s_data , DATA_WIDTH           ),
+    `DEFINE_MASTER_DATA_PORT    ( m_data , DATA_WIDTH           ),
 
     // Control Ports    
-    `DEFINE_SLAVE_CTRL_PORT(s_ctrl),
+    `DEFINE_SLAVE_CTRL_PORT     ( s_ctrl    , $bits(mptw_flush_ctrl_e)      ),
 
     // Status Ports
-    `DEFINE_MASTER_STATUS_PORT(s_status)
+    `DEFINE_MASTER_STATUS_PORT  ( m_status  , $bits(mptw_flush_status_e)    )
 
 );
 
@@ -34,11 +34,21 @@ module pipeline_register #(
         FULL
     } pipe_status_e;
 
-    pipe_status_e current_state, next_state; 
-    logic [DATA_WIDTH - 1 : 0] reg_data_q, reg_data_d;
+    mptw_flush_ctrl_e           flush_type;
+    mptw_flush_status_e         flush_status;
+    logic                       busy;
+    logic                       stalled;
+    pipe_status_e               current_state, next_state; 
+    logic [DATA_WIDTH - 1 : 0]  reg_data_q, reg_data_d;
+
+    assign flush_type = s_ctrl_flush;
+
     always_comb begin
 
-        reg_data_d = reg_data_q;
+        reg_data_d      = reg_data_q;
+        flush_status    = ( flush_type != MPT_FLUSH_NONE ) ? MPT_FLUSHED_COMPLETED : MPT_FLUSHED_NONE; // It takes one clock cycle to flush (TODO)
+        stalled         = '0;
+        busy            = '0;
         
         case (current_state)
             EMPTY: begin
@@ -52,8 +62,9 @@ module pipeline_register #(
                     // A new valid data is available
                     // But we currently have no available product
                     // We cannot yet expose a consumer ready
-                    next_state = FULL;
-                    reg_data_d = s_data_data;
+                    next_state  = FULL;
+                    reg_data_d  = s_data_data;
+                    busy        = 1'b1;
                 end else begin
                     next_state = EMPTY;
                 end
@@ -63,6 +74,7 @@ module pipeline_register #(
                 // A product is now available and must be consumed
                 m_data_valid = 1'b1;
                 s_data_ready = 1'b1;
+                busy         = 1'b1;
                 if( s_data_valid && m_data_ready ) begin
                     // A consumer is requesting a data
                     // And at the same time a new data can be produced
@@ -72,6 +84,7 @@ module pipeline_register #(
                     // A consumer is requesting a data
                     // But no valid data is available from the producer side
                     next_state = EMPTY;
+                    busy       = '0;
                 end else begin
                     // In all other cases
                     s_data_ready = '0;
@@ -82,20 +95,19 @@ module pipeline_register #(
     end
 
     always_ff @(posedge clk_i) begin
-        if ( ~rst_ni || s_ctrl_flush ) begin
-            current_state <= '0;
-            reg_data_q <= '0;
+        if ( ~rst_ni || ( flush_type != MPT_FLUSH_NONE ) ) begin
+            current_state   <= EMPTY;
+            reg_data_q      <= '0;
         end else begin
-            if ( ~s_ctrl_stall ) begin
-                current_state <= next_state;
-                reg_data_q <= reg_data_d;
-            end
+            current_state   <= next_state;
+            reg_data_q      <= reg_data_d;
         end
     end
 
-    assign m_data_data = reg_data_q;
-    assign s_status_busy = current_state;
+    assign m_data_data      = reg_data_q;
+    assign m_status_flushed = flush_status;
+    assign m_status_busy    = busy;
+    assign m_status_stalled = stalled;
 
-    
     
 endmodule : pipeline_register

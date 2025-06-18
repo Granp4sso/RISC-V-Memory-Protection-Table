@@ -78,7 +78,7 @@ module issue_stage #(
             `MAP_DATA_PORT          ( s_data, fetch_to_issue        ),
             `MAP_DATA_PORT          ( m_data, issue_to_backend      ),
             `SINK_SLAVE_CTRL_PORT   ( s_ctrl                        ),
-            `SINK_MASTER_STATUS_PORT( s_status  )
+            `SINK_MASTER_STATUS_PORT( m_status  )
 
         ); 
     end else begin: pipeline_register_passthrough
@@ -107,7 +107,7 @@ module issue_stage #(
             `MAP_DATA_PORT          ( s_data, backend_to_issue      ),
             `MAP_DATA_PORT          ( m_data, issue_to_plb_lookup   ),
             `SINK_SLAVE_CTRL_PORT   ( s_ctrl                        ),
-            `SINK_MASTER_STATUS_PORT( s_status  )
+            `SINK_MASTER_STATUS_PORT( m_status  )
 
         ); 
     end else begin: pipeline_register_passthrough
