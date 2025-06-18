@@ -181,7 +181,7 @@ module memory_read_stage #(
                     // Perform the memory protocol
                     if( grant_do_walk ) begin
                         memory_master_mem_req   = 1'b1;
-                        memory_master_mem_addr  = req_to_grant_fifo.spa;
+                        memory_master_mem_addr  = req_to_grant_fifo.mpte_ptr;
                         // The grant signal is not necessarily an answer to a request.
                         // The memory could always keep the grant signal high
                         if( memory_master_mem_gnt ) begin
@@ -214,7 +214,7 @@ module memory_read_stage #(
             GNT_WAIT_FOR_GRANT: begin
 
                 memory_master_mem_req = req_bus_valid;
-                memory_master_mem_addr = req_to_grant_fifo.spa;
+                memory_master_mem_addr = req_to_grant_fifo.mpte_ptr;
 
                 if( memory_master_mem_gnt ) begin
                     // Once the grant signal arrives, push the data into the fifo
@@ -291,18 +291,12 @@ module memory_read_stage #(
     );
 
     // The response data can be saved into the current transaction
-    assign grant_fifo_to_valid_fifo.id            = grant_fifo_data_out.id;
-    assign grant_fifo_to_valid_fifo.completed     = grant_fifo_data_out.completed;
-    assign grant_fifo_to_valid_fifo.valid         = grant_fifo_data_out.valid;
-    assign grant_fifo_to_valid_fifo.access_error  = grant_fifo_data_out.access_error;
-    assign grant_fifo_to_valid_fifo.format_error  = grant_fifo_data_out.format_error;
-    assign grant_fifo_to_valid_fifo.plb_hit       = grant_fifo_data_out.plb_hit;
-    assign grant_fifo_to_valid_fifo.rpa           = memory_master_mem_rdata;
-    assign grant_fifo_to_valid_fifo.mpte          = grant_fifo_data_out.mpte;
-    assign grant_fifo_to_valid_fifo.walking       = grant_fifo_data_out.walking;
-    assign grant_fifo_to_valid_fifo.access_type   = grant_fifo_data_out.access_type;
-    assign grant_fifo_to_valid_fifo.spa           = grant_fifo_data_out.spa;
-    assign grant_fifo_to_valid_fifo.mmpt          = grant_fifo_data_out.mmpt;
+    assign grant_fifo_to_valid_fifo         = grant_fifo_data_out;
+
+    // The MPTE field is used at input time ad the read address as
+    // It contains the pointer to the mpte. Once the memory answers,
+    // The content of the mpte field is changed to the actual MPTE data.
+    assign grant_fifo_to_valid_fifo.mpte    = memory_master_mem_rdata;
 
     //////////////////////////////////////////////////
     //   __   __    _ _    _   ___ ___ ___ ___      //

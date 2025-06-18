@@ -21,13 +21,14 @@ import mpt_pkg::*;
 
 module mptw_top #(
 
-    parameter unsigned NUM_STAGES                  = 4,                        // Four stages for SMMPT52
+    parameter unsigned NUM_STAGES                  = 4,                  // Four stages for SMMPT52
     parameter unsigned DATA_WIDTH                  = 64,
     parameter unsigned ADDR_WIDTH                  = 64,
     parameter unsigned PLB_STAGE_DEPTH             = 4,
-    parameter unsigned PLB_TRANSACTION_DATA_WIDTH  = 64,                        // 8
-    parameter unsigned PLB_TRANSACTION_ADDR_WIDTH  = 64,                        // $bits(plb_lookup_req_t)
+    parameter unsigned PLB_TRANSACTION_DATA_WIDTH  = 64,                 // 8
+    parameter unsigned PLB_TRANSACTION_ADDR_WIDTH  = 64,                 // $bits(plb_lookup_req_t)
     parameter unsigned WALKING_STAGE_MEM_DEPTH     = PLB_STAGE_DEPTH,
+    parameter unsigned FORWARDING_BUFFER_DEPTH     = 4,
     parameter unsigned REORDER_BUFFER_DEPTH        = 16,
     parameter unsigned PIPELINE_PASSTHROUGH        = 0                   // Experimental: remove some pipeline registers
 
@@ -38,8 +39,8 @@ module mptw_top #(
 
     input  logic                clk_i,
     input  logic                rst_ni,
-    input  logic                flush_i,                // Flush signal to reset internal state             <TODO>
-    input  logic                mptw_enable_i,          // Enable the MPT (i.e. only for non M-mode code)   <TODO>
+    input  logic                flush_i,                    // Flush signal to reset internal state             <TODO>
+    input  logic                mptw_enable_i,              // Enable the MPT (i.e. only for non M-mode code)   <TODO>
 
     //////////////////////
     // Transaction Port //
@@ -48,6 +49,7 @@ module mptw_top #(
     input  spa_t_u              spa_i,                      // Supervisor physical address input
     input  mmpt_reg_t           mmpt_reg_i,                 // Memory Protection Table Register input (coming from CSRs)
     input  mpt_access_e         access_type_i,              // Memory access type (read, write, execute)
+    input  logic                speculative_i,              // This transaction comes from speculative execution
     input  logic                mptw_transaction_valid_i,   // Input Data are Valid
     output logic                mptw_ready_o,               // The MPT Walker is ready to serve a transaction
     output logic                mptw_transaction_valid_o,   // Output Data is Valid (for one clock cycle)
@@ -154,14 +156,15 @@ module mptw_top #(
     assign input_transaction.mmpt           = mmpt_reg_i;
     assign input_transaction.spa            = spa_i;
     assign input_transaction.access_type    = access_type_i;
+    assign input_transaction.speculative    = speculative_i;
 
     // Inintially, we assume a transaction must be walked
     assign input_transaction.walking        = MPT_WALKING_DO;
     assign input_transaction.valid          = mptw_transaction_valid_i; 
     assign input_transaction.completed      = '0;
     assign input_transaction.id             = '1; // ID 0xfff is reserved for non-issued transactions
-    assign input_transaction.rpa            = '1;
     assign input_transaction.mpte           = '0;
+    assign input_transaction.mpte_ptr       = '0;
     assign input_transaction.format_error   = NO_ERROR ;
     assign input_transaction.access_error   = '0 ;
 
@@ -223,11 +226,11 @@ module mptw_top #(
 
     ) issue_stage_u (
 
-        .clk_i                  ( clk_i                             ),
-        .rst_ni                 ( rst_ni                            ),
+        .clk_i                  ( clk_i                                 ),
+        .rst_ni                 ( rst_ni                                ),
 
-        `MAP_DATA_PORT          ( stage_slave,  issue_stage_slave      ),
-        `MAP_DATA_PORT          ( stage_master, issue_stage_master     )
+        `MAP_DATA_PORT          ( stage_slave,  issue_stage_slave       ),
+        `MAP_DATA_PORT          ( stage_master, issue_stage_master      )
     );
 
     //////////////////////////////////////////////////////////////////////////////
@@ -323,29 +326,30 @@ module mptw_top #(
                 .PIPELINE_SLAVE_DATA_WIDTH      ( walking_stage_datawidth   ),
                 .PIPELINE_MASTER_DATA_WIDTH     ( walking_stage_datawidth   ),
                 .TRANSACTION_FIFO_DEPTH         ( WALKING_STAGE_MEM_DEPTH   ),
+                .FORWARDING_BUFFER_DEPTH        ( FORWARDING_BUFFER_DEPTH   ),
                 .MEMORY_TRANSACTION_DATA_WIDTH  ( DATA_WIDTH                ),           
                 .MEMORY_TRANSACTION_ADDR_WIDTH  ( ADDR_WIDTH                ),
                 .WALKING_LEVEL                  ( NUM_STAGES - i            )
 
             ) walking_stage_u (
                 
-                .clk_i                  ( clk_i                                     ),
-                .rst_ni                 ( rst_ni                                    ),
+                .clk_i                      ( clk_i                                 ),
+                .rst_ni                     ( rst_ni                                ),
 
                 // Pipeline Ports
-                `MAP_DATA_INDEX_PORT    ( stage_slave, to_walking_stage, i          ),
-                `MAP_DATA_INDEX_PORT    ( stage_master, walking_to_demux, i         ),
+                `MAP_DATA_INDEX_PORT        ( stage_slave   , to_walking_stage  , i ),
+                `MAP_DATA_INDEX_PORT        ( stage_master  , walking_to_demux  , i ),
 
                 // Walker Memory Port
-                .memory_master_mem_req      ( walking_mem_master_mem_req[i]     ),
-                .memory_master_mem_gnt      ( walking_mem_master_mem_gnt[i]     ),
-                .memory_master_mem_valid    ( walking_mem_master_mem_valid[i]   ),
-                .memory_master_mem_addr     ( walking_mem_master_mem_addr[i]    ),
-                .memory_master_mem_rdata    ( walking_mem_master_mem_rdata[i]   ),
-                .memory_master_mem_wdata    ( walking_mem_master_mem_wdata[i]   ),
-                .memory_master_mem_we       ( walking_mem_master_mem_we[i]      ),
-                .memory_master_mem_be       ( walking_mem_master_mem_be[i]      ),
-                .memory_master_mem_error    ( walking_mem_master_mem_error[i]   ),
+                .memory_master_mem_req      ( walking_mem_master_mem_req[i]         ),
+                .memory_master_mem_gnt      ( walking_mem_master_mem_gnt[i]         ),
+                .memory_master_mem_valid    ( walking_mem_master_mem_valid[i]       ),
+                .memory_master_mem_addr     ( walking_mem_master_mem_addr[i]        ),
+                .memory_master_mem_rdata    ( walking_mem_master_mem_rdata[i]       ),
+                .memory_master_mem_wdata    ( walking_mem_master_mem_wdata[i]       ),
+                .memory_master_mem_we       ( walking_mem_master_mem_we[i]          ),
+                .memory_master_mem_be       ( walking_mem_master_mem_be[i]          ),
+                .memory_master_mem_error    ( walking_mem_master_mem_error[i]       ),
 
                 // Error ports
                 .access_page_fault_o        (),
@@ -394,7 +398,7 @@ module mptw_top #(
     //                                             |___/               |___/        //
     //////////////////////////////////////////////////////////////////////////////////
 
-    parsing_stage #(
+    mpte_parsing_stage #(
         .PIPELINE_SLAVE_DATA_WIDTH   ( walking_stage_datawidth      ),
         .PIPELINE_MASTER_DATA_WIDTH  ( walking_stage_datawidth      ),
         .WALKING_LEVEL               ( 0                            )
@@ -479,7 +483,7 @@ module mptw_top #(
     // Instead, it just maps the output of the retire stage to
     // the system output.
 
-
+    assign commit_to_output_data = retire_to_commit_data;
     // Currently, we tie the last stage to be always ready
     // Future stall logic will deal with this
     assign retire_to_commit_ready = 1;

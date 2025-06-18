@@ -162,7 +162,6 @@ module retire_stage #(
     assign to_issue_transaction.mmpt          = from_issue_transaction.mmpt;
     assign to_issue_transaction.spa           = from_issue_transaction.spa;
     assign to_issue_transaction.access_type   = from_issue_transaction.access_type;
-    assign to_issue_transaction.rpa           = from_issue_transaction.rpa;
     assign to_issue_transaction.valid         = from_issue_transaction.valid;
     assign to_issue_transaction.mpte          = from_issue_transaction.mpte;
     assign to_issue_transaction.plb_hit       = from_issue_transaction.plb_hit;
