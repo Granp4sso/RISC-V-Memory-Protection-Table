@@ -39,8 +39,11 @@ module mptw_top #(
 
     input  logic                clk_i,
     input  logic                rst_ni,
-    input  logic                flush_i,                    // Flush signal to reset internal state             <TODO>
-    input  logic                mptw_enable_i,              // Enable the MPT (i.e. only for non M-mode code)   <TODO>
+    input  logic                flush_all_i,                // Flush all transactions in the pipeline
+    input  logic                flush_spec_i,               // Only flush speculative transactions (e.g. on a branch misprediction)
+    input  logic                stall_i,                    // External stall request
+    output logic                busy_o,                     // Required to notify to the CPU that transactions are still ongoing
+    output logic                stalled_o,                  // The pipeline is stalled
 
     //////////////////////
     // Transaction Port //
@@ -52,7 +55,7 @@ module mptw_top #(
     input  logic                speculative_i,              // This transaction comes from speculative execution
     input  logic                mptw_transaction_valid_i,   // Input Data are Valid
     output logic                mptw_ready_o,               // The MPT Walker is ready to serve a transaction
-    output logic                mptw_transaction_valid_o,   // Output Data is Valid (for one clock cycle)
+    output logic                mptw_result_valid_o,        // Output Data is Valid (for one clock cycle)
     //output plb_entry_t plb_entry_o,            // Output PLB entry (contains SDID, physical address, and permissions) <TODO>
 
     ////////////////
@@ -85,7 +88,8 @@ module mptw_top #(
     // Localparam Declaration //
     ////////////////////////////
 
-    localparam REORDER_BUFFER_ENABLE = ( REORDER_BUFFER_DEPTH == 0 ) ? 0 : 1;
+    localparam REORDER_BUFFER_ENABLE        = ( REORDER_BUFFER_DEPTH == 0 ) ? 0 : 1;
+    localparam PIPELINE_STAGES_NUM          = 4 + NUM_STAGES + 1; // Check
 
     localparam fetch_stage_datawidth        = $bits(mptw_transaction_t);
     localparam issue_stage_datawidth        = $bits(mptw_transaction_t);
@@ -115,23 +119,59 @@ module mptw_top #(
     /////////////////////
 
     // Frontend Buses
-    `DECLARE_DATA_BUS       ( input_to_fetch            , fetch_stage_datawidth                         );
-    `DECLARE_DATA_BUS       ( fetch_to_issue            , issue_stage_datawidth                         );
-    `DECLARE_DATA_BUS       ( issue_to_backend          , issue_stage_datawidth                         );
-    `DECLARE_DATA_BUS       ( issue_to_plb_lookup       , plb_lookup_stage_datawidth                    );
-    `DECLARE_DATA_BUS       ( plb_lookup_to_demux       , walking_stage_datawidth                       );
-    // Midend Buses
-    `DECLARE_DATA_BUS_ARRAY ( to_walking_stage          , walking_stage_datawidth   , NUM_STAGES + 1    );
-    `DECLARE_DATA_BUS_ARRAY ( walking_to_demux          , walking_stage_datawidth   , NUM_STAGES + 1    );   
-    `DECLARE_DATA_BUS_ARRAY ( walking_to_retire         , walking_stage_datawidth   , NUM_STAGES + 1    );
-    // Backend Buses
-    `DECLARE_DATA_BUS       ( backend_to_issue          , issue_stage_datawidth                         );
-    `DECLARE_DATA_BUS       ( retire_to_commit          , walking_stage_datawidth                       );
-    `DECLARE_DATA_BUS       ( commit_to_output          , walking_stage_datawidth                       );
+    `DECLARE_DATA_BUS           ( input_to_fetch_data           , fetch_stage_datawidth                             );
+    `DECLARE_DATA_BUS           ( fetch_to_issue_data           , issue_stage_datawidth                             );
+    `DECLARE_DATA_BUS           ( issue_to_backend_data         , issue_stage_datawidth                             );
+    `DECLARE_DATA_BUS           ( issue_to_plb_lookup_data      , plb_lookup_stage_datawidth                        );
+    `DECLARE_DATA_BUS           ( plb_lookup_to_demux_data      , walking_stage_datawidth                           );
 
-    // Control and Status BUS
-    `DECLARE_STATUS_BUS( fetch_pipe_status      );
-    `DECLARE_STATUS_BUS( plb_lookup_pipe_status );
+    // Midend Buses
+    `DECLARE_DATA_BUS_ARRAY     ( to_walking_stage_data         , walking_stage_datawidth       , NUM_STAGES + 1    );
+    `DECLARE_DATA_BUS_ARRAY     ( walking_to_demux_data         , walking_stage_datawidth       , NUM_STAGES + 1    );
+    `DECLARE_DATA_BUS_ARRAY     ( walking_to_retire_data        , walking_stage_datawidth       , NUM_STAGES + 1    );
+ 
+    // Backend Buses
+    `DECLARE_DATA_BUS           ( backend_to_issue_data         , issue_stage_datawidth                             );
+    `DECLARE_DATA_BUS           ( retire_to_commit_data         , walking_stage_datawidth                           );
+    `DECLARE_DATA_BUS           ( commit_to_output_data         , walking_stage_datawidth                           );
+
+    // Control and Status buses
+    `DECLARE_CTRL_BUS_ARRAY     ( system_control                , $bits(mptw_flush_ctrl_e)      , PIPELINE_STAGES_NUM   );
+    `DECLARE_STATUS_BUS_ARRAY   ( system_status                 , $bits(mptw_flush_status_e)    , PIPELINE_STAGES_NUM   );
+
+
+    //////////////////////////////////////////////////////////
+    //     ___         _           _   _   _      _ _       //
+    //    / __|___ _ _| |_ _ _ ___| | | | | |_ _ (_) |_     //
+    //   | (__/ _ \ ' \  _| '_/ _ \ | | |_| | ' \| |  _|    //
+    //    \___\___/_||_\__|_| \___/_|  \___/|_||_|_|\__|    //
+    //                                                      //
+    //////////////////////////////////////////////////////////
+
+    // Control unit handles external flush and stall logics
+    // It also handles the internal error conditions
+
+    // verilator lint_off PINMISSING
+    control_unit # (
+        .CONTROL_AND_STATUS_PORTS_NUM   ( PIPELINE_STAGES_NUM                                   )
+    ) control_unit_u (
+        .clk_i                          ( clk_i                                                 ),
+        .rst_ni                         ( rst_ni                                                ),
+        .valid_req_i                    ( mptw_transaction_valid_i                              ),   // A new valid transaction is issued
+        .busy_o                         ( busy_o                                                ),   // The pipeline is still processing data
+        .stalled_o                      ( stalled_o                                             ),
+        .flush_all_i                    ( flush_all_i                                           ),   // Externall flush
+        .flush_spec_i                   ( flush_spec_i                                          ),   // External flush for speculative transactions
+        .stall_i                        ( stall_i                                               ),   // External Stall
+        .pipeline_valid_i               ( mptw_transaction_valid_i                              ),   // A valid request is coming to the pipeline
+        .pipeline_ready_i               ( input_to_fetch_data_ready                             ),   // The pipeline can accept a new transaction
+        .system_valid_o                 ( input_to_fetch_data_valid                             ),   // The system can forward the input transaction
+        .system_ready_o                 ( mptw_ready_o                                          ),   // The system can accept a new transaction
+
+        `MAP_CTRL_PORT                  ( master_control            , system_control            ),
+        `MAP_STATUS_PORT                ( slave_status              , system_status             )
+    ); 
+    // verilator lint_on PINMISSING
 
     //////////////////////////////////////////////////////
     //    _____                _                 _      //
@@ -169,9 +209,7 @@ module mptw_top #(
     assign input_transaction.access_error   = '0 ;
 
     // Connect to the fetch stage
-    assign input_to_fetch_data              = input_transaction;
-    assign input_to_fetch_valid             = mptw_transaction_valid_i;
-    assign mptw_ready_o                     = input_to_fetch_ready;     // TODO: make this depending on the whole pipeline conditions
+    assign input_to_fetch_data_data         = input_transaction;
 
     //////////////////////////////////////////////////////
     //    ___    _      _      ___ _                    //
@@ -188,14 +226,15 @@ module mptw_top #(
 
     ) fetch_stage_u (
 
-        .clk_i                  ( clk_i                             ),
-        .rst_ni                 ( rst_ni                            ),
+        .clk_i                  ( clk_i                                     ),
+        .rst_ni                 ( rst_ni                                    ),
 
-        `MAP_DATA_PORT          ( stage_slave,  input_to_fetch      ),
-        `MAP_DATA_PORT          ( stage_master, fetch_to_issue      ),
-        `SINK_SLAVE_CTRL_PORT   ( stage_ctrl                        ),
+        `MAP_DATA_PORT          ( stage_slave   , input_to_fetch_data       ),
+        `MAP_DATA_PORT          ( stage_master  , fetch_to_issue_data       ),
+        `MAP_CTRL_INDEX_PORT    ( stage_ctrl    , system_control        , 0 ),
+        `MAP_STATUS_INDEX_PORT  ( stage_status  , system_status         , 0 ),
 
-        .exception_cause_o      ( fetch_exception_cause             )
+        .exception_cause_o      ( fetch_exception_cause                     )
     );
 
     //////////////////////////////////////////////////////
@@ -214,9 +253,9 @@ module mptw_top #(
     `DECLARE_DATA_BUS_ARRAY( issue_stage_master, issue_stage_datawidth, 2);
 
     // Concat Master ports to Issue Slave Ports: Backend to Issue (1), Fetch to Issue (0)
-    `CONCAT_MASTER_DATA_ARRAY_2( issue_stage_slave, backend_to_issue, fetch_to_issue );
+    `CONCAT_MASTER_DATA_ARRAY_2( issue_stage_slave, backend_to_issue_data, fetch_to_issue_data );
     // Concat Slave ports to Master Ports: Issue to PLB Lookup (1), Issue to Backend (0)
-    `CONCAT_SLAVE_DATA_ARRAY_2( issue_stage_master, issue_to_plb_lookup, issue_to_backend );
+    `CONCAT_SLAVE_DATA_ARRAY_2( issue_stage_master, issue_to_plb_lookup_data, issue_to_backend_data );
 
     issue_stage # (
 
@@ -226,11 +265,13 @@ module mptw_top #(
 
     ) issue_stage_u (
 
-        .clk_i                  ( clk_i                                 ),
-        .rst_ni                 ( rst_ni                                ),
+        .clk_i                  ( clk_i                                     ),
+        .rst_ni                 ( rst_ni                                    ),
 
-        `MAP_DATA_PORT          ( stage_slave,  issue_stage_slave       ),
-        `MAP_DATA_PORT          ( stage_master, issue_stage_master      )
+        `MAP_DATA_PORT          ( stage_slave   , issue_stage_slave         ),
+        `MAP_DATA_PORT          ( stage_master  , issue_stage_master        ),
+        `MAP_CTRL_INDEX_PORT    ( stage_ctrl    , system_control        , 1 ),
+        `MAP_STATUS_INDEX_PORT  ( stage_status  , system_status         , 1 )
     );
 
     //////////////////////////////////////////////////////////////////////////////
@@ -249,13 +290,14 @@ module mptw_top #(
 
     ) plb_lookup_stage_u (
         
-        .clk_i                  ( clk_i                                     ),
-        .rst_ni                 ( rst_ni                                    ),
+        .clk_i                  ( clk_i                                         ),
+        .rst_ni                 ( rst_ni                                        ),
 
         // Pipeline Ports
-        `MAP_DATA_PORT          ( stage_slave  , issue_to_plb_lookup        ),
-        `MAP_DATA_PORT          ( stage_master , plb_lookup_to_demux        ),
-        `SINK_SLAVE_CTRL_PORT   ( plb_lookup_ctrl                           ),
+        `MAP_DATA_PORT          ( stage_slave   , issue_to_plb_lookup_data      ),
+        `MAP_DATA_PORT          ( stage_master  , plb_lookup_to_demux_data      ),
+        `MAP_CTRL_INDEX_PORT    ( stage_ctrl    , system_control            , 2 ),
+        `MAP_STATUS_INDEX_PORT  ( stage_status  , system_status             , 2 ),
 
         // PLB Cache Port
         .plb_master_mem_req      ,
@@ -277,21 +319,21 @@ module mptw_top #(
     // The PLB Lookup result can go either to the retire stage or the 
     // walking stages. If no reorder buffer is implemented, go straight to walking.
 
-    assign plb_output_transaction = plb_lookup_to_demux_data;
+    assign plb_output_transaction = plb_lookup_to_demux_data_data;
     assign retire_demux_select[0] = plb_output_transaction.completed && plb_output_transaction.valid;
 
     // PLB Lookup retire port is port 0
     always_comb begin: plb_lookup_retire_demux
         if( retire_demux_select[0] && REORDER_BUFFER_ENABLE ) begin
             // Map the output to the corresponding retire stage
-            `ASSIGN_DATA_BUS_SCALAR_TO_ARRAY( walking_to_retire , 0 , plb_lookup_to_demux );
-            to_walking_stage_valid[0] = '0;
-            to_walking_stage_data[0] = '0; 
+            `ASSIGN_DATA_BUS_SCALAR_TO_ARRAY( walking_to_retire_data , 0 , plb_lookup_to_demux_data );
+            to_walking_stage_data_valid[0] = '0;
+            to_walking_stage_data_data[0] = '0; 
         end else begin
             // Forward to the Midend
-            `ASSIGN_DATA_BUS_SCALAR_TO_ARRAY( to_walking_stage , 0 , plb_lookup_to_demux );
-            walking_to_retire_valid[0] = '0;
-            walking_to_retire_data[0] = '0; 
+            `ASSIGN_DATA_BUS_SCALAR_TO_ARRAY( to_walking_stage_data , 0 , plb_lookup_to_demux_data );
+            walking_to_retire_data_valid[0] = '0;
+            walking_to_retire_data_data[0] = '0; 
         end
     end
 
@@ -333,23 +375,25 @@ module mptw_top #(
 
             ) walking_stage_u (
                 
-                .clk_i                      ( clk_i                                 ),
-                .rst_ni                     ( rst_ni                                ),
+                .clk_i                      ( clk_i                                             ),
+                .rst_ni                     ( rst_ni                                            ),
 
                 // Pipeline Ports
-                `MAP_DATA_INDEX_PORT        ( stage_slave   , to_walking_stage  , i ),
-                `MAP_DATA_INDEX_PORT        ( stage_master  , walking_to_demux  , i ),
+                `MAP_DATA_INDEX_PORT        ( stage_slave   , to_walking_stage_data , i         ),
+                `MAP_DATA_INDEX_PORT        ( stage_master  , walking_to_demux_data , i         ),
+                `MAP_CTRL_INDEX_PORT        ( stage_ctrl    , system_control        , 3 + i     ),
+                `MAP_STATUS_INDEX_PORT      ( stage_status  , system_status         , 3 + i     ),
 
                 // Walker Memory Port
-                .memory_master_mem_req      ( walking_mem_master_mem_req[i]         ),
-                .memory_master_mem_gnt      ( walking_mem_master_mem_gnt[i]         ),
-                .memory_master_mem_valid    ( walking_mem_master_mem_valid[i]       ),
-                .memory_master_mem_addr     ( walking_mem_master_mem_addr[i]        ),
-                .memory_master_mem_rdata    ( walking_mem_master_mem_rdata[i]       ),
-                .memory_master_mem_wdata    ( walking_mem_master_mem_wdata[i]       ),
-                .memory_master_mem_we       ( walking_mem_master_mem_we[i]          ),
-                .memory_master_mem_be       ( walking_mem_master_mem_be[i]          ),
-                .memory_master_mem_error    ( walking_mem_master_mem_error[i]       ),
+                .memory_master_mem_req      ( walking_mem_master_mem_req[i]                     ),
+                .memory_master_mem_gnt      ( walking_mem_master_mem_gnt[i]                     ),
+                .memory_master_mem_valid    ( walking_mem_master_mem_valid[i]                   ),
+                .memory_master_mem_addr     ( walking_mem_master_mem_addr[i]                    ),
+                .memory_master_mem_rdata    ( walking_mem_master_mem_rdata[i]                   ),
+                .memory_master_mem_wdata    ( walking_mem_master_mem_wdata[i]                   ),
+                .memory_master_mem_we       ( walking_mem_master_mem_we[i]                      ),
+                .memory_master_mem_be       ( walking_mem_master_mem_be[i]                      ),
+                .memory_master_mem_error    ( walking_mem_master_mem_error[i]                   ),
 
                 // Error ports
                 .access_page_fault_o        (),
@@ -365,26 +409,26 @@ module mptw_top #(
             // Such a choice is taken by the parsing stage. The first parsing stage
             // just builds the first root-MPT Entry address. Only from the second onward
             // The complete bit might be filled (as walking happened)
-            assign walking_output_transaction[i] = walking_to_demux_data[i];
+            assign walking_output_transaction[i] = walking_to_demux_data_data[i];
 
             if( i != 0 ) begin: retire_demux_gen
                 assign retire_demux_select[i] = walking_output_transaction[i].completed && walking_output_transaction[i].valid;
                 always_comb begin: walking_stage_retire_demux
                     if( retire_demux_select[i] && REORDER_BUFFER_ENABLE ) begin
                         // Map the output to the corresponding retire stage
-                        `ASSIGN_DATA_BUS_ARRAY_TO_ARRAY( walking_to_retire , i , walking_to_demux , i );
-                        to_walking_stage_valid[i + 1] = '0;
-                        to_walking_stage_data[i + 1] = '0; 
+                        `ASSIGN_DATA_BUS_ARRAY_TO_ARRAY( walking_to_retire_data , i , walking_to_demux_data , i );
+                        to_walking_stage_data_valid[i + 1] = '0;
+                        to_walking_stage_data_data[i + 1] = '0; 
                     end else begin
                         // Forward to the next walking stage
-                        `ASSIGN_DATA_BUS_ARRAY_TO_ARRAY( to_walking_stage , i + 1 , walking_to_demux , i );
-                        walking_to_retire_valid[i] = '0;
-                        walking_to_retire_data[i] = '0; 
+                        `ASSIGN_DATA_BUS_ARRAY_TO_ARRAY( to_walking_stage_data , i + 1 , walking_to_demux_data , i );
+                        walking_to_retire_data_valid[i] = '0;
+                        walking_to_retire_data_data[i] = '0; 
                     end
                 end
             end else begin: no_retire_demux_gen
                 // In case of the first walking stage, just passthrough
-                `ASSIGN_DATA_BUS_ARRAY_TO_ARRAY( to_walking_stage , i + 1 , walking_to_demux , i );
+                `ASSIGN_DATA_BUS_ARRAY_TO_ARRAY( to_walking_stage_data , i + 1 , walking_to_demux_data , i );
             end
             
         end
@@ -399,16 +443,18 @@ module mptw_top #(
     //////////////////////////////////////////////////////////////////////////////////
 
     mpte_parsing_stage #(
-        .PIPELINE_SLAVE_DATA_WIDTH   ( walking_stage_datawidth      ),
-        .PIPELINE_MASTER_DATA_WIDTH  ( walking_stage_datawidth      ),
-        .WALKING_LEVEL               ( 0                            )
+        .PIPELINE_SLAVE_DATA_WIDTH   ( walking_stage_datawidth                                      ),
+        .PIPELINE_MASTER_DATA_WIDTH  ( walking_stage_datawidth                                      ),
+        .WALKING_LEVEL               ( 0                                                            )
     ) last_parsing_stage_u (
-        .clk_i                      ( clk_i                         ),
-        .rst_ni                     ( rst_ni                        ),
+        .clk_i                      ( clk_i                                                         ),
+        .rst_ni                     ( rst_ni                                                        ),
 
         // Pipeline Ports
-        `MAP_DATA_INDEX_PORT        ( stage_slave  , to_walking_stage   , NUM_STAGES ),
-        `MAP_DATA_INDEX_PORT        ( stage_master , walking_to_retire  , NUM_STAGES ), // This must go to the Retire Stage
+        `MAP_DATA_INDEX_PORT        ( stage_slave   , to_walking_stage_data     , NUM_STAGES        ),
+        `MAP_DATA_INDEX_PORT        ( stage_master  , walking_to_retire_data    , NUM_STAGES        ), 
+        `MAP_CTRL_INDEX_PORT        ( stage_ctrl    , system_control            , 3 + NUM_STAGES    ),
+        `MAP_STATUS_INDEX_PORT      ( stage_status  , system_status             , 3 + NUM_STAGES    ),
 
         // Error Port
         .access_page_fault_o        ( ),
@@ -454,21 +500,24 @@ module mptw_top #(
 
         ) retire_stage_u (
 
-            .clk_i                  ( clk_i                             ),
-            .rst_ni                 ( rst_ni                            ),
+            .clk_i                  ( clk_i                                                                         ),
+            .rst_ni                 ( rst_ni                                                                        ),
 
             // Master/Slave interface to the Issue Stage
-            `MAP_DATA_PORT          ( issue_stage_slave,  issue_to_backend  ),
-            `MAP_DATA_PORT          ( issue_stage_master, backend_to_issue  ),
+            `MAP_DATA_PORT          ( issue_stage_slave     , issue_to_backend_data                                 ),
+            `MAP_DATA_PORT          ( issue_stage_master    , backend_to_issue_data                                 ),
             // Slave Interfaces to the PLB/Walking stages
-            `MAP_DATA_PORT          ( retire_stage_slave, walking_to_retire ),
-
-            // Master interface to the Commit Stage
-            `MAP_DATA_PORT          ( commit_stage_master, retire_to_commit )
+            `MAP_DATA_PORT          ( retire_stage_slave    , walking_to_retire_data                                ),
+            // Master interface to the Commit Sta   ge
+            `MAP_DATA_PORT          ( commit_stage_master   , retire_to_commit_data                                 ),
+            // Control and Status Ports
+            `MAP_CTRL_INDEX_PORT    ( stage_ctrl            , system_control            , PIPELINE_STAGES_NUM - 1   ),
+            `MAP_STATUS_INDEX_PORT  ( stage_status          , system_status             , PIPELINE_STAGES_NUM - 1   )
         );
     end else begin
-        `ASSIGN_DATA_BUS( backend_to_issue, issue_to_backend );
-        `ASSIGN_DATA_BUS_ARRAY_TO_SCALAR( retire_to_commit, NUM_STAGES, walking_to_retire );
+        `ASSIGN_DATA_BUS                    ( backend_to_issue_data , issue_to_backend_data                             );
+        `ASSIGN_DATA_BUS_ARRAY_TO_SCALAR    ( retire_to_commit_data , NUM_STAGES            , walking_to_retire_data    );
+        assign system_status_flushed[PIPELINE_STAGES_NUM - 1] = MPT_FLUSHED_COMPLETED;
     end
 
     //////////////////////////////////////////////////////////////
@@ -483,13 +532,13 @@ module mptw_top #(
     // Instead, it just maps the output of the retire stage to
     // the system output.
 
-    assign commit_to_output_data = retire_to_commit_data;
+    assign commit_to_output_data_data = retire_to_commit_data_data;
     // Currently, we tie the last stage to be always ready
     // Future stall logic will deal with this
-    assign retire_to_commit_ready = 1;
+    assign retire_to_commit_data_ready = 1;
     // Also, this allows the valid signal to be high for exactly one
     // clock cycle every time a new data is available on the commit stage
-    assign mptw_transaction_valid_o = retire_to_commit_valid;
+    assign mptw_result_valid_o = retire_to_commit_data_valid;
 
 endmodule : mptw_top
 

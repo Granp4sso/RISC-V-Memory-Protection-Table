@@ -13,7 +13,18 @@
 
     package mpt_pkg;
         
-        // Define lengths for various fields based on XLEN
+        //////////////////////////////////////////////////////
+        //    ___                         _                 //
+        //   | _ \__ _ _ _ __ _ _ __  ___| |_ ___ _ _ ___   //
+        //   |  _/ _` | '_/ _` | '  \/ -_)  _/ -_) '_(_-<   //
+        //   |_| \__,_|_| \__,_|_|_|_\___|\__\___|_| /__/   //
+        //                                                  //
+        //////////////////////////////////////////////////////
+
+        ///////////////////
+        // Specification //
+        ///////////////////
+
         localparam int PPN_LEN       = (XLEN == 32) ? 22: 52;
         localparam int MMPT_MODE_LEN = (XLEN == 32) ? 2 : 4;
         localparam int MPTESIZE      = (XLEN == 32) ? 4 : 8;
@@ -27,19 +38,25 @@
         localparam int SMMPT52_WALKING_LEVELS = 4;
         localparam int SMMPT64_WALKING_LEVELS = 5;
 
+        ///////////////////////
+        // Microarchitecture //
+        ///////////////////////
 
-        // State machine states for MPT operations
-        typedef enum logic [3:0] {
-            IDLE              = 4'b0000, // Waiting for ptw_enable and valid address 
-            VALIDATE_ADDRESS  = 4'b0001, // Validate the received physical address against the maximum addressable address for the current MPT mode. If the address is invalid, generate a format_fault error
-            WAIT_FOR_GRANT    = 4'b0010, // Hold state until memory responds with grant signal
-            WAIT_FOR_RVALID   = 4'b0011, // Hold state until memory responds with rvalid signal   
-            MPT_LOOKUP        = 4'b0100, // Lookup process to obtain perissions associated with PA
-            FLUSH             = 4'b0101, // If flush signal received 
-            ERROR             = 4'b0110, // If a format_error or an access_fault occurrs
-            CHECK_PERMISSIONS = 4'b0111, // Check permissions
-            COMMIT            = 4'b1000  // Valid entry found
-        } mpt_state_e;
+        // Specify the maximum size for the ROB
+        // the ID '1 (sizeof ROB_ID_SIZE) is the unvalid one
+        localparam unsigned ROB_ID_SIZE = 12; 
+
+        //////////////////////////////////////////////////////////
+        //      _          _      ___              _  __ _      //
+        //     /_\  _ _ __| |_   / __|_ __  ___ __(_)/ _(_)__   //
+        //    / _ \| '_/ _| ' \  \__ \ '_ \/ -_) _| |  _| / _|  //
+        //   /_/ \_\_| \__|_||_| |___/ .__/\___\__|_|_| |_\__|  //
+        //                           |_|                        //
+        //////////////////////////////////////////////////////////
+
+        ///////////////////
+        // Specification //
+        ///////////////////
 
         // MPT access types
         typedef enum logic [1:0] {
@@ -48,6 +65,15 @@
             ACCESS_WRITE = 2'b10,
             ACCESS_EXEC  = 2'b11
         } mpt_access_e;
+
+        // MPT leaf-entry permissions
+        typedef enum logic [2:0] {
+            ALLOW_R   = 3'b001,
+            ALLOW_RW  = 3'b011,
+            ALLOW_X   = 3'b100,
+            ALLOW_RX  = 3'b101,
+            ALLOW_RWX = 3'b111
+        } mpt_permissions_e;
 
         // Format error that may occur in page table lookups
         typedef enum logic [2:0] {
@@ -59,22 +85,6 @@
             INVALID_LEVEL      = 3'b101, // Unsupported lookup level
             UNSUPPORTED_MODE   = 3'b110  // Unsupported MPT reg MODE
         } page_format_fault_e;
-
-        // MPT leaf-entry permissions
-        typedef enum logic [2:0] {
-            ALLOW_R   = 3'b001,
-            ALLOW_RW  = 3'b011,
-            ALLOW_X   = 3'b100,
-            ALLOW_RX  = 3'b101,
-            ALLOW_RWX = 3'b111
-        } mpt_permissions_e;
-         
-        // PLB entry structure
-        typedef struct packed {
-            logic [SDID_LEN-1:0] SDID;  // Supervisor domain identifier
-            logic [XLEN-1:0]     SPA;   // Supervisor physical address 
-            mpt_permissions_e    PERMS; // Permissions associated with SPA
-        } plb_entry_t;
     
         `ifdef ARCH_rv32
             localparam int XLEN = 32;
@@ -206,21 +216,50 @@
             logic [PPN_LEN-1:0]       PPN;  // Physical page number (PPN) of the root page of the memory protection tables. Must be set to 0 if mode = BARE
         } mmpt_reg_t;
 
-        ////////////////////////////////////////////////////
+        //////////////////////////////////
+        //    _____                     //
+        //   |_   _|  _ _ __  ___ ___   //
+        //     | || || | '_ \/ -_|_-<   //
+        //     |_| \_, | .__/\___/__/   //
+        //         |__/|_|              //
+        //////////////////////////////////
 
-        typedef enum logic [1:0] {
-            MPT_WALKING_DO      = 2'b00,
-            MPT_WALKING_FWD     = 2'b01,
-            MPT_WALKING_SKIP    = 2'b10,
-            MPT_WALKING_UNUSED  = 2'b11
-        } mpt_walking_e;
-
-        // Transaction type is used as input for the MPT Walker
-        // And propagated throughout the pipeline
-
-        localparam unsigned ROB_ID_SIZE = 12; 
         typedef logic[ ROB_ID_SIZE - 1: 0 ] rob_id_size_t;
 
+        ///////////////////////
+        // Microarchitecture //
+        ///////////////////////
+
+        // Walking Status for a Transaction
+        typedef enum logic [1:0] {
+            MPT_WALKING_DO      = 2'b00,    // Perform walking for the current transaction
+            MPT_WALKING_FWD     = 2'b01,    // Do not perform walking as a match in the forward buffer happened
+            MPT_WALKING_SKIP    = 2'b10,    // Skip walking for this transaction (it is either completed, plb hit or failed)
+            MPT_WALKING_UNUSED  = 2'b11     // Unused
+        } mpt_walking_e;
+
+        // Flush type 
+        typedef enum logic [1:0] {
+            MPT_FLUSH_NONE      = 2'b00,    // Do not flush
+            MPT_FLUSH_ALL       = 2'b01,    // Flush the stage     
+            MPT_FLUSH_SPEC      = 2'b10,    // Flush only speculative transactions
+            MPT_FLUSH_UNUSED    = 2'b11     // Unused
+        } mptw_flush_ctrl_e;
+
+        typedef enum logic [1:0] {
+            MPT_FLUSHED_NONE        = 2'b00,    // No flush requested
+            MPT_FLUSHED_ONGOING     = 2'b01,    // Flush acknowledged and ongoing
+            MPT_FLUSHED_UNUSED      = 2'b10,    // Unused
+            MPT_FLUSHED_COMPLETED   = 2'b11     // Flush completed (high for one clock cycle)
+        } mptw_flush_status_e;
+
+        // Forwarding buffer entry 
+        typedef struct packed {
+            spa_t_u             mpte_tag;
+            mpt_entry_t         mpte_content;
+        } mptw_fwd_buff_entry_t;
+
+        // Pipeline transaction
         typedef struct packed {
             rob_id_size_t       id;             // Transaction assigned ID (in the Issue Stage)
             logic               speculative;    // Transaction is running from speculative execution
@@ -237,10 +276,17 @@
             mmpt_reg_t          mmpt;           // Input transaction mmpt CSR value
         } mptw_transaction_t;
 
+        ///////////
+        // Cache //
+        ///////////
+         
+        // Currently Unused
+        // PLB entry structure
         typedef struct packed {
-            spa_t_u             mpte_tag;
-            mpt_entry_t         mpte_content;
-        } mptw_fwd_buff_entry_t;
+            logic [SDID_LEN-1:0] SDID;  // Supervisor domain identifier
+            logic [XLEN-1:0]     SPA;   // Supervisor physical address 
+            mpt_permissions_e    PERMS; // Permissions associated with SPA
+        } plb_entry_t;
 
         typedef struct packed {
             logic [SDID_LEN-1:0]    SDID;
@@ -248,8 +294,6 @@
             mpt_access_e            access_type;
         } plb_lookup_req_t;
 
-
-        
     endpackage;
     
 `endif

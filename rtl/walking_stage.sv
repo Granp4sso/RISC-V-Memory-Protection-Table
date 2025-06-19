@@ -28,13 +28,17 @@ module walking_stage #(
     input  logic                rst_ni,
 
     // Walking Slave Port
-    `DEFINE_SLAVE_DATA_PORT(stage_slave, PIPELINE_SLAVE_DATA_WIDTH),
+    `DEFINE_SLAVE_DATA_PORT     ( stage_slave   , PIPELINE_SLAVE_DATA_WIDTH                                     ),
 
     // Walking Master Port
-    `DEFINE_MASTER_DATA_PORT(stage_master, PIPELINE_MASTER_DATA_WIDTH),
+    `DEFINE_MASTER_DATA_PORT    ( stage_master  , PIPELINE_MASTER_DATA_WIDTH                                    ),
+
+    // Control and Status Ports
+    `DEFINE_SLAVE_CTRL_PORT     ( stage_ctrl    , $bits(mptw_flush_ctrl_e)                                      ),
+    `DEFINE_MASTER_STATUS_PORT  ( stage_status  , $bits(mptw_flush_status_e)                                    ),
 
     // Walking memory interface
-    `DEFINE_MEM_MASTER_PORTS(memory_master, MEMORY_TRANSACTION_DATA_WIDTH, MEMORY_TRANSACTION_ADDR_WIDTH),
+    `DEFINE_MEM_MASTER_PORTS    ( memory_master , MEMORY_TRANSACTION_DATA_WIDTH , MEMORY_TRANSACTION_ADDR_WIDTH ),
 
     // Error Port
     output logic                access_page_fault_o,
@@ -63,11 +67,16 @@ module walking_stage #(
     // Bus Declaration //
     /////////////////////
 
-    `DECLARE_DATA_BUS( parsing_to_forwarding    , PIPELINE_SLAVE_DATA_WIDTH );
-    `DECLARE_DATA_BUS( forwarding_to_walking    , PIPELINE_SLAVE_DATA_WIDTH );
-    `DECLARE_DATA_BUS( from_walking             , PIPELINE_SLAVE_DATA_WIDTH );
-    `DECLARE_DATA_BUS( walking_to_forwarding    , PIPELINE_SLAVE_DATA_WIDTH );
-    `DECLARE_DATA_BUS( walking_to_pipe          , PIPELINE_SLAVE_DATA_WIDTH );
+    `DECLARE_DATA_BUS   ( parsing_to_forwarding     , PIPELINE_SLAVE_DATA_WIDTH     );
+    `DECLARE_DATA_BUS   ( forwarding_to_walking     , PIPELINE_SLAVE_DATA_WIDTH     );
+    `DECLARE_DATA_BUS   ( from_walking              , PIPELINE_SLAVE_DATA_WIDTH     );
+    `DECLARE_DATA_BUS   ( walking_to_forwarding     , PIPELINE_SLAVE_DATA_WIDTH     );
+    `DECLARE_DATA_BUS   ( walking_to_pipe           , PIPELINE_SLAVE_DATA_WIDTH     );
+
+    `DECLARE_STATUS_BUS ( mpte_parsing_status       , $bits(mptw_flush_status_e)    );
+    `DECLARE_STATUS_BUS ( forward_buffer_status     , $bits(mptw_flush_status_e)    );
+    `DECLARE_STATUS_BUS ( walking_mem_status        , $bits(mptw_flush_status_e)    );
+    `DECLARE_STATUS_BUS ( stage_reg_status          , $bits(mptw_flush_status_e)    );
 
     //////////////////////////////////////////////////////
     //    _   _                    _   _                //
@@ -96,6 +105,8 @@ module walking_stage #(
         // Pipeline Ports
         `MAP_DATA_PORT              ( stage_slave  , stage_slave            ),
         `MAP_DATA_PORT              ( stage_master , parsing_to_forwarding  ),
+        `MAP_CTRL_PORT              ( stage_ctrl   , stage_ctrl             ),
+        `MAP_STATUS_PORT            ( stage_status , mpte_parsing_status    ),
 
         // Error Port
         .access_page_fault_o,
@@ -129,10 +140,14 @@ module walking_stage #(
             // Slave Port to the Memory Stage update
             `MAP_DATA_PORT              ( mem_slave_stage       , walking_to_forwarding ),
             // Master Port to the Memory Stage
-            `MAP_DATA_PORT              ( mem_master_stage      , forwarding_to_walking )
+            `MAP_DATA_PORT              ( mem_master_stage      , forwarding_to_walking ),
+            // Status and Control Ports
+            `MAP_CTRL_PORT              ( stage_ctrl            , stage_ctrl            ),
+            `MAP_STATUS_PORT            ( stage_status          , forward_buffer_status )
         ); 
     end else begin: no_forwarding_buffer
         `ASSIGN_DATA_BUS( forwarding_to_walking, parsing_to_forwarding );
+        assign forward_buffer_status_flushed = MPT_FLUSHED_COMPLETED;
     end
 
     //////////////////////////////////////////////////////////////////
@@ -158,6 +173,8 @@ module walking_stage #(
         // Pipeline Ports
         `MAP_DATA_PORT              ( stage_slave  , forwarding_to_walking  ),
         `MAP_DATA_PORT              ( stage_master , from_walking           ),
+        `MAP_CTRL_PORT              ( stage_ctrl   , stage_ctrl             ),
+        `MAP_STATUS_PORT            ( stage_status , walking_mem_status     ),
 
         // PLB Cache Port
         .memory_master_mem_req      ( memory_master_mem_req                 ),
@@ -213,10 +230,37 @@ module walking_stage #(
         .rst_ni                 ( rst_ni                            ),
         `MAP_DATA_PORT          ( s_data, walking_to_pipe           ),
         `MAP_DATA_PORT          ( m_data, stage_master              ),
-        `SINK_SLAVE_CTRL_PORT   ( s_ctrl                            ),
-        `SINK_MASTER_STATUS_PORT( s_status  )
+        `MAP_CTRL_PORT          ( s_ctrl    , stage_ctrl            ),
+        `MAP_STATUS_PORT        ( m_status  , stage_reg_status      )
     );
     
+    //////////////////////////////////////////////////////
+    //    ___ _         _      _              _         //
+    //   | __| |_  _ __| |_   | |   ___  __ _(_)__      //
+    //   | _|| | || (_-< ' \  | |__/ _ \/ _` | / _|     //
+    //   |_| |_|\_,_/__/_||_| |____\___/\__, |_\__|     //
+    //                                  |___/           //
+    //////////////////////////////////////////////////////
+    
+    // Here we do handle the combination of flushed states of register and mem stage
+    always_comb begin: flush_handler_process
+        if (    ( mpte_parsing_status_flushed   == MPT_FLUSHED_COMPLETED ) &&
+                ( forward_buffer_status_flushed == MPT_FLUSHED_COMPLETED ) &&
+                ( walking_mem_status_flushed    == MPT_FLUSHED_COMPLETED ) &&
+                ( stage_reg_status_flushed      == MPT_FLUSHED_COMPLETED ) 
+            ) begin
+            stage_status_flushed = MPT_FLUSHED_COMPLETED;
+        end else if (   ( mpte_parsing_status_flushed   != MPT_FLUSHED_NONE ) || 
+                        ( forward_buffer_status_flushed != MPT_FLUSHED_NONE ) ||
+                        ( walking_mem_status_flushed    != MPT_FLUSHED_NONE ) ||
+                        ( stage_reg_status_flushed      != MPT_FLUSHED_NONE ) 
+                    ) begin
+            stage_status_flushed = MPT_FLUSHED_ONGOING;
+        end else begin
+            stage_status_flushed = MPT_FLUSHED_NONE;
+        end
+    end
+
 endmodule : walking_stage
 
 // verilator lint_on UNOPTFLAT

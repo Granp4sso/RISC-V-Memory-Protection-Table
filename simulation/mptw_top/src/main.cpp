@@ -13,9 +13,9 @@
 #define TRANSACTION_NUM 256
 #define TRANSACTION_RANDOM_FACTOR 1
 #define PLB_GRANT_RANDOM_FACTOR 1
-#define PLB_VALID_RANDOM_FACTOR 2
-#define MEM_GRANT_RANDOM_FACTOR 16
-#define MEM_VALID_RANDOM_FACTOR 64
+#define PLB_VALID_RANDOM_FACTOR 1
+#define MEM_GRANT_RANDOM_FACTOR 23
+#define MEM_VALID_RANDOM_FACTOR 48
 
 #define PLB_MISS_RATE 1
 
@@ -123,7 +123,12 @@ int main(int argc, char **argv) {
 
             }
 
-
+            uut.mod->flush_all_i = 0;
+            if( i == 23 ) uut.mod->flush_all_i = 1;
+            if( i == 102 ) uut.mod->flush_all_i = 1;
+            if( i == 142 ) uut.mod->flush_all_i = 1;
+            if( i == 453 ) uut.mod->flush_all_i = 1;
+            
 
             // Generate Transaction
             gen_transaction(&transaction, mptw_ready, TRANSACTION_RANDOM_FACTOR);
@@ -135,15 +140,7 @@ int main(int argc, char **argv) {
 
         }
 
-        // Every time the mptw outputs a valid signal, a full transaction have
-        // been processed.
-        /*if( valid_counters[TOT_PORTS_NUM - 1] == 0 && ending_clock_cycle == 0 ) {
-            ending_clock_cycle = i;
-        } else if ( ending_clock_cycle != 0 && i == ending_clock_cycle + 200 ) {
-            printf("\nDone: %u transactions completed in %d clock cycles\n", TRANSACTION_NUM, ending_clock_cycle);
-            break;
-        }*/
-        if( uut.mod->mptw_transaction_valid_o ) completed_counter++;
+        if( uut.mod->mptw_result_valid_o ) completed_counter++;
         if( completed_counter == TRANSACTION_NUM ){
             printf("\nDone: %u transactions completed in %d clock cycles\n", TRANSACTION_NUM, i);
             break;

@@ -32,13 +32,17 @@ module forwarding_buffer #(
     input  logic                rst_ni,
 
     // Slave Port from the MPTE_parsiing
-    `DEFINE_SLAVE_DATA_PORT ( parsing_slave_stage  , TRANSACTION_DATA_WIDTH ),
+    `DEFINE_SLAVE_DATA_PORT     ( parsing_slave_stage   , TRANSACTION_DATA_WIDTH        ),
 
     // Slave Port to the Memory Stage update
-    `DEFINE_SLAVE_DATA_PORT ( mem_slave_stage      , TRANSACTION_DATA_WIDTH ),
+    `DEFINE_SLAVE_DATA_PORT     ( mem_slave_stage       , TRANSACTION_DATA_WIDTH        ),
 
     // Master Port to the Memory Stage
-    `DEFINE_MASTER_DATA_PORT( mem_master_stage     , TRANSACTION_DATA_WIDTH )
+    `DEFINE_MASTER_DATA_PORT    ( mem_master_stage      , TRANSACTION_DATA_WIDTH        ),
+
+    // Control and Status Port
+    `DEFINE_SLAVE_CTRL_PORT     ( stage_ctrl            , $bits(mptw_flush_ctrl_e)      ),
+    `DEFINE_MASTER_STATUS_PORT  ( stage_status          , $bits(mptw_flush_status_e)    )
 ); 
 
     //////////////////////////////////////
@@ -73,6 +77,8 @@ module forwarding_buffer #(
     logic [$clog2(FORWARDING_BUFFER_DEPTH) - 1 : 0]         next_victim_line_d;
     mptw_fwd_buff_entry_t                                   fwd_buffer_next_data;
 
+    logic flush_event;
+
     /////////////////////
     // Bus Declaration //
     /////////////////////
@@ -87,7 +93,8 @@ module forwarding_buffer #(
     //              |_|                      |___/      //
     //////////////////////////////////////////////////////
 
-    assign input_transaction = parsing_slave_stage_data;
+    assign input_transaction    = parsing_slave_stage_data;
+    assign flush_event          = ( stage_ctrl_flush != MPT_FLUSH_NONE );
 
     //////////////////////////////////////
     //    ___       __  __              //
@@ -195,7 +202,7 @@ module forwarding_buffer #(
     end
 
     always_ff @(posedge clk_i) begin : fwd_buffer_reg_proc
-        if ( ~rst_ni ) begin
+        if ( ~rst_ni || flush_event ) begin
             fwd_buffer_mem_q    <= '1; //'1; Since address 0x0 is valid for an mpte, we reset to '1.
             next_victim_line_q  <= '0;
         end else begin
@@ -220,10 +227,10 @@ module forwarding_buffer #(
     ) fwd_buffer_reg (
         .clk_i                  ( clk_i                             ),
         .rst_ni                 ( rst_ni                            ),
-        `MAP_DATA_PORT          ( s_data, to_mem_bus                ),
-        `MAP_DATA_PORT          ( m_data, mem_master_stage          ),
-        `SINK_SLAVE_CTRL_PORT   ( s_ctrl                            ),
-        `SINK_MASTER_STATUS_PORT( s_status  )
+        `MAP_DATA_PORT          ( s_data    , to_mem_bus            ),
+        `MAP_DATA_PORT          ( m_data    , mem_master_stage      ),
+        `MAP_CTRL_PORT          ( s_ctrl    , stage_ctrl            ),
+        `MAP_STATUS_PORT        ( m_status  , stage_status          )
     );
 
     
