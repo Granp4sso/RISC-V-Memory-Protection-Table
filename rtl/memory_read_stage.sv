@@ -78,7 +78,8 @@ module memory_read_stage #(
     // Signals Declaration //
     /////////////////////////
 
-    `DECLARE_DATA_BUS( req_bus , PIPELINE_SLAVE_DATA_WIDTH );
+    `DECLARE_DATA_BUS( req_bus          , PIPELINE_SLAVE_DATA_WIDTH );
+    `DECLARE_DATA_BUS( to_output_bus    , PIPELINE_SLAVE_DATA_WIDTH );
 
     mptw_transaction_t req_to_grant_fifo;
     mptw_transaction_t grant_fifo_to_valid_fifo;
@@ -102,6 +103,7 @@ module memory_read_stage #(
     mptw_transaction_t valid_fifo_data_in;
     mptw_transaction_t valid_fifo_data_out;
     logic [$clog2(TRANSACTION_FIFO_DEPTH):0] valid_counter_q, valid_counter_d;
+    logic [$clog2(TRANSACTION_FIFO_DEPTH):0] spec_transaction_cnt_q, spec_transaction_cnt_d;
 
     logic [$clog2(TRANSACTION_FIFO_DEPTH):0] stage_usage;
     grant_fifo_status_e grant_fifo_status_q, grant_fifo_status_d;
@@ -199,10 +201,10 @@ module memory_read_stage #(
         case( grant_fifo_status_q )
             // No transaction is waiting for a Grant
             GNT_IDLE: begin
-                if( req_bus_valid && ( stage_usage < TRANSACTION_FIFO_DEPTH && ~grant_fifo_full && ~valid_fifo_full ) && ( flush_status_q != MEM_FLUSH_MODE && flush_status_q != MEM_FLUSH_WAIT ) ) begin
+                if( req_bus_valid && ( stage_usage < TRANSACTION_FIFO_DEPTH && ~grant_fifo_full && ~valid_fifo_full ) ) begin
                     // If the current transaction requires a walk
                     // Perform the memory protocol
-                    if( grant_do_walk ) begin
+                    if( grant_do_walk ) begin 
                         // If a flush arrives, and no grant is out yet, avoid the current transaction to be sent out
                         memory_master_mem_req   = '1;
                         memory_master_mem_addr  = req_to_grant_fifo.mpte_ptr;
@@ -353,7 +355,7 @@ module memory_read_stage #(
         valid_fifo_push         = '0;
         valid_fifo_pop          = '0;
         valid_fifo_to_master    = '0;
-        stage_master_valid      = '0;
+        to_output_bus_valid      = '0;
         valid_fifo_status_d     = VALID_IDLE;
 
         case( valid_fifo_status_q )
@@ -384,7 +386,7 @@ module memory_read_stage #(
                         // Buffered before ( therefore the valid counter is used )
                         if( ~valid_fifo_full && ~grant_fifo_empty ) begin
                             grant_fifo_pop = ( ~grant_fifo_empty ) ? 1'b1 : '0 ;
-                            if( ~stage_master_ready && ~valid_fifo_full ) begin
+                            if( ~to_output_bus_ready && ~valid_fifo_full ) begin
                                 // The next stage is not ready. We need to buffer
                                 // this transaction and move to the buffering stage
                                 valid_fifo_push = 1'b1;
@@ -393,7 +395,7 @@ module memory_read_stage #(
                                 // Otherwise, the transaction from grant fifo can
                                 // be forwarded to the next stage
                                 valid_fifo_to_master = grant_fifo_to_valid_fifo;
-                                stage_master_valid = 1'b1;
+                                to_output_bus_valid = 1'b1;
                             end
                             // The valid counter value is consumed if the mem valid is not high
                             valid_counter_d = ( memory_master_mem_valid ) ? valid_counter_q : valid_counter_q - 1;
@@ -404,7 +406,7 @@ module memory_read_stage #(
                     // be forwarded if the next stage is ready.
                     if( ~valid_fifo_full && ~grant_fifo_empty ) begin
                         grant_fifo_pop = ( ~grant_fifo_empty ) ? 1'b1 : 1'b0;
-                        if( ~stage_master_ready && ~valid_fifo_full ) begin
+                        if( ~to_output_bus_ready && ~valid_fifo_full ) begin
                             // The next stage is not ready. We need to buffer
                             // this transaction and move to the buffering stage
                             valid_fifo_push = 1'b1;
@@ -413,7 +415,7 @@ module memory_read_stage #(
                             // Otherwise, the transaction from grant fifo can
                             // be forwarded to the next stage
                             valid_fifo_to_master = grant_fifo_to_valid_fifo;
-                            stage_master_valid = 1'b1;
+                            to_output_bus_valid = 1'b1;
                         end
                         // If a valid signal arrives when handling a NON_WALKING transaction
                         // we need to take not of such occurrence
@@ -425,7 +427,7 @@ module memory_read_stage #(
                 // Or it will be emptied because of the passthrough and the valid fifo won't be used
                 if( ( grant_fifo_empty && ~grant_fifo_push ) ||
                     ( ~valid_fifo_empty ) ||
-                    ( ( grant_fifo_usage - 1 == '0 ) && ( grant_fifo_pop && ~grant_fifo_push ) && ( stage_master_ready ) )
+                    ( ( grant_fifo_usage - 1 == '0 ) && ( grant_fifo_pop && ~grant_fifo_push ) && ( to_output_bus_ready ) )
                     ) begin
                     valid_fifo_status_d = VALID_IDLE;
                 end
@@ -470,13 +472,13 @@ module memory_read_stage #(
                 // Pop from VALID FIFO //
                 /////////////////////////
 
-                if( ~stage_master_ready ) begin
+                if( ~to_output_bus_ready ) begin
                     // Stay in VALID_BUFFER
                     valid_fifo_status_d = VALID_BUFFER;
                 end else begin
                     // Data can be moved to the next stage
                     valid_fifo_to_master = valid_fifo_data_out;
-                    stage_master_valid = 1'b1;
+                    to_output_bus_valid = 1'b1;
                     valid_fifo_pop = 1'b1;
                     // If the valid FIFO is going to be emptied
                     // We can go back to the VALID_PASSTHROUGH state
@@ -558,10 +560,10 @@ module memory_read_stage #(
     
     always_comb begin
 
-        flush_status_d = flush_status_q;
-        flush_fifo = '0;
-        stage_status_flushed = MPT_FLUSHED_NONE;
-        flush_grant_fifo_pop = '0;
+        flush_status_d          = flush_status_q;
+        flush_fifo              = '0;
+        stage_status_flushed    = MPT_FLUSHED_NONE;
+        flush_grant_fifo_pop    = '0;
 
         case( flush_status_q )
 
@@ -570,6 +572,7 @@ module memory_read_stage #(
                 if( flush_event ) begin
                     flush_status_d = ( stage_ctrl_flush == MPT_FLUSH_ALL ) ? MEM_FLUSH_MODE : MEM_SPEC_FLUSH_MODE;
                     // Reset valid fifo and state machines
+                    // Only if the flush is ALL
                     flush_fifo = ( stage_ctrl_flush == MPT_FLUSH_ALL ) ? '1 : '0;
                     stage_status_flushed = MPT_FLUSHED_ONGOING;
                 end else begin
@@ -590,7 +593,8 @@ module memory_read_stage #(
                     flush_status_d = MEM_FLUSH_WAIT;
                 end else begin
                     // Otherwise, se must wait for valids to pop data.
-                    if( memory_master_mem_valid ) begin
+                    // Or just pop if the head transaction is a non walking one
+                    if( memory_master_mem_valid || ( grant_fifo_to_valid_fifo.walking != MPT_WALKING_DO ) ) begin
                         flush_grant_fifo_pop = 1'b1;
                     end
                     flush_status_d = MEM_FLUSH_MODE;
@@ -598,7 +602,16 @@ module memory_read_stage #(
             end
 
             MEM_SPEC_FLUSH_MODE: begin
-                
+                // TODO: Experimental
+                // Here we want to mantain the classic behaviour of the stage.
+                // The only difference is that in this mode spec transactions are
+                // popped but not forwarded anywhere
+                stage_status_flushed = MPT_FLUSHED_COMPLETED;
+                if( spec_transaction_cnt_q == '0 ) begin // Maybe using D?
+                    flush_status_d = MEM_RUN_MODE;
+                end else begin
+                    flush_status_d = MEM_SPEC_FLUSH_MODE;
+                end
             end
 
             MEM_FLUSH_WAIT: begin
@@ -618,14 +631,43 @@ module memory_read_stage #(
 
     end
 
+    /////////////////////////
+    // Speculative Counter //
+    /////////////////////////
+    // TODO: Experimental
+
+    always_comb begin
+        spec_transaction_cnt_d = spec_transaction_cnt_q;
+        // A new speculative transaction is in the grant fifo
+        if( grant_fifo_push && req_to_grant_fifo.speculative ) begin
+            spec_transaction_cnt_d = spec_transaction_cnt_q + 1;
+            if( to_output_bus_valid && valid_fifo_to_master.speculative ) begin
+                // A speculative transaction is coming in and one is going out
+                spec_transaction_cnt_d = spec_transaction_cnt_q;
+            end
+        end else if( to_output_bus_valid && to_output_bus_ready && valid_fifo_to_master.speculative ) begin
+            // A speculative tranasction is consumed
+            spec_transaction_cnt_d = spec_transaction_cnt_q - 1;
+        end
+    end
+
+    ////////////////
+    // Sequential //
+    ////////////////
 
     always_ff @(posedge clk_i) begin
         if ( ~rst_ni ) begin
             flush_status_q <= MEM_RUN_MODE;
+            // TODO: Experimental
+            spec_transaction_cnt_q <= '0;
         end else begin
             flush_status_q <= flush_status_d;
+            // TODO: Experimental
+            spec_transaction_cnt_q <= ( flush_fifo ) ? '0 :  spec_transaction_cnt_d;
         end
     end   
+
+
 
     //////////////////////////////////////////////////
     //    ___                   _   _               //
@@ -635,7 +677,12 @@ module memory_read_stage #(
     //           |_|                      |___/     //
     //////////////////////////////////////////////////
 
-    assign stage_master_data    = valid_fifo_to_master;
+    assign to_output_bus_ready  = stage_master_ready;
+    // If we are in flush speculative mode, transactions can flow through the stage normally, but their
+    // output is ignored by the next stage.
+    // TODO: Experimental
+    assign stage_master_data    = ( flush_status_q == MEM_SPEC_FLUSH_MODE && valid_fifo_to_master.speculative ) ? 64'hDDDDDDDDDDDDDDDD : valid_fifo_to_master;
+    assign stage_master_valid   = ( flush_status_q == MEM_SPEC_FLUSH_MODE && valid_fifo_to_master.speculative ) ? '0 : to_output_bus_valid;
 
 endmodule : memory_read_stage
 

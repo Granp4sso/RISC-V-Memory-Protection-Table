@@ -18,8 +18,8 @@ module pipeline_register #(
     input  logic                rst_ni,
 
     // Data Ports
-    `DEFINE_SLAVE_DATA_PORT     ( s_data , DATA_WIDTH           ),
-    `DEFINE_MASTER_DATA_PORT    ( m_data , DATA_WIDTH           ),
+    `DEFINE_SLAVE_DATA_PORT     ( s_data    , DATA_WIDTH                    ),
+    `DEFINE_MASTER_DATA_PORT    ( m_data    , DATA_WIDTH                    ),
 
     // Control Ports    
     `DEFINE_SLAVE_CTRL_PORT     ( s_ctrl    , $bits(mptw_flush_ctrl_e)      ),
@@ -36,19 +36,23 @@ module pipeline_register #(
 
     mptw_flush_ctrl_e           flush_type;
     mptw_flush_status_e         flush_status;
+    logic                       flush_event;
     logic                       busy;
     logic                       stalled;
     pipe_status_e               current_state, next_state; 
     logic [DATA_WIDTH - 1 : 0]  reg_data_q, reg_data_d;
+    mptw_transaction_t          internal_transaction;
 
     assign flush_type = s_ctrl_flush;
+    assign flush_event = ( flush_type != MPT_FLUSH_NONE );
+    assign internal_transaction = reg_data_q;
 
     always_comb begin
 
         reg_data_d      = reg_data_q;
-        flush_status    = ( flush_type != MPT_FLUSH_NONE ) ? MPT_FLUSHED_COMPLETED : MPT_FLUSHED_NONE; // It takes one clock cycle to flush (TODO)
         stalled         = '0;
         busy            = '0;
+        flush_status    = ( flush_type != MPT_FLUSH_NONE ) ? MPT_FLUSHED_COMPLETED : MPT_FLUSHED_NONE; // It takes one clock cycle to flush
         
         case (current_state)
             EMPTY: begin
@@ -95,9 +99,17 @@ module pipeline_register #(
     end
 
     always_ff @(posedge clk_i) begin
-        if ( ~rst_ni || ( flush_type != MPT_FLUSH_NONE ) ) begin
+        if ( ~rst_ni ) begin
             current_state   <= EMPTY;
             reg_data_q      <= '0;
+        end else if ( flush_event ) begin
+            if( flush_type == MPT_FLUSH_ALL ) begin
+                current_state   <= EMPTY;
+                reg_data_q      <= '0;
+            end else begin
+                current_state   <= ( internal_transaction.speculative ) ? EMPTY : next_state;
+                reg_data_q      <= ( internal_transaction.speculative ) ? '0 : reg_data_d;
+            end
         end else begin
             current_state   <= next_state;
             reg_data_q      <= reg_data_d;

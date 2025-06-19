@@ -1,22 +1,22 @@
 [*]
 [*] GTKWave Analyzer v3.3.104 (w)1999-2020 BSI
-[*] Thu Jun 19 11:35:34 2025
+[*] Thu Jun 19 16:15:14 2025
 [*]
 [dumpfile] "/home/stefano/Desktop/Work/Projects/smmtt/b_flush/simulation/mptw_top/waves/trace.vcd"
-[dumpfile_mtime] "Thu Jun 19 11:33:18 2025"
-[dumpfile_size] 677521
+[dumpfile_mtime] "Thu Jun 19 16:08:37 2025"
+[dumpfile_size] 8008412
 [savefile] "/home/stefano/Desktop/Work/Projects/smmtt/b_flush/simulation/mptw_top/waves/conf.gtkw"
-[timestart] 1
+[timestart] 1211
 [size] 1850 1016
 [pos] 70 47
-*-7.733255 430 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+*-7.733255 1730 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
 [treeopen] TOP.
 [treeopen] TOP.mptw_top.
 [treeopen] TOP.mptw_top.control_unit_u.
 [treeopen] TOP.mptw_top.fetch_stage_u.
-[treeopen] TOP.mptw_top.gen_walking_stages(0).
 [treeopen] TOP.mptw_top.gen_walking_stages(0).walking_stage_u.
 [treeopen] TOP.mptw_top.gen_walking_stages(0).walking_stage_u.mem_stage_u.
+[treeopen] TOP.mptw_top.gen_walking_stages(1).
 [treeopen] TOP.mptw_top.gen_walking_stages(1).walking_stage_u.
 [treeopen] TOP.mptw_top.gen_walking_stages(1).walking_stage_u.parsing_stage_u.
 [treeopen] TOP.mptw_top.plb_lookup_stage_u.
@@ -113,9 +113,7 @@ TOP.mptw_top.plb_lookup_stage_u.plb_lookup_reg_status_flushed[1:0]
 TOP.mptw_top.gen_walking_stages(0).walking_stage_u.stage_status_flushed[1:0]
 TOP.mptw_top.gen_walking_stages(0).walking_stage_u.forward_buffer_status_flushed[1:0]
 TOP.mptw_top.gen_walking_stages(0).walking_stage_u.stage_reg_status_flushed[1:0]
-@29
 TOP.mptw_top.gen_walking_stages(0).walking_stage_u.walking_mem_status_flushed[1:0]
-@28
 TOP.mptw_top.gen_walking_stages(0).walking_stage_u.mpte_parsing_status_flushed[1:0]
 [color] 3
 TOP.mptw_top.gen_walking_stages(0).walking_stage_u.stage_slave_ready
@@ -141,7 +139,19 @@ TOP.mptw_top.gen_walking_stages(1).walking_stage_u.parsing_stage_u.mpt_entry[63:
 @28
 [color] 1
 TOP.mptw_top.gen_walking_stages(1).walking_stage_u.parsing_stage_u.format_error_cause[2:0]
+TOP.mptw_top.gen_walking_stages(1).walking_stage_u.stage_status_flushed[1:0]
+TOP.mptw_top.gen_walking_stages(1).walking_stage_u.mem_stage_u.stage_status_flushed[1:0]
+TOP.mptw_top.gen_walking_stages(1).walking_stage_u.mem_stage_u.flush_status_q[1:0]
+TOP.mptw_top.gen_walking_stages(1).walking_stage_u.mem_stage_u.grant_fifo_usage[1:0]
+TOP.mptw_top.gen_walking_stages(1).walking_stage_u.mem_stage_u.memory_master_mem_valid
+TOP.mptw_top.gen_walking_stages(1).walking_stage_u.mem_stage_u.grant_fifo_full
+@29
+TOP.mptw_top.gen_walking_stages(1).walking_stage_u.mem_stage_u.grant_fifo_push
+@28
+TOP.mptw_top.gen_walking_stages(1).walking_stage_u.mem_stage_u.grant_fifo_pop
+TOP.mptw_top.gen_walking_stages(1).walking_stage_u.mem_stage_u.memory_master_mem_gnt
 TOP.mptw_top.gen_walking_stages(1).walking_stage_u.parsing_stage_u.access_page_fault
+TOP.mptw_top.gen_walking_stages(1).walking_stage_u.mem_stage_u.grant_fifo_status_q[1:0]
 @200
 -Walking Stage 2
 @28

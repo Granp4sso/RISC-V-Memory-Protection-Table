@@ -10,12 +10,12 @@
 
 #define BACK_TO_BACK 0
 
-#define TRANSACTION_NUM 16
+#define TRANSACTION_NUM 256
 #define TRANSACTION_RANDOM_FACTOR 1
 #define PLB_GRANT_RANDOM_FACTOR 1
 #define PLB_VALID_RANDOM_FACTOR 1
-#define MEM_GRANT_RANDOM_FACTOR 2
-#define MEM_VALID_RANDOM_FACTOR 4
+#define MEM_GRANT_RANDOM_FACTOR 23
+#define MEM_VALID_RANDOM_FACTOR 48
 
 #define PLB_MISS_RATE 1
 
@@ -124,7 +124,10 @@ int main(int argc, char **argv) {
             }
 
             uut.mod->flush_all_i = 0;
-            if( i == 12 ) uut.mod->flush_all_i = 1;
+            if( i == 23 ) uut.mod->flush_all_i = 1;
+            if( i == 102 ) uut.mod->flush_all_i = 1;
+            if( i == 142 ) uut.mod->flush_all_i = 1;
+            if( i == 453 ) uut.mod->flush_all_i = 1;
             
 
             // Generate Transaction

@@ -127,7 +127,7 @@ module control_unit #(
     //////////////////////////////
 
     // TODO
-    assign stall_condition = ( ~pipeline_ready_i ) || stall_i ;
+    assign stall_condition = '0; //( ~pipeline_ready_i ) || stall_i ;
 
     //////////////////////////////
     //    ___                   //
