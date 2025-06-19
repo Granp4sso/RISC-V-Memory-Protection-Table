@@ -18,7 +18,7 @@ import mpt_pkg::*;
 // verilator lint_off UNDRIVEN
 
 module control_unit #(
-    parameter unsigned NUM_STAGES   = 4                // Four stages for SMMPT52
+    parameter unsigned CONTROL_AND_STATUS_PORTS_NUM   = 4   // Four stages for SMMPT52
 ) (
     // Generic Signals
     input  logic                    clk_i,
@@ -39,18 +39,10 @@ module control_unit #(
     output logic                    system_ready_o,     // The system can accept a new transaction
 
     // Control Ports to Stages
-    `DEFINE_MASTER_CTRL_PORT        ( fetch_master_control      , $bits(mptw_flush_ctrl_e)               ),
-    `DEFINE_MASTER_CTRL_PORT        ( issue_master_control      , $bits(mptw_flush_ctrl_e)               ),
-    `DEFINE_MASTER_CTRL_PORT        ( plb_lookup_master_control , $bits(mptw_flush_ctrl_e)               ),
-    `DEFINE_MASTER_CTRL_PORT_ARRAY  ( walking_master_control    , $bits(mptw_flush_ctrl_e) , NUM_STAGES  ),
-    `DEFINE_MASTER_CTRL_PORT        ( retire_master_control     , $bits(mptw_flush_ctrl_e)               ),
+    `DEFINE_MASTER_CTRL_PORT_ARRAY  ( master_control    , $bits(mptw_flush_ctrl_e)      , CONTROL_AND_STATUS_PORTS_NUM ),
 
     // Status Bus from Stages
-    `DEFINE_SLAVE_STATUS_PORT        ( fetch_master_status       , $bits(mptw_flush_status_e)               ),
-    `DEFINE_SLAVE_STATUS_PORT        ( issue_master_status       , $bits(mptw_flush_status_e)               ),
-    `DEFINE_SLAVE_STATUS_PORT        ( plb_lookup_master_status  , $bits(mptw_flush_status_e)               ),
-    `DEFINE_SLAVE_STATUS_PORT_ARRAY  ( walking_master_status     , $bits(mptw_flush_status_e) , NUM_STAGES  ),
-    `DEFINE_SLAVE_STATUS_PORT        ( retire_master_status      , $bits(mptw_flush_status_e)               )
+    `DEFINE_SLAVE_STATUS_PORT_ARRAY ( slave_status      , $bits(mptw_flush_status_e)    , CONTROL_AND_STATUS_PORTS_NUM )
 
     // Error Ports from Stages
     // TBD
@@ -78,6 +70,11 @@ module control_unit #(
     /////////////////////////
 
     ctrl_status_e       ctrl_status_q, ctrl_status_d;
+    mptw_flush_ctrl_e   [ CONTROL_AND_STATUS_PORTS_NUM - 1 : 0 ] control_reg_q;
+    mptw_flush_ctrl_e   [ CONTROL_AND_STATUS_PORTS_NUM - 1 : 0 ] control_reg_d;
+    mptw_flush_status_e [ CONTROL_AND_STATUS_PORTS_NUM - 1 : 0 ] status_reg_q;
+    mptw_flush_status_e [ CONTROL_AND_STATUS_PORTS_NUM - 1 : 0 ] status_reg_d;
+
     mptw_flush_ctrl_e   flush_type;
     logic               stall_condition;
     logic               pipeline_busy;
@@ -111,15 +108,11 @@ module control_unit #(
     // Into another state only when all stages have been emptied.
     // Forward the flush signal to all stages
     always_comb begin: flush_signal_forward
-        fetch_master_control_flush      = flush_type;
-        issue_master_control_flush      = flush_type;
-        plb_lookup_master_control_flush = flush_type;  
-        retire_master_control_flush     = flush_type;
-
-        for( int i = 0; i < NUM_STAGES; i++ ) begin
-            walking_master_control_flush[i] = flush_type;
+        for( int i = 0; i < CONTROL_AND_STATUS_PORTS_NUM; i++ ) begin
+            control_reg_d[i] = flush_type;
         end
     end
+
 
     // The pipeline is busy as long as at least one stage is busy
     // This is a function of all status bus signals
@@ -165,6 +158,10 @@ module control_unit #(
         // By default, forward the communication between system interface and pipeline
         system_ready_o  = pipeline_ready_i; 
         system_valid_o  = pipeline_valid_i;
+        
+        // Control Word
+        control_reg_d  = '0;
+        status_reg_d   = '0;
 
         case ( ctrl_status_q )
             CTRL_IDLE: begin                // IDLE handling
@@ -175,16 +172,11 @@ module control_unit #(
                     ctrl_status_d = ( flush_type == MPT_FLUSH_NONE ) ? CTRL_STALL : CTRL_STALL_AND_FLUSH ;
                     system_ready_o = '0;
                     system_valid_o = '0;
-                end else if ( flush_type == MPT_FLUSH_ALL ) begin
+                end else if ( flush_type != MPT_FLUSH_NONE ) begin
                     // A flush all arrived
+                    system_ready_o = '0;
+                    system_valid_o = '0;
                     ctrl_status_d = CTRL_FLUSH;
-                    system_ready_o = '0;
-                    system_valid_o = '0;
-                end else if ( flush_type == MPT_FLUSH_SPEC ) begin
-                    // A speculative flush all arrived
-                    ctrl_status_d = CTRL_SPEC_FLUSH;
-                    system_ready_o = '0;
-                    system_valid_o = '0;
                 end else if ( valid_req_i && pipeline_ready_i ) begin
                     // A valid transaction arrived and the pipeline can handle it
                     busy_o = 1'b1;
@@ -202,16 +194,14 @@ module control_unit #(
                     ctrl_status_d = ( flush_type == MPT_FLUSH_NONE ) ? CTRL_STALL : CTRL_STALL_AND_FLUSH ;
                     system_ready_o = '0;
                     system_valid_o = '0;
-                end else if ( flush_type == MPT_FLUSH_ALL ) begin
+                end else if ( flush_type != MPT_FLUSH_NONE ) begin
                     // A flush all arrived
+                    system_ready_o = '0;
+                    system_valid_o = '0;
+                    for( int i = 0; i < CONTROL_AND_STATUS_PORTS_NUM; i++ ) begin
+                        control_reg_d[i] = flush_type;
+                    end
                     ctrl_status_d = CTRL_FLUSH;
-                    system_ready_o = '0;
-                    system_valid_o = '0;
-                end else if ( flush_type == MPT_FLUSH_SPEC ) begin
-                    // A speculative flush all arrived
-                    ctrl_status_d = CTRL_SPEC_FLUSH;
-                    system_ready_o = '0;
-                    system_valid_o = '0;
                 end else if( ~pipeline_busy && ~( valid_req_i && pipeline_ready_i ) ) begin
                     // The pipeline is not busy anymore and no requests are coming
                     ctrl_status_d = CTRL_IDLE;
@@ -226,9 +216,11 @@ module control_unit #(
                 busy_o = 1'b1;
                 system_ready_o = '0;
                 system_valid_o = '0;
-                // First, check for stalls
-                if( ~pipeline_busy ) begin
+                // The FLUSH is completed only when the status reg reports a MPT_FLUSHED_COMPLETED for all ports
+                if( &status_reg_q ) begin
                     // The pipeline is not busy anymore: the flush is completed.
+                    status_reg_d = '0;
+                    control_reg_d = '0;
                     // At this point, if a stall arrives, we go to stall, otherwise
                     // We can either go to idle or running depending if a request is coming
                     if ( stall_condition ) begin
@@ -240,6 +232,10 @@ module control_unit #(
                     end
                 end else begin
                     // The flush is not yet completed. 
+                    for ( int i = 0; i < CONTROL_AND_STATUS_PORTS_NUM; i++ ) begin
+                        status_reg_d[i]     = ( status_reg_q[i] == MPT_FLUSHED_COMPLETED ) ? MPT_FLUSHED_COMPLETED  : slave_status_flushed[i];
+                        control_reg_d[i]    = ( status_reg_q[i] == MPT_FLUSHED_COMPLETED ) ? MPT_FLUSH_NONE         : control_reg_q[i];
+                    end
                     ctrl_status_d = ( stall_condition ) ? CTRL_STALL_AND_FLUSH : CTRL_FLUSH;
                 end
 
@@ -265,8 +261,19 @@ module control_unit #(
     always_ff @(posedge clk_i) begin
         if ( ~rst_ni ) begin
             ctrl_status_q   <= CTRL_IDLE;
+            control_reg_q   <= '0;
+            status_reg_q    <= '0;
         end else begin
             ctrl_status_q   <= ctrl_status_d;
+            control_reg_q   <= control_reg_d;
+            status_reg_q    <= status_reg_d;
+        end
+    end
+
+    // Connect input and output signals
+    always_comb begin: port_mapping_proc
+        for( int i = 0; i < CONTROL_AND_STATUS_PORTS_NUM; i++ ) begin
+            master_control_flush[i] = control_reg_q[i];
         end
     end
 

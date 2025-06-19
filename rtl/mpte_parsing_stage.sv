@@ -26,18 +26,22 @@ module mpte_parsing_stage #(
     parameter unsigned  WALKING_LEVEL                   = 0
 ) (
     // Generic Signals
-    input  logic                clk_i,
-    input  logic                rst_ni,
+    input  logic                        clk_i,
+    input  logic                        rst_ni,
 
     // Walking Slave Port
-    `DEFINE_SLAVE_DATA_PORT(stage_slave, PIPELINE_SLAVE_DATA_WIDTH),
+    `DEFINE_SLAVE_DATA_PORT             ( stage_slave   , PIPELINE_SLAVE_DATA_WIDTH         ),
 
     // Walking Master Port
-    `DEFINE_MASTER_DATA_PORT(stage_master, PIPELINE_MASTER_DATA_WIDTH),
+    `DEFINE_MASTER_DATA_PORT            ( stage_master  , PIPELINE_MASTER_DATA_WIDTH        ),
+
+    // Control and Status Ports
+    `DEFINE_SLAVE_CTRL_PORT             ( stage_ctrl    , $bits(mptw_flush_ctrl_e)          ),
+    `DEFINE_MASTER_STATUS_PORT          ( stage_status  , $bits(mptw_flush_status_e)        ),
 
     // Error Port
-    output logic                access_page_fault_o,
-    output page_format_fault_e  format_error_cause_o
+    output logic                        access_page_fault_o,
+    output page_format_fault_e          format_error_cause_o
 
 ); 
 
@@ -336,8 +340,8 @@ module mpte_parsing_stage #(
         .rst_ni                 ( rst_ni                            ),
         `MAP_DATA_PORT          ( s_data, slave_to_reg_bus          ),
         `MAP_DATA_PORT          ( m_data, stage_master              ),
-        `SINK_SLAVE_CTRL_PORT   ( s_ctrl                            ),
-        `SINK_MASTER_STATUS_PORT( m_status  )
+        `MAP_CTRL_PORT          ( s_ctrl    , stage_ctrl            ),
+        `MAP_STATUS_PORT        ( m_status  , stage_status          )
     );
 
     

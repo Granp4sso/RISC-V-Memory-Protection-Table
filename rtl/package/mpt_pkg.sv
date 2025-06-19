@@ -249,8 +249,8 @@
         typedef enum logic [1:0] {
             MPT_FLUSHED_NONE        = 2'b00,    // No flush requested
             MPT_FLUSHED_ONGOING     = 2'b01,    // Flush acknowledged and ongoing
-            MPT_FLUSHED_COMPLETED   = 2'b10,    // Flush completed (high for one clock cycle)
-            MPT_FLUSHED_UNUSED      = 2'b11     // Unused
+            MPT_FLUSHED_UNUSED      = 2'b10,    // Unused
+            MPT_FLUSHED_COMPLETED   = 2'b11     // Flush completed (high for one clock cycle)
         } mptw_flush_status_e;
 
         // Forwarding buffer entry 

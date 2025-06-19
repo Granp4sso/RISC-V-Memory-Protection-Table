@@ -33,13 +33,17 @@ module memory_read_stage #(
     input  logic                rst_ni,
 
     // Memory Stage Slave Port
-    `DEFINE_SLAVE_DATA_PORT(stage_slave, PIPELINE_SLAVE_DATA_WIDTH),
+    `DEFINE_SLAVE_DATA_PORT     ( stage_slave   , PIPELINE_SLAVE_DATA_WIDTH             ),
 
     // Memory Stage Master Port
-    `DEFINE_MASTER_DATA_PORT(stage_master, PIPELINE_MASTER_DATA_WIDTH),
+    `DEFINE_MASTER_DATA_PORT    ( stage_master  , PIPELINE_MASTER_DATA_WIDTH            ),
+
+    // Control and Status Port
+    `DEFINE_SLAVE_CTRL_PORT     ( stage_ctrl    , $bits(mptw_flush_ctrl_e)              ),
+    `DEFINE_MASTER_STATUS_PORT  ( stage_status  , $bits(mptw_flush_status_e)            ),
 
     // Memory Master interface
-    `DEFINE_MEM_MASTER_PORTS(memory_master, MEMORY_DATA_WIDTH, MEMORY_ADDR_WIDTH)
+    `DEFINE_MEM_MASTER_PORTS    ( memory_master , MEMORY_DATA_WIDTH, MEMORY_ADDR_WIDTH  )
 
 ); 
 
@@ -62,6 +66,13 @@ module memory_read_stage #(
         VALID_PASSTHROUGH,
         VALID_BUFFER
     } valid_fifo_status_e;
+
+    typedef enum logic[1:0] { 
+        MEM_RUN_MODE,
+        MEM_FLUSH_MODE,
+        MEM_SPEC_FLUSH_MODE,
+        MEM_FLUSH_WAIT
+    } mem_flush_status_e;
 
     /////////////////////////
     // Signals Declaration //
@@ -96,6 +107,12 @@ module memory_read_stage #(
     grant_fifo_status_e grant_fifo_status_q, grant_fifo_status_d;
     valid_fifo_status_e valid_fifo_status_q, valid_fifo_status_d;
 
+    // Flush Signals
+    logic flush_event;
+    logic flush_fifo;
+    logic flush_grant_fifo_pop;
+    mem_flush_status_e flush_status_q, flush_status_d;
+
     ///////////////////////
     // Bus Concatenation //
     ///////////////////////
@@ -120,17 +137,23 @@ module memory_read_stage #(
 
     // This register is used to stabilize the communication between the
     // Previous stage and the current stage.
+    // It is not required anymore, let's leave it for safety in case we
+    // need it for debug purposes
 
-    pipeline_register # ( 
-        .DATA_WIDTH             ( PIPELINE_SLAVE_DATA_WIDTH         )
-    ) req_reg (
-        .clk_i                  ( clk_i                             ),
-        .rst_ni                 ( rst_ni                            ),
-        `MAP_DATA_PORT          ( s_data, stage_slave               ),
-        `MAP_DATA_PORT          ( m_data, req_bus                   ),
-        `SINK_SLAVE_CTRL_PORT   ( s_ctrl                            ),
-        `SINK_MASTER_STATUS_PORT( m_status  )
-    );
+    if( 0 ) begin: pipeline_register_generate
+        pipeline_register # ( 
+            .DATA_WIDTH             ( PIPELINE_SLAVE_DATA_WIDTH         )
+        ) req_reg (
+            .clk_i                  ( clk_i                             ),
+            .rst_ni                 ( rst_ni                            ),
+            `MAP_DATA_PORT          ( s_data, stage_slave               ),
+            `MAP_DATA_PORT          ( m_data, req_bus                   ),
+            `MAP_CTRL_PORT          ( s_ctrl, stage_ctrl                ),
+            `SINK_MASTER_STATUS_PORT( m_status  )
+        );
+    end else begin: pipeline_register_passthrough
+        `ASSIGN_DATA_BUS( req_bus, stage_slave );
+    end
 
     assign grant_do_walk = ( req_to_grant_fifo.walking == MPT_WALKING_DO );
 
@@ -169,18 +192,19 @@ module memory_read_stage #(
         // By default, no memory transaction is issued
         memory_master_mem_req   = '0;
         memory_master_mem_addr  = '0;
-        req_bus_ready           = 1'b0;
+        req_bus_ready           = '0;
         grant_fifo_push         = '0;
         grant_fifo_status_d     = GNT_IDLE;
 
-        case(grant_fifo_status_q)
+        case( grant_fifo_status_q )
             // No transaction is waiting for a Grant
             GNT_IDLE: begin
-                if( req_bus_valid && ( stage_usage < TRANSACTION_FIFO_DEPTH && ~grant_fifo_full && ~valid_fifo_full ) ) begin
+                if( req_bus_valid && ( stage_usage < TRANSACTION_FIFO_DEPTH && ~grant_fifo_full && ~valid_fifo_full ) && ( flush_status_q != MEM_FLUSH_MODE && flush_status_q != MEM_FLUSH_WAIT ) ) begin
                     // If the current transaction requires a walk
                     // Perform the memory protocol
                     if( grant_do_walk ) begin
-                        memory_master_mem_req   = 1'b1;
+                        // If a flush arrives, and no grant is out yet, avoid the current transaction to be sent out
+                        memory_master_mem_req   = '1;
                         memory_master_mem_addr  = req_to_grant_fifo.mpte_ptr;
                         // The grant signal is not necessarily an answer to a request.
                         // The memory could always keep the grant signal high
@@ -207,7 +231,6 @@ module memory_read_stage #(
                         // Stay in GNT_IDLE
                         grant_fifo_status_d = GNT_IDLE;
                     end
-
                 end
             end
             // A transaction is waiting for the grant signal
@@ -254,8 +277,8 @@ module memory_read_stage #(
 
     // Update status
     always_ff @(posedge clk_i) begin
-        if ( ~rst_ni ) begin
-            grant_fifo_status_q <= '0;
+        if ( ~rst_ni || flush_fifo ) begin
+            grant_fifo_status_q <= GNT_IDLE;
         end else begin
             grant_fifo_status_q <= grant_fifo_status_d;
         end
@@ -326,7 +349,7 @@ module memory_read_stage #(
         valid_do_walk           = 1'b1;
         valid_counter_d         = valid_counter_q;
 
-        grant_fifo_pop          = '0;
+        grant_fifo_pop          = ( flush_status_q != MEM_FLUSH_MODE ) ? '0 : flush_grant_fifo_pop;
         valid_fifo_push         = '0;
         valid_fifo_pop          = '0;
         valid_fifo_to_master    = '0;
@@ -473,7 +496,7 @@ module memory_read_stage #(
 
     // Update status
     always_ff @(posedge clk_i) begin
-        if ( ~rst_ni ) begin
+        if ( ~rst_ni || flush_fifo ) begin
             valid_fifo_status_q <= VALID_IDLE;
             valid_counter_q     <= '0;
         end else begin
@@ -492,9 +515,9 @@ module memory_read_stage #(
         .DEPTH          ( TRANSACTION_FIFO_DEPTH    ),   
         .dtype          ( mptw_transaction_t        )
     ) valid_fifo_u (
-        .clk_i          ( clk_i                     ),
-        .rst_ni         ( rst_ni                    ),
-        .flush_i        ( '0                        ),
+        .clk_i          ( clk_i               ),
+        .rst_ni         ( rst_ni              ),
+        .flush_i        ( flush_fifo          ),
         // status flags
         .full_o         ( valid_fifo_full     ),
         .empty_o        ( valid_fifo_empty    ),
@@ -508,6 +531,101 @@ module memory_read_stage #(
         .usage_o        ( valid_fifo_usage                          ),  // fill pointer
         .testmode_i     ( '0                        )   // test_mode to bypass clock gating
     );
+
+    //////////////////////////////////////////////////////
+    //    ___ _         _      _              _         //
+    //   | __| |_  _ __| |_   | |   ___  __ _(_)__      //
+    //   | _|| | || (_-< ' \  | |__/ _ \/ _` | / _|     //
+    //   |_| |_|\_,_/__/_||_| |____\___/\__, |_\__|     //
+    //                                  |___/           //
+    //////////////////////////////////////////////////////
+
+    // The flush logic here is complex enough to require a specific code section.
+    // We assume the control_unit is keeping the flush signal high until the unit does confirm it.
+    // The status flushed signal must be COMPLETED for one clock cycle to ack the control unit.
+    // FSMs are kept to idle thanks to the flush signal.
+
+    // When a FLUSH_ALL arrives, the fifos are reset, and so are their state machines.
+    // The valid fifo can be flushed without problems, because it contains transactions that already closed the memory protocol.
+    // The grant fifo is a bit more complicated. It contains memory transactions. We cannot just reset it like we do for the valid.
+    // Instead, we must wait for as many valid as required. For each valid receive, just pop, without pushing anywhere.
+
+    // If a FLUSH_SPEC arrives, things are a bit different. Transactions must be flushed only if they are speculative.
+    // Each time a spec transaction enters, we must count their number. When the flush spec arrives, let all the
+    // Transactions to continue.
+
+    assign flush_event = ( stage_ctrl_flush != MPT_FLUSH_NONE );
+    
+    always_comb begin
+
+        flush_status_d = flush_status_q;
+        flush_fifo = '0;
+        stage_status_flushed = MPT_FLUSHED_NONE;
+        flush_grant_fifo_pop = '0;
+
+        case( flush_status_q )
+
+            MEM_RUN_MODE: begin
+                // Stay in run mode until a flush signal arrives
+                if( flush_event ) begin
+                    flush_status_d = ( stage_ctrl_flush == MPT_FLUSH_ALL ) ? MEM_FLUSH_MODE : MEM_SPEC_FLUSH_MODE;
+                    // Reset valid fifo and state machines
+                    flush_fifo = ( stage_ctrl_flush == MPT_FLUSH_ALL ) ? '1 : '0;
+                    stage_status_flushed = MPT_FLUSHED_ONGOING;
+                end else begin
+                    flush_status_d = MEM_RUN_MODE;
+                end
+            end
+
+            MEM_FLUSH_MODE: begin
+                // Flush is on going
+                stage_status_flushed = MPT_FLUSHED_ONGOING;
+                // Reset valid fifo and state machines
+                flush_fifo = '1;
+                // The stage must not be ready to accept
+                req_bus_ready = 1'b0;
+                // If the grant fifo is empty, go back to run mode
+                if( grant_fifo_empty ) begin
+                    stage_status_flushed = MPT_FLUSHED_COMPLETED;
+                    flush_status_d = MEM_FLUSH_WAIT;
+                end else begin
+                    // Otherwise, se must wait for valids to pop data.
+                    if( memory_master_mem_valid ) begin
+                        flush_grant_fifo_pop = 1'b1;
+                    end
+                    flush_status_d = MEM_FLUSH_MODE;
+                end
+            end
+
+            MEM_SPEC_FLUSH_MODE: begin
+                
+            end
+
+            MEM_FLUSH_WAIT: begin
+                // This stage exists to wait for the control unit
+                // To update its internal status register.
+                // We stay here untill the flush signal is not lowered.
+                flush_fifo = '1;
+                // The stage must not be ready to accept
+                req_bus_ready = 1'b0;
+
+                stage_status_flushed    = MPT_FLUSHED_COMPLETED;
+                flush_status_d          = ( stage_ctrl_flush != MPT_FLUSH_NONE ) ? MEM_FLUSH_WAIT : MEM_RUN_MODE;
+                
+            end
+
+        endcase
+
+    end
+
+
+    always_ff @(posedge clk_i) begin
+        if ( ~rst_ni ) begin
+            flush_status_q <= MEM_RUN_MODE;
+        end else begin
+            flush_status_q <= flush_status_d;
+        end
+    end   
 
     //////////////////////////////////////////////////
     //    ___                   _   _               //

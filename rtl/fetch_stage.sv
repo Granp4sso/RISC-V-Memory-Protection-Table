@@ -25,13 +25,14 @@ module fetch_stage #(
     input  logic                rst_ni,
 
     // Fetch Slave Port
-    `DEFINE_SLAVE_DATA_PORT(stage_slave, PIPELINE_SLAVE_DATA_WIDTH),
+    `DEFINE_SLAVE_DATA_PORT     ( stage_slave   , PIPELINE_SLAVE_DATA_WIDTH     ),
 
     // Fetch Master Port
-    `DEFINE_MASTER_DATA_PORT(stage_master, PIPELINE_MASTER_DATA_WIDTH),
+    `DEFINE_MASTER_DATA_PORT    ( stage_master  , PIPELINE_MASTER_DATA_WIDTH    ),
 
-    // Control Port (Unused atm)
-    `DEFINE_SLAVE_CTRL_PORT (stage_ctrl, $bits(mptw_flush_ctrl_e)),
+    // Control and Status Ports
+    `DEFINE_SLAVE_CTRL_PORT     ( stage_ctrl    , $bits(mptw_flush_ctrl_e)      ),
+    `DEFINE_MASTER_STATUS_PORT  ( stage_status  , $bits(mptw_flush_status_e)    ),
 
     // Extra Logics
     output page_format_fault_e  exception_cause_o
@@ -172,10 +173,10 @@ module fetch_stage #(
         .clk_i                  ( clk_i                         ),
         .rst_ni                 ( rst_ni                        ),
 
-        `MAP_DATA_PORT          ( s_data, slave_to_reg_bus      ),
-        `MAP_DATA_PORT          ( m_data, stage_master          ),
-        `SINK_SLAVE_CTRL_PORT   ( s_ctrl                        ),
-        `SINK_MASTER_STATUS_PORT( m_status                      )
+        `MAP_DATA_PORT          ( s_data    , slave_to_reg_bus  ),
+        `MAP_DATA_PORT          ( m_data    , stage_master      ),
+        `MAP_CTRL_PORT          ( s_ctrl    , stage_ctrl        ),
+        `MAP_STATUS_PORT        ( m_status  , stage_status      )
 
     ); 
     

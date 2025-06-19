@@ -58,18 +58,19 @@
 //  Bus Assignment   //
 ///////////////////////
 
-`define ASSIGN_CTRL_BUS(dest, src)              \
-    assign ``dest``_flush     = ``src``_flush ; \
-    assign ``dest``_stall     = ``src``_stall ; 
-
 `define ASSIGN_DATA_BUS(dest, src)              \
     assign ``dest``_data    = ``src``_data ;    \
     assign ``dest``_valid   = ``src``_valid ;   \
     assign ``src``_ready    = ``dest``_ready ;   
 
-`define ASSIGN_STATUS_BUS(dest, src)            \
-    assign ``dest``_busy     = ``src``_busy ; 
+`define ASSIGN_CTRL_BUS(dest, src)              \
+    assign ``dest``_flush     = ``src``_flush ; \
+    assign ``dest``_stall     = ``src``_stall ; 
 
+`define ASSIGN_STATUS_BUS(dest, src)            \
+    assign ``dest``_busy     = ``src``_busy ;  \
+    assign ``dest``_flushed  = ``src``_flushed ;  \
+    assign ``dest``_stalled  = ``src``_stalled ; 
 
 // Assign to Data Array
 `define ASSIGN_DATA_BUS_SCALAR_TO_ARRAY(dest, index, src) \
@@ -86,6 +87,39 @@
     assign ``dest``_data    [``index_dest``] = ``src``_data     [``index_src``] ;    \
     assign ``dest``_valid   [``index_dest``] = ``src``_valid    [``index_src``] ;   \
     assign ``src``_ready    [``index_src``] = ``dest``_ready   [``index_dest``];   
+
+// Assign to CTRL Bus
+`define ASSIGN_CTRL_BUS_SCALAR_TO_ARRAY(dest, index, src) \
+    assign ``dest`_flush    [``index``] = ``src``_flush ;               \
+    assign ``dest`_stall    [``index``] = ``src``_stall ;
+
+`define ASSIGN_CTRL_BUS_ARRAY_TO_SCALAR(dest, index, src) \
+    assign ``dest``_flush       = ``src``_flush [``index``] ;         \
+    assign ``dest``_stall       = ``src``_stall [``index``] ;
+
+`define ASSIGN_CTRL_BUS_ARRAY_TO_ARRAY(dest, index_dest, src, index_src) \
+    assign ``dest``_flush   [``index_dest``] = ``src``_flush    [``index_src``] ;              \
+    assign ``dest``_stall   [``index_dest``] = ``src``_stall    [``index_src``] ;
+
+// Assign to Status Bus
+`define ASSIGN_STATUS_BUS_SCALAR_TO_ARRAY(dest, index, src)   \
+    assign ``dest``_busy    [``index``] = ``src``_busy ;           \
+    assign ``dest``_flushed [``index``] = ``src``_flushed ;        \
+    assign ``dest``_stalled [``index``] = ``src``_stalled ;
+
+
+`define ASSIGN_STATUS_BUS_ARRAY_TO_SCALAR(dest, index, src)   \
+    assign ``dest``_busy    = ``src``_busy      [``index``] ;        \
+    assign ``dest``_flushed = ``src``_flushed   [``index``] ;        \
+    assign ``dest``_stalled = ``src``_stalled   [``index``] ;
+
+`define ASSIGN_STATUS_BUS_ARRAY_TO_ARRAY(dest, index_dest, src, index_src) \
+    assign ``dest``_busy    [``index_dest``] = ``src``_busy     [``index_src``] ;     \
+    assign ``dest``_flushed [``index_dest``] = ``src``_flushed  [``index_src``] ;     \
+    assign ``dest``_stalled [``index_dest``] = ``src``_stalled  [``index_src``] ;
+
+
+
 
 // Assign to Zero
 
@@ -122,6 +156,12 @@
     output logic [``data_width`` -1 : 0]    ``port_name``_flush [``size`` -1 : 0],  \
     output logic                            ``port_name``_stall [``size`` -1 : 0]         
 
+`define DEFINE_MASTER_STATUS_PORT_ARRAY(port_name, flush_width, size)    \
+                                               \
+    output logic                           ``port_name``_busy    [``size`` -1 : 0],  \
+    output logic [``flush_width`` -1 : 0]  ``port_name``_flushed [``size`` -1 : 0],  \
+    output logic                           ``port_name``_stalled [``size`` -1 : 0]   
+
 `define DEFINE_MASTER_DATA_PORT_ARRAY(port_name, data_width, size)   \
     output logic [``data_width``-1     : 0] ``port_name``_data  [``size`` -1 : 0],       \
     output logic                            ``port_name``_valid [``size`` -1 : 0],       \
@@ -150,11 +190,16 @@
     input  logic                            ``port_name``_valid [``size`` -1 : 0],       \
     output logic                            ``port_name``_ready [``size`` -1 : 0]       
 
+`define DEFINE_SLAVE_CTRL_PORT_ARRAY(port_name, data_width, size)        \
+                                                                                    \
+    input  logic [``data_width`` -1 : 0]    ``port_name``_flush [``size`` -1 : 0],  \
+    input  logic                            ``port_name``_stall [``size`` -1 : 0]        
+
 `define DEFINE_SLAVE_STATUS_PORT_ARRAY(port_name, flush_width, size)    \
                                                \
     input  logic                           ``port_name``_busy    [``size`` -1 : 0],  \
     input  logic [``flush_width`` -1 : 0]  ``port_name``_flushed [``size`` -1 : 0],  \
-    input  logic                           ``port_name``_stalled [``size`` -1 : 0]   \
+    input  logic                           ``port_name``_stalled [``size`` -1 : 0]   
 
 
 //////////////////
@@ -166,9 +211,22 @@
     .``unit_port``_flush ( ``coming_bus``_flush ),  \
     .``unit_port``_stall ( ``coming_bus``_stall ) 
 
+`define MAP_CTRL_INDEX_PORT(unit_port, coming_bus, index)        \
+                                                    \
+    .``unit_port``_flush ( ``coming_bus``_flush[``index``] ),  \
+    .``unit_port``_stall ( ``coming_bus``_stall[``index``] ) 
+
 `define MAP_STATUS_PORT(unit_port, coming_bus)      \
                                                     \
-    .``unit_port``_busy ( ``coming_bus``_busy )     \
+    .``unit_port``_busy ( ``coming_bus``_busy ),     \
+    .``unit_port``_flushed ( ``coming_bus``_flushed ),     \
+    .``unit_port``_stalled ( ``coming_bus``_stalled )     \
+
+`define MAP_STATUS_INDEX_PORT(unit_port, coming_bus, index)      \
+                                                    \
+    .``unit_port``_busy ( ``coming_bus``_busy[``index``] ),     \
+    .``unit_port``_flushed ( ``coming_bus``_flushed[``index``] ),     \
+    .``unit_port``_stalled ( ``coming_bus``_stalled[``index``] )     \
 
 `define MAP_DATA_PORT(unit_port, coming_bus)        \
                                                     \

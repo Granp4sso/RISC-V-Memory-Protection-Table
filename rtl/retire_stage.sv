@@ -33,18 +33,22 @@ module retire_stage #(
     parameter unsigned PIPELINE_PASSTHROUGH         = 0   
 ) (
     // Generic Signals
-    input  logic                clk_i,
-    input  logic                rst_ni,
+    input  logic                    clk_i,
+    input  logic                    rst_ni,
 
     // Master/Slave Ports to the Issue Stage
-    `DEFINE_SLAVE_DATA_PORT(issue_stage_slave, PIPELINE_SLAVE_DATA_WIDTH),
-    `DEFINE_MASTER_DATA_PORT(issue_stage_master, PIPELINE_MASTER_DATA_WIDTH),
+    `DEFINE_SLAVE_DATA_PORT         ( issue_stage_slave     , PIPELINE_SLAVE_DATA_WIDTH                         ),
+    `DEFINE_MASTER_DATA_PORT        ( issue_stage_master    , PIPELINE_MASTER_DATA_WIDTH                        ),
 
     // Slave Interfaces to the PLB/Walking stages
-    `DEFINE_SLAVE_DATA_PORT_ARRAY(retire_stage_slave, PIPELINE_SLAVE_DATA_WIDTH, RETIRE_PORT_NUM),
+    `DEFINE_SLAVE_DATA_PORT_ARRAY   ( retire_stage_slave    , PIPELINE_SLAVE_DATA_WIDTH     , RETIRE_PORT_NUM   ),
 
     // Master interface to the Commit Stage
-    `DEFINE_MASTER_DATA_PORT(commit_stage_master, PIPELINE_MASTER_DATA_WIDTH)
+    `DEFINE_MASTER_DATA_PORT        ( commit_stage_master   , PIPELINE_MASTER_DATA_WIDTH                        ),
+
+    // Control and Status Ports
+    `DEFINE_SLAVE_CTRL_PORT         ( stage_ctrl            , $bits(mptw_flush_ctrl_e)                          ),
+    `DEFINE_MASTER_STATUS_PORT      ( stage_status          , $bits(mptw_flush_status_e)                        )
 ); 
 
     //////////////////////////////////////
@@ -74,6 +78,13 @@ module retire_stage #(
         ROB_POP_WAIT_FOR_COMPLETED,
         ROB_POP_FLUSH
     } rob_pop_status_e;
+
+    typedef enum logic[1:0] { 
+        ROB_RUN_MODE,
+        ROB_FLUSH_MODE,
+        ROB_SPEC_FLUSH_MODE,
+        ROB_FLUSH_WAIT
+    } rob_flush_status_e;
 
     /////////////////////////
     // Signals Declaration //
@@ -118,6 +129,12 @@ module retire_stage #(
     mptw_transaction_t eldest_transaction;
     logic [$clog2(REORDER_BUFFER_DEPTH):0] eldest_transaction_id;
     logic [RETIRE_PORT_NUM - 1 : 0] eldest_transaction_completed_mask;
+
+    // Flush Signals
+    logic flush_event;
+    logic flush_fifo;
+    rob_flush_status_e flush_status_q, flush_status_d;
+
 
     /////////////////////
     // Bus Declaration //
@@ -229,8 +246,8 @@ module retire_stage #(
     end
 
     always_ff @(posedge clk_i) begin
-        if ( ~rst_ni ) begin
-            rob_push_status_q <= '0;
+        if ( ~rst_ni || flush_fifo ) begin
+            rob_push_status_q   <= '0;
             rob_next_valid_id_q <= '0;
         end else begin
             rob_push_status_q <= rob_push_status_d;
@@ -240,6 +257,7 @@ module retire_stage #(
     end
 
     // Register to communicate with the issue stage
+    // Removable to reduce pipeline latency
     if( ~PIPELINE_PASSTHROUGH ) begin: issue_pipeline_register_generate
         pipeline_register # ( 
             .DATA_WIDTH             ( PIPELINE_SLAVE_DATA_WIDTH    )
@@ -281,7 +299,7 @@ module retire_stage #(
     ) rob_fifo_u (
         .clk_i          ( clk_i                     ),
         .rst_ni         ( rst_ni                    ),
-        .flush_i        ( '0                        ),
+        .flush_i        ( flush_fifo                ),
         .full_o         ( rob_fifo_full             ),
         .empty_o        ( rob_fifo_empty            ),
         .data_i         ( rob_fifo_data_in          ),
@@ -428,7 +446,7 @@ module retire_stage #(
     end
 
     always_ff @(posedge clk_i) begin
-        if ( ~rst_ni ) begin
+        if ( ~rst_ni || flush_fifo ) begin
             rob_pop_status_q <= ROB_POP_IDLE;
         end else begin
             rob_pop_status_q <= rob_pop_status_d;
@@ -445,6 +463,7 @@ module retire_stage #(
     //////////////////////////////////////////////////
 
     // Register to commit stage
+    // Removable to reduce pipeline latency
     if( ~PIPELINE_PASSTHROUGH ) begin: commit_stage_register_generate
         pipeline_register # ( 
             .DATA_WIDTH             ( PIPELINE_SLAVE_DATA_WIDTH    )
@@ -459,6 +478,89 @@ module retire_stage #(
     end else begin: commit_stage_register_generate
         `ASSIGN_DATA_BUS( commit_stage_master, to_commit_bus );
     end
+
+    //////////////////////////////////////////////////////
+    //    ___ _         _      _              _         //
+    //   | __| |_  _ __| |_   | |   ___  __ _(_)__      //
+    //   | _|| | || (_-< ' \  | |__/ _ \/ _` | / _|     //
+    //   |_| |_|\_,_/__/_||_| |____\___/\__, |_\__|     //
+    //                                  |___/           //
+    //////////////////////////////////////////////////////
+
+    // The flush logic here is complex enough to require a specific code section.
+    // If a FLUSH all arrives, we must (1) Flush the ROB FIFo, (2) Clean ROB Memories.
+
+    // In case of a FLUSH speculative, we immediately ack the completed to the control unit,
+    // Yet, we do not actually perform any flash. Instead,  transactions marked as speculative
+    // are going to be discarded as soon as they reach the top of the fifo.
+
+    assign flush_event = ( stage_ctrl_flush != MPT_FLUSH_NONE );
+    
+    always_comb begin
+
+        flush_status_d          = flush_status_q;
+        flush_fifo              = '0;
+        stage_status_flushed    = MPT_FLUSHED_NONE;
+
+        case( flush_status_q )
+
+            ROB_RUN_MODE: begin
+                // Stay in run mode until a flush signal arrives
+                if( flush_event ) begin
+                    flush_status_d          = ( stage_ctrl_flush == MPT_FLUSH_ALL ) ? ROB_FLUSH_MODE : ROB_SPEC_FLUSH_MODE;
+                    flush_fifo              = ( stage_ctrl_flush == MPT_FLUSH_ALL ) ? '1 : '0;
+                    stage_status_flushed    = MPT_FLUSHED_ONGOING;
+                end else begin
+                    flush_status_d = ROB_RUN_MODE;
+                end
+            end
+
+            ROB_FLUSH_MODE: begin
+
+                // Reset valid fifo and state machines
+                flush_fifo = '1;
+
+                // The stage must not be ready to accept
+                for (int i = 0; i < RETIRE_PORT_NUM; i = i + 1) begin
+                    retire_stage_slave_ready[i] = '0;
+                end
+
+                // On the ROB, the flush takes one clock cycle
+                stage_status_flushed    = MPT_FLUSHED_COMPLETED;
+                flush_status_d          = ROB_FLUSH_WAIT;
+
+            end
+
+            ROB_SPEC_FLUSH_MODE: begin
+                
+            end
+
+            ROB_FLUSH_WAIT: begin
+                // This stage exists to wait for the control unit
+                // To update its internal status register.
+                // We stay here untill the flush signal is not lowered.
+                flush_fifo = '1;
+                // The stage must not be ready to accept
+                for (int i = 0; i < RETIRE_PORT_NUM; i = i + 1) begin
+                    retire_stage_slave_ready[i] = '0;
+                end
+
+                stage_status_flushed    = MPT_FLUSHED_COMPLETED;
+                flush_status_d          = ( stage_ctrl_flush != MPT_FLUSH_NONE ) ? ROB_FLUSH_WAIT : ROB_RUN_MODE;
+                
+            end
+
+        endcase
+    end
+
+
+    always_ff @(posedge clk_i) begin
+        if ( ~rst_ni ) begin
+            flush_status_q <= ROB_RUN_MODE;
+        end else begin
+            flush_status_q <= flush_status_d;
+        end
+    end 
     
 endmodule : retire_stage
 

@@ -88,7 +88,8 @@ module mptw_top #(
     // Localparam Declaration //
     ////////////////////////////
 
-    localparam REORDER_BUFFER_ENABLE = ( REORDER_BUFFER_DEPTH == 0 ) ? 0 : 1;
+    localparam REORDER_BUFFER_ENABLE        = ( REORDER_BUFFER_DEPTH == 0 ) ? 0 : 1;
+    localparam PIPELINE_STAGES_NUM          = 4 + NUM_STAGES + 1; // Check
 
     localparam fetch_stage_datawidth        = $bits(mptw_transaction_t);
     localparam issue_stage_datawidth        = $bits(mptw_transaction_t);
@@ -119,50 +120,25 @@ module mptw_top #(
 
     // Frontend Buses
     `DECLARE_DATA_BUS           ( input_to_fetch_data           , fetch_stage_datawidth                             );
-    `DECLARE_CTRL_BUS           ( input_to_fetch_ctrl           , $bits(mptw_flush_ctrl_e)                          );
-    `DECLARE_STATUS_BUS         ( input_to_fetch_status         , $bits(mptw_flush_status_e)                        );
-
     `DECLARE_DATA_BUS           ( fetch_to_issue_data           , issue_stage_datawidth                             );
-    `DECLARE_CTRL_BUS           ( fetch_to_issue_ctrl           , $bits(mptw_flush_ctrl_e)                          );
-    `DECLARE_STATUS_BUS         ( fetch_to_issue_status         , $bits(mptw_flush_status_e)                        );
-
     `DECLARE_DATA_BUS           ( issue_to_backend_data         , issue_stage_datawidth                             );
-    `DECLARE_CTRL_BUS           ( issue_to_backend_ctrl         , $bits(mptw_flush_ctrl_e)                          );
-    `DECLARE_STATUS_BUS         ( issue_to_backend_status       , $bits(mptw_flush_status_e)                        );
-
     `DECLARE_DATA_BUS           ( issue_to_plb_lookup_data      , plb_lookup_stage_datawidth                        );
-    `DECLARE_CTRL_BUS           ( issue_to_plb_lookup_ctrl      , $bits(mptw_flush_ctrl_e)                          );
-    `DECLARE_STATUS_BUS         ( issue_to_plb_lookup_status    , $bits(mptw_flush_status_e)                        );
-
     `DECLARE_DATA_BUS           ( plb_lookup_to_demux_data      , walking_stage_datawidth                           );
-    `DECLARE_CTRL_BUS           ( plb_lookup_to_demux_ctrl      , $bits(mptw_flush_ctrl_e)                          );
-    `DECLARE_STATUS_BUS         ( plb_lookup_to_demux_status    , $bits(mptw_flush_status_e)                        );
 
     // Midend Buses
     `DECLARE_DATA_BUS_ARRAY     ( to_walking_stage_data         , walking_stage_datawidth       , NUM_STAGES + 1    );
-    `DECLARE_CTRL_BUS_ARRAY     ( to_walking_stage_ctrl         , $bits(mptw_flush_ctrl_e)      , NUM_STAGES + 1    );
-    `DECLARE_STATUS_BUS_ARRAY   ( to_walking_stage_status       , $bits(mptw_flush_status_e)    , NUM_STAGES + 1    );
-
-    `DECLARE_DATA_BUS_ARRAY     ( walking_to_demux_data         , walking_stage_datawidth       , NUM_STAGES + 1    );  
-    `DECLARE_CTRL_BUS_ARRAY     ( walking_to_demux_ctrl         , $bits(mptw_flush_ctrl_e)      , NUM_STAGES + 1     );
-    `DECLARE_STATUS_BUS_ARRAY   ( walking_to_demux_status       , $bits(mptw_flush_status_e)    , NUM_STAGES + 1     );
-
+    `DECLARE_DATA_BUS_ARRAY     ( walking_to_demux_data         , walking_stage_datawidth       , NUM_STAGES + 1    );
     `DECLARE_DATA_BUS_ARRAY     ( walking_to_retire_data        , walking_stage_datawidth       , NUM_STAGES + 1    );
-    `DECLARE_CTRL_BUS_ARRAY     ( walking_to_retire_ctrl        , $bits(mptw_flush_ctrl_e)      , NUM_STAGES + 1    );
-    `DECLARE_STATUS_BUS_ARRAY   ( walking_to_retire_status      , $bits(mptw_flush_status_e)    , NUM_STAGES + 1    );
  
     // Backend Buses
     `DECLARE_DATA_BUS           ( backend_to_issue_data         , issue_stage_datawidth                             );
-    `DECLARE_CTRL_BUS           ( backend_to_issue_ctrl         , $bits(mptw_flush_ctrl_e)                          );
-    `DECLARE_STATUS_BUS         ( backend_to_issue_status       , $bits(mptw_flush_status_e)                        );
-
     `DECLARE_DATA_BUS           ( retire_to_commit_data         , walking_stage_datawidth                           );
-    `DECLARE_CTRL_BUS           ( retire_to_commit_ctrl         , $bits(mptw_flush_ctrl_e)                          );
-    `DECLARE_STATUS_BUS         ( retire_to_commit_status       , $bits(mptw_flush_status_e)                        );
-
     `DECLARE_DATA_BUS           ( commit_to_output_data         , walking_stage_datawidth                           );
-    `DECLARE_CTRL_BUS           ( commit_to_output_ctrl         , $bits(mptw_flush_ctrl_e)                          );
-    `DECLARE_STATUS_BUS         ( commit_to_output_status       , $bits(mptw_flush_status_e)                        );
+
+    // Control and Status buses
+    `DECLARE_CTRL_BUS_ARRAY     ( system_control                , $bits(mptw_flush_ctrl_e)      , PIPELINE_STAGES_NUM   );
+    `DECLARE_STATUS_BUS_ARRAY   ( system_status                 , $bits(mptw_flush_status_e)    , PIPELINE_STAGES_NUM   );
+
 
     //////////////////////////////////////////////////////////
     //     ___         _           _   _   _      _ _       //
@@ -177,23 +153,24 @@ module mptw_top #(
 
     // verilator lint_off PINMISSING
     control_unit # (
-        .NUM_STAGES ( NUM_STAGES )
+        .CONTROL_AND_STATUS_PORTS_NUM   ( PIPELINE_STAGES_NUM                                   )
     ) control_unit_u (
-        .clk_i              ( clk_i ),
-        .rst_ni             ( rst_ni ),
-        .valid_req_i        ( mptw_transaction_valid_i ),   // A new valid transaction is issued
-        .busy_o             ( busy_o ),                     // The pipeline is still processing data
-        .stalled_o          ( stalled_o ),
-        .flush_all_i        ( flush_all_i ),                // Externall flush
-        .flush_spec_i       ( flush_spec_i ),               // External flush for speculative transactions
-        .stall_i            ( stall_i ),                    // External Stall
-        .pipeline_valid_i   ( mptw_transaction_valid_i ),   // A valid request is coming to the pipeline
-        .pipeline_ready_i   ( input_to_fetch_data_ready ),       // The pipeline can accept a new transaction
-        .system_valid_o     ( input_to_fetch_data_valid ),       // The system can forward the input transaction
-        .system_ready_o     ( mptw_ready_o )                // The system can accept a new transaction
+        .clk_i                          ( clk_i                                                 ),
+        .rst_ni                         ( rst_ni                                                ),
+        .valid_req_i                    ( mptw_transaction_valid_i                              ),   // A new valid transaction is issued
+        .busy_o                         ( busy_o                                                ),   // The pipeline is still processing data
+        .stalled_o                      ( stalled_o                                             ),
+        .flush_all_i                    ( flush_all_i                                           ),   // Externall flush
+        .flush_spec_i                   ( flush_spec_i                                          ),   // External flush for speculative transactions
+        .stall_i                        ( stall_i                                               ),   // External Stall
+        .pipeline_valid_i               ( mptw_transaction_valid_i                              ),   // A valid request is coming to the pipeline
+        .pipeline_ready_i               ( input_to_fetch_data_ready                             ),   // The pipeline can accept a new transaction
+        .system_valid_o                 ( input_to_fetch_data_valid                             ),   // The system can forward the input transaction
+        .system_ready_o                 ( mptw_ready_o                                          ),   // The system can accept a new transaction
+
+        `MAP_CTRL_PORT                  ( master_control            , system_control            ),
+        `MAP_STATUS_PORT                ( slave_status              , system_status             )
     ); 
-
-
     // verilator lint_on PINMISSING
 
     //////////////////////////////////////////////////////
@@ -249,14 +226,15 @@ module mptw_top #(
 
     ) fetch_stage_u (
 
-        .clk_i                  ( clk_i                             ),
-        .rst_ni                 ( rst_ni                            ),
+        .clk_i                  ( clk_i                                     ),
+        .rst_ni                 ( rst_ni                                    ),
 
-        `MAP_DATA_PORT          ( stage_slave,  input_to_fetch_data      ),
-        `MAP_DATA_PORT          ( stage_master, fetch_to_issue_data      ),
-        `SINK_SLAVE_CTRL_PORT   ( stage_ctrl                        ),
+        `MAP_DATA_PORT          ( stage_slave   , input_to_fetch_data       ),
+        `MAP_DATA_PORT          ( stage_master  , fetch_to_issue_data       ),
+        `MAP_CTRL_INDEX_PORT    ( stage_ctrl    , system_control        , 0 ),
+        `MAP_STATUS_INDEX_PORT  ( stage_status  , system_status         , 0 ),
 
-        .exception_cause_o      ( fetch_exception_cause             )
+        .exception_cause_o      ( fetch_exception_cause                     )
     );
 
     //////////////////////////////////////////////////////
@@ -287,11 +265,13 @@ module mptw_top #(
 
     ) issue_stage_u (
 
-        .clk_i                  ( clk_i                                 ),
-        .rst_ni                 ( rst_ni                                ),
+        .clk_i                  ( clk_i                                     ),
+        .rst_ni                 ( rst_ni                                    ),
 
-        `MAP_DATA_PORT          ( stage_slave,  issue_stage_slave       ),
-        `MAP_DATA_PORT          ( stage_master, issue_stage_master      )
+        `MAP_DATA_PORT          ( stage_slave   , issue_stage_slave         ),
+        `MAP_DATA_PORT          ( stage_master  , issue_stage_master        ),
+        `MAP_CTRL_INDEX_PORT    ( stage_ctrl    , system_control        , 1 ),
+        `MAP_STATUS_INDEX_PORT  ( stage_status  , system_status         , 1 )
     );
 
     //////////////////////////////////////////////////////////////////////////////
@@ -310,13 +290,14 @@ module mptw_top #(
 
     ) plb_lookup_stage_u (
         
-        .clk_i                  ( clk_i                                     ),
-        .rst_ni                 ( rst_ni                                    ),
+        .clk_i                  ( clk_i                                         ),
+        .rst_ni                 ( rst_ni                                        ),
 
         // Pipeline Ports
-        `MAP_DATA_PORT          ( stage_slave  , issue_to_plb_lookup_data        ),
-        `MAP_DATA_PORT          ( stage_master , plb_lookup_to_demux_data        ),
-        `SINK_SLAVE_CTRL_PORT   ( plb_lookup_ctrl                           ),
+        `MAP_DATA_PORT          ( stage_slave   , issue_to_plb_lookup_data      ),
+        `MAP_DATA_PORT          ( stage_master  , plb_lookup_to_demux_data      ),
+        `MAP_CTRL_INDEX_PORT    ( stage_ctrl    , system_control            , 2 ),
+        `MAP_STATUS_INDEX_PORT  ( stage_status  , system_status             , 2 ),
 
         // PLB Cache Port
         .plb_master_mem_req      ,
@@ -394,23 +375,25 @@ module mptw_top #(
 
             ) walking_stage_u (
                 
-                .clk_i                      ( clk_i                                 ),
-                .rst_ni                     ( rst_ni                                ),
+                .clk_i                      ( clk_i                                             ),
+                .rst_ni                     ( rst_ni                                            ),
 
                 // Pipeline Ports
-                `MAP_DATA_INDEX_PORT        ( stage_slave   , to_walking_stage_data  , i ),
-                `MAP_DATA_INDEX_PORT        ( stage_master  , walking_to_demux_data  , i ),
+                `MAP_DATA_INDEX_PORT        ( stage_slave   , to_walking_stage_data , i         ),
+                `MAP_DATA_INDEX_PORT        ( stage_master  , walking_to_demux_data , i         ),
+                `MAP_CTRL_INDEX_PORT        ( stage_ctrl    , system_control        , 3 + i     ),
+                `MAP_STATUS_INDEX_PORT      ( stage_status  , system_status         , 3 + i     ),
 
                 // Walker Memory Port
-                .memory_master_mem_req      ( walking_mem_master_mem_req[i]         ),
-                .memory_master_mem_gnt      ( walking_mem_master_mem_gnt[i]         ),
-                .memory_master_mem_valid    ( walking_mem_master_mem_valid[i]       ),
-                .memory_master_mem_addr     ( walking_mem_master_mem_addr[i]        ),
-                .memory_master_mem_rdata    ( walking_mem_master_mem_rdata[i]       ),
-                .memory_master_mem_wdata    ( walking_mem_master_mem_wdata[i]       ),
-                .memory_master_mem_we       ( walking_mem_master_mem_we[i]          ),
-                .memory_master_mem_be       ( walking_mem_master_mem_be[i]          ),
-                .memory_master_mem_error    ( walking_mem_master_mem_error[i]       ),
+                .memory_master_mem_req      ( walking_mem_master_mem_req[i]                     ),
+                .memory_master_mem_gnt      ( walking_mem_master_mem_gnt[i]                     ),
+                .memory_master_mem_valid    ( walking_mem_master_mem_valid[i]                   ),
+                .memory_master_mem_addr     ( walking_mem_master_mem_addr[i]                    ),
+                .memory_master_mem_rdata    ( walking_mem_master_mem_rdata[i]                   ),
+                .memory_master_mem_wdata    ( walking_mem_master_mem_wdata[i]                   ),
+                .memory_master_mem_we       ( walking_mem_master_mem_we[i]                      ),
+                .memory_master_mem_be       ( walking_mem_master_mem_be[i]                      ),
+                .memory_master_mem_error    ( walking_mem_master_mem_error[i]                   ),
 
                 // Error ports
                 .access_page_fault_o        (),
@@ -460,16 +443,18 @@ module mptw_top #(
     //////////////////////////////////////////////////////////////////////////////////
 
     mpte_parsing_stage #(
-        .PIPELINE_SLAVE_DATA_WIDTH   ( walking_stage_datawidth      ),
-        .PIPELINE_MASTER_DATA_WIDTH  ( walking_stage_datawidth      ),
-        .WALKING_LEVEL               ( 0                            )
+        .PIPELINE_SLAVE_DATA_WIDTH   ( walking_stage_datawidth                                      ),
+        .PIPELINE_MASTER_DATA_WIDTH  ( walking_stage_datawidth                                      ),
+        .WALKING_LEVEL               ( 0                                                            )
     ) last_parsing_stage_u (
-        .clk_i                      ( clk_i                         ),
-        .rst_ni                     ( rst_ni                        ),
+        .clk_i                      ( clk_i                                                         ),
+        .rst_ni                     ( rst_ni                                                        ),
 
         // Pipeline Ports
-        `MAP_DATA_INDEX_PORT        ( stage_slave  , to_walking_stage_data   , NUM_STAGES ),
-        `MAP_DATA_INDEX_PORT        ( stage_master , walking_to_retire_data  , NUM_STAGES ), // This must go to the Retire Stage
+        `MAP_DATA_INDEX_PORT        ( stage_slave   , to_walking_stage_data     , NUM_STAGES        ),
+        `MAP_DATA_INDEX_PORT        ( stage_master  , walking_to_retire_data    , NUM_STAGES        ), 
+        `MAP_CTRL_INDEX_PORT        ( stage_ctrl    , system_control            , 3 + NUM_STAGES    ),
+        `MAP_STATUS_INDEX_PORT      ( stage_status  , system_status             , 3 + NUM_STAGES    ),
 
         // Error Port
         .access_page_fault_o        ( ),
@@ -515,21 +500,24 @@ module mptw_top #(
 
         ) retire_stage_u (
 
-            .clk_i                  ( clk_i                             ),
-            .rst_ni                 ( rst_ni                            ),
+            .clk_i                  ( clk_i                                                                         ),
+            .rst_ni                 ( rst_ni                                                                        ),
 
             // Master/Slave interface to the Issue Stage
-            `MAP_DATA_PORT          ( issue_stage_slave,  issue_to_backend_data  ),
-            `MAP_DATA_PORT          ( issue_stage_master, backend_to_issue_data  ),
+            `MAP_DATA_PORT          ( issue_stage_slave     , issue_to_backend_data                                 ),
+            `MAP_DATA_PORT          ( issue_stage_master    , backend_to_issue_data                                 ),
             // Slave Interfaces to the PLB/Walking stages
-            `MAP_DATA_PORT          ( retire_stage_slave, walking_to_retire_data ),
-
-            // Master interface to the Commit Stage
-            `MAP_DATA_PORT          ( commit_stage_master, retire_to_commit_data )
+            `MAP_DATA_PORT          ( retire_stage_slave    , walking_to_retire_data                                ),
+            // Master interface to the Commit Sta   ge
+            `MAP_DATA_PORT          ( commit_stage_master   , retire_to_commit_data                                 ),
+            // Control and Status Ports
+            `MAP_CTRL_INDEX_PORT    ( stage_ctrl            , system_control            , PIPELINE_STAGES_NUM - 1   ),
+            `MAP_STATUS_INDEX_PORT  ( stage_status          , system_status             , PIPELINE_STAGES_NUM - 1   )
         );
     end else begin
-        `ASSIGN_DATA_BUS( backend_to_issue_data, issue_to_backend_data );
-        `ASSIGN_DATA_BUS_ARRAY_TO_SCALAR( retire_to_commit_data, NUM_STAGES, walking_to_retire_data );
+        `ASSIGN_DATA_BUS                    ( backend_to_issue_data , issue_to_backend_data                             );
+        `ASSIGN_DATA_BUS_ARRAY_TO_SCALAR    ( retire_to_commit_data , NUM_STAGES            , walking_to_retire_data    );
+        assign system_status_flushed[PIPELINE_STAGES_NUM - 1] = MPT_FLUSHED_COMPLETED;
     end
 
     //////////////////////////////////////////////////////////////
