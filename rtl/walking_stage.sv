@@ -21,7 +21,8 @@ module walking_stage #(
     parameter unsigned  FORWARDING_BUFFER_DEPTH         = 4,
     parameter unsigned  MEMORY_TRANSACTION_DATA_WIDTH   = 64,                       
     parameter unsigned  MEMORY_TRANSACTION_ADDR_WIDTH   = 64,
-    parameter unsigned  WALKING_LEVEL                   = 0
+    parameter unsigned  WALKING_LEVEL                   = 0,
+    parameter unsigned  TEST_MODE                       = 0
 ) (
     // Generic Signals
     input  logic                clk_i,
@@ -97,7 +98,8 @@ module walking_stage #(
     mpte_parsing_stage #(
         .PIPELINE_SLAVE_DATA_WIDTH  ( PIPELINE_SLAVE_DATA_WIDTH             ),
         .PIPELINE_MASTER_DATA_WIDTH ( PIPELINE_MASTER_DATA_WIDTH            ),
-        .WALKING_LEVEL              ( WALKING_LEVEL                         )
+        .WALKING_LEVEL              ( WALKING_LEVEL                         ),
+        .TEST_MODE                  ( TEST_MODE                             )
     ) parsing_stage_u (
         .clk_i                      ( clk_i                                 ),
         .rst_ni                     ( rst_ni                                ),
@@ -165,7 +167,8 @@ module walking_stage #(
         .PIPELINE_MASTER_DATA_WIDTH ( PIPELINE_MASTER_DATA_WIDTH            ),
         .TRANSACTION_FIFO_DEPTH     ( TRANSACTION_FIFO_DEPTH                ),
         .MEMORY_DATA_WIDTH          ( MEMORY_TRANSACTION_DATA_WIDTH         ),                      
-        .MEMORY_ADDR_WIDTH          ( MEMORY_TRANSACTION_ADDR_WIDTH         )
+        .MEMORY_ADDR_WIDTH          ( MEMORY_TRANSACTION_ADDR_WIDTH         ),
+        .TEST_MODE                  ( TEST_MODE                             )
     ) mem_stage_u (
         .clk_i                      ( clk_i                                 ),
         .rst_ni                     ( rst_ni                                ),

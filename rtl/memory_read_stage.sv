@@ -26,7 +26,8 @@ module memory_read_stage #(
     parameter unsigned  PIPELINE_MASTER_DATA_WIDTH  = 32,
     parameter unsigned  TRANSACTION_FIFO_DEPTH      = 4,
     parameter unsigned  MEMORY_DATA_WIDTH           = 32,                        
-    parameter unsigned  MEMORY_ADDR_WIDTH           = 32
+    parameter unsigned  MEMORY_ADDR_WIDTH           = 32,
+    parameter unsigned  TEST_MODE                   = 0 
 ) (
     // Generic Signals
     input  logic                clk_i,
@@ -207,7 +208,7 @@ module memory_read_stage #(
                     if( grant_do_walk ) begin 
                         // If a flush arrives, and no grant is out yet, avoid the current transaction to be sent out
                         memory_master_mem_req   = '1;
-                        memory_master_mem_addr  = req_to_grant_fifo.mpte_ptr;
+                        memory_master_mem_addr  = ( TEST_MODE ) ? req_to_grant_fifo.spa : req_to_grant_fifo.mpte_ptr;
                         // The grant signal is not necessarily an answer to a request.
                         // The memory could always keep the grant signal high
                         if( memory_master_mem_gnt ) begin
@@ -239,7 +240,8 @@ module memory_read_stage #(
             GNT_WAIT_FOR_GRANT: begin
 
                 memory_master_mem_req = req_bus_valid;
-                memory_master_mem_addr = req_to_grant_fifo.mpte_ptr;
+                memory_master_mem_addr = ( TEST_MODE ) ? req_to_grant_fifo.spa : req_to_grant_fifo.mpte_ptr;
+                grant_fifo_status_d = GNT_WAIT_FOR_GRANT;
 
                 if( memory_master_mem_gnt ) begin
                     // Once the grant signal arrives, push the data into the fifo

@@ -27,7 +27,8 @@ module plb_lookup_stage #(
     parameter unsigned  PIPELINE_MASTER_DATA_WIDTH  = 32,
     parameter unsigned  TRANSACTION_FIFO_DEPTH      = 4,
     localparam unsigned PLB_TRANSACTION_DATA_WIDTH  = 64,                        // 8
-    localparam unsigned PLB_TRANSACTION_ADDR_WIDTH  = 64                         // $bits(plb_lookup_req_t)
+    localparam unsigned PLB_TRANSACTION_ADDR_WIDTH  = 64,                        // $bits(plb_lookup_req_t)
+    parameter unsigned  TEST_MODE                   = 0
 ) (
     // Generic Signals
     input  logic                clk_i,
@@ -112,7 +113,8 @@ module plb_lookup_stage #(
         .PIPELINE_MASTER_DATA_WIDTH  ( PIPELINE_MASTER_DATA_WIDTH   ),
         .TRANSACTION_FIFO_DEPTH      ( TRANSACTION_FIFO_DEPTH       ),
         .MEMORY_DATA_WIDTH           ( PLB_TRANSACTION_DATA_WIDTH   ),                      
-        .MEMORY_ADDR_WIDTH           ( PLB_TRANSACTION_ADDR_WIDTH   )
+        .MEMORY_ADDR_WIDTH           ( PLB_TRANSACTION_ADDR_WIDTH   ),
+        .TEST_MODE                   ( TEST_MODE                    )
     ) mem_stage_u (
         .clk_i                  ( clk_i                                     ),
         .rst_ni                 ( rst_ni                                    ),

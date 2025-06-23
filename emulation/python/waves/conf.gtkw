@@ -1,0 +1,192 @@
+[*]
+[*] GTKWave Analyzer v3.3.104 (w)1999-2020 BSI
+[*] Thu Jun 19 16:15:14 2025
+[*]
+[dumpfile] "/home/stefano/Desktop/Work/Projects/smmtt/b_flush/simulation/mptw_top/waves/trace.vcd"
+[dumpfile_mtime] "Thu Jun 19 16:08:37 2025"
+[dumpfile_size] 8008412
+[savefile] "/home/stefano/Desktop/Work/Projects/smmtt/b_flush/simulation/mptw_top/waves/conf.gtkw"
+[timestart] 1211
+[size] 1850 1016
+[pos] 70 47
+*-7.733255 1730 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[treeopen] TOP.
+[treeopen] TOP.mptw_top.
+[treeopen] TOP.mptw_top.control_unit_u.
+[treeopen] TOP.mptw_top.fetch_stage_u.
+[treeopen] TOP.mptw_top.gen_walking_stages(0).walking_stage_u.
+[treeopen] TOP.mptw_top.gen_walking_stages(0).walking_stage_u.mem_stage_u.
+[treeopen] TOP.mptw_top.gen_walking_stages(1).
+[treeopen] TOP.mptw_top.gen_walking_stages(1).walking_stage_u.
+[treeopen] TOP.mptw_top.gen_walking_stages(1).walking_stage_u.parsing_stage_u.
+[treeopen] TOP.mptw_top.plb_lookup_stage_u.
+[sst_width] 417
+[signals_width] 403
+[sst_expanded] 1
+[sst_vpaned_height] 489
+@200
+-Module Interface
+@28
+TOP.clk_i
+TOP.rst_ni
+TOP.mptw_transaction_valid_i
+TOP.mptw_ready_o
+@22
+TOP.mmpt_reg_i[63:0]
+TOP.spa_i[63:0]
+@28
+TOP.access_type_i[1:0]
+@22
+TOP.plb_master_mem_addr[63:0]
+@200
+-Memory Ports
+@28
+TOP.mptw_top.plb_master_mem_req
+TOP.mptw_top.plb_master_mem_gnt
+TOP.mptw_top.plb_master_mem_valid
+@200
+-Control Unit
+@28
+TOP.mptw_top.control_unit_u.ctrl_status_q[2:0]
+TOP.mptw_top.control_unit_u.flush_all_i
+TOP.mptw_top.control_unit_u.flush_type[1:0]
+TOP.mptw_top.control_unit_u.ctrl_status_q[2:0]
+@22
+TOP.mptw_top.control_unit_u.status_reg_q[17:0]
+TOP.mptw_top.control_unit_u.control_reg_q[17:0]
+@200
+-# FRONTEND #
+-Fetch Stage
+@28
+[color] 7
+TOP.mptw_top.fetch_stage_u.stage_slave_ready
+[color] 7
+TOP.mptw_top.fetch_stage_u.stage_slave_valid
+@22
+TOP.mptw_top.fetch_stage_u.stage_slave_data[279:0]
+@28
+TOP.mptw_top.fetch_stage_u.stage_ctrl_flush[1:0]
+TOP.mptw_top.fetch_stage_u.stage_status_flushed[1:0]
+[color] 7
+TOP.mptw_top.fetch_stage_u.stage_master_ready
+[color] 7
+TOP.mptw_top.fetch_stage_u.stage_master_valid
+@22
+TOP.mptw_top.fetch_stage_u.stage_master_data[279:0]
+@200
+-Issue Stage
+@28
+TOP.mptw_top.issue_stage_u.fetch_to_issue_ready
+TOP.mptw_top.issue_stage_u.fetch_to_issue_valid
+TOP.mptw_top.issue_stage_u.stage_master_valid(0)
+TOP.mptw_top.plb_lookup_stage_u.mem_stage_u.grant_fifo_u.usage_o[1:0]
+TOP.mptw_top.issue_stage_u.issue_to_backend_ready
+TOP.mptw_top.issue_stage_u.issue_to_backend_valid
+TOP.mptw_top.issue_stage_u.backend_to_issue_ready
+TOP.mptw_top.issue_stage_u.backend_to_issue_valid
+TOP.mptw_top.issue_stage_u.issue_to_plb_lookup_ready
+TOP.mptw_top.issue_stage_u.issue_to_plb_lookup_valid
+@200
+-PLB Lookup Stage
+@28
+[color] 5
+TOP.mptw_top.plb_lookup_stage_u.stage_slave_ready
+[color] 5
+TOP.mptw_top.plb_lookup_stage_u.stage_slave_valid
+[color] 5
+TOP.mptw_top.plb_lookup_stage_u.stage_master_ready
+[color] 5
+TOP.mptw_top.plb_lookup_stage_u.stage_master_valid
+TOP.mptw_top.plb_lookup_stage_u.mem_stage_u.stage_ctrl_flush[1:0]
+TOP.mptw_top.plb_lookup_stage_u.mem_stage_u.grant_fifo_status_q[1:0]
+TOP.mptw_top.plb_lookup_stage_u.mem_stage_u.grant_fifo_usage[1:0]
+TOP.mptw_top.plb_lookup_stage_u.mem_stage_u.flush_status_q[1:0]
+TOP.mptw_top.plb_lookup_stage_u.mem_stage_u.flush_grant_fifo_pop
+TOP.mptw_top.plb_lookup_stage_u.mem_stage_u.grant_fifo_pop
+TOP.mptw_top.plb_lookup_stage_u.stage_status_flushed[1:0]
+TOP.mptw_top.plb_lookup_stage_u.plb_lookup_mem_status_flushed[1:0]
+TOP.mptw_top.plb_lookup_stage_u.plb_lookup_reg_status_flushed[1:0]
+@200
+-# MIDEND #
+-Walking Stage 0
+@28
+TOP.mptw_top.gen_walking_stages(0).walking_stage_u.stage_status_flushed[1:0]
+TOP.mptw_top.gen_walking_stages(0).walking_stage_u.forward_buffer_status_flushed[1:0]
+TOP.mptw_top.gen_walking_stages(0).walking_stage_u.stage_reg_status_flushed[1:0]
+TOP.mptw_top.gen_walking_stages(0).walking_stage_u.walking_mem_status_flushed[1:0]
+TOP.mptw_top.gen_walking_stages(0).walking_stage_u.mpte_parsing_status_flushed[1:0]
+[color] 3
+TOP.mptw_top.gen_walking_stages(0).walking_stage_u.stage_slave_ready
+[color] 3
+TOP.mptw_top.gen_walking_stages(0).walking_stage_u.stage_slave_valid
+[color] 3
+TOP.mptw_top.gen_walking_stages(0).walking_stage_u.stage_master_valid
+[color] 3
+TOP.mptw_top.gen_walking_stages(0).walking_stage_u.stage_master_ready
+@200
+-Walking Stage 1
+@28
+[color] 1
+TOP.mptw_top.gen_walking_stages(1).walking_stage_u.stage_slave_valid
+[color] 1
+TOP.mptw_top.gen_walking_stages(1).walking_stage_u.stage_slave_ready
+[color] 1
+TOP.mptw_top.gen_walking_stages(1).walking_stage_u.stage_master_valid
+[color] 1
+TOP.mptw_top.gen_walking_stages(1).walking_stage_u.stage_master_ready
+@22
+TOP.mptw_top.gen_walking_stages(1).walking_stage_u.parsing_stage_u.mpt_entry[63:0]
+@28
+[color] 1
+TOP.mptw_top.gen_walking_stages(1).walking_stage_u.parsing_stage_u.format_error_cause[2:0]
+TOP.mptw_top.gen_walking_stages(1).walking_stage_u.stage_status_flushed[1:0]
+TOP.mptw_top.gen_walking_stages(1).walking_stage_u.mem_stage_u.stage_status_flushed[1:0]
+TOP.mptw_top.gen_walking_stages(1).walking_stage_u.mem_stage_u.flush_status_q[1:0]
+TOP.mptw_top.gen_walking_stages(1).walking_stage_u.mem_stage_u.grant_fifo_usage[1:0]
+TOP.mptw_top.gen_walking_stages(1).walking_stage_u.mem_stage_u.memory_master_mem_valid
+TOP.mptw_top.gen_walking_stages(1).walking_stage_u.mem_stage_u.grant_fifo_full
+@29
+TOP.mptw_top.gen_walking_stages(1).walking_stage_u.mem_stage_u.grant_fifo_push
+@28
+TOP.mptw_top.gen_walking_stages(1).walking_stage_u.mem_stage_u.grant_fifo_pop
+TOP.mptw_top.gen_walking_stages(1).walking_stage_u.mem_stage_u.memory_master_mem_gnt
+TOP.mptw_top.gen_walking_stages(1).walking_stage_u.parsing_stage_u.access_page_fault
+TOP.mptw_top.gen_walking_stages(1).walking_stage_u.mem_stage_u.grant_fifo_status_q[1:0]
+@200
+-Walking Stage 2
+@28
+[color] 6
+TOP.mptw_top.gen_walking_stages(2).walking_stage_u.stage_slave_valid
+[color] 6
+TOP.mptw_top.gen_walking_stages(2).walking_stage_u.stage_slave_ready
+[color] 6
+TOP.mptw_top.gen_walking_stages(2).walking_stage_u.stage_master_valid
+[color] 6
+TOP.mptw_top.gen_walking_stages(2).walking_stage_u.stage_master_ready
+@200
+-Walking Stage 3
+@28
+[color] 2
+TOP.mptw_top.gen_walking_stages(3).walking_stage_u.stage_slave_ready
+[color] 2
+TOP.mptw_top.gen_walking_stages(3).walking_stage_u.stage_slave_valid
+[color] 2
+TOP.mptw_top.gen_walking_stages(3).walking_stage_u.stage_master_ready
+[color] 2
+TOP.mptw_top.gen_walking_stages(3).walking_stage_u.stage_master_valid
+@22
+TOP.mptw_top.retire_stage_gen.retire_stage_u.rob_fifo_usage[3:0]
+@28
+TOP.mptw_top.retire_stage_gen.retire_stage_u.rob_fifo_pop
+@22
+TOP.mptw_top.retire_stage_gen.retire_stage_u.eldest_transaction_completed_mask[4:0]
+@28
+TOP.mptw_top.retire_stage_gen.retire_stage_u.to_commit_bus_ready
+@200
+-# BACKEND #
+-Retire Stage
+-Commit Stage
+@22
+TOP.mptw_top.commit_to_output_data_data[279:0]
+[pattern_trace] 1
+[pattern_trace] 0

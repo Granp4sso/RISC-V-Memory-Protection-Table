@@ -124,10 +124,10 @@ int main(int argc, char **argv) {
             }
 
             uut.mod->flush_all_i = 0;
-            if( i == 23 ) uut.mod->flush_all_i = 1;
+            /*if( i == 23 ) uut.mod->flush_all_i = 1;
             if( i == 102 ) uut.mod->flush_all_i = 1;
             if( i == 142 ) uut.mod->flush_all_i = 1;
-            if( i == 453 ) uut.mod->flush_all_i = 1;
+            if( i == 453 ) uut.mod->flush_all_i = 1;*/
             
 
             // Generate Transaction

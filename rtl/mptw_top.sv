@@ -24,13 +24,14 @@ module mptw_top #(
     parameter unsigned NUM_STAGES                  = 4,                  // Four stages for SMMPT52
     parameter unsigned DATA_WIDTH                  = 64,
     parameter unsigned ADDR_WIDTH                  = 64,
-    parameter unsigned PLB_STAGE_DEPTH             = 4,
+    parameter unsigned PLB_STAGE_DEPTH             = 64,
     parameter unsigned PLB_TRANSACTION_DATA_WIDTH  = 64,                 // 8
     parameter unsigned PLB_TRANSACTION_ADDR_WIDTH  = 64,                 // $bits(plb_lookup_req_t)
     parameter unsigned WALKING_STAGE_MEM_DEPTH     = PLB_STAGE_DEPTH,
-    parameter unsigned FORWARDING_BUFFER_DEPTH     = 4,
-    parameter unsigned REORDER_BUFFER_DEPTH        = 16,
-    parameter unsigned PIPELINE_PASSTHROUGH        = 0                   // Experimental: remove some pipeline registers
+    parameter unsigned FORWARDING_BUFFER_DEPTH     = 0,
+    parameter unsigned REORDER_BUFFER_DEPTH        = 0,
+    parameter unsigned PIPELINE_PASSTHROUGH        = 0,                  // Experimental: remove some pipeline registers
+    parameter unsigned TEST_MODE                   = 1                   // Remove ERROR propagation and output IDs on the rdata memory ports
 
 ) (
     //////////////////
@@ -56,7 +57,7 @@ module mptw_top #(
     input  logic                mptw_transaction_valid_i,   // Input Data are Valid
     output logic                mptw_ready_o,               // The MPT Walker is ready to serve a transaction
     output logic                mptw_result_valid_o,        // Output Data is Valid (for one clock cycle)
-    //output plb_entry_t plb_entry_o,            // Output PLB entry (contains SDID, physical address, and permissions) <TODO>
+    output spa_t_u              plb_entry_o,                // Output PLB entry (contains SDID, physical address, and permissions) <TODO>
 
     ////////////////
     // Error Port //
@@ -222,7 +223,8 @@ module mptw_top #(
     fetch_stage # (
 
         .PIPELINE_SLAVE_DATA_WIDTH      ( fetch_stage_datawidth         ),
-        .PIPELINE_MASTER_DATA_WIDTH     ( issue_stage_datawidth         )
+        .PIPELINE_MASTER_DATA_WIDTH     ( issue_stage_datawidth         ),
+        .TEST_MODE                      ( TEST_MODE                     )
 
     ) fetch_stage_u (
 
@@ -286,7 +288,8 @@ module mptw_top #(
 
         .PIPELINE_SLAVE_DATA_WIDTH  ( plb_lookup_stage_datawidth ),
         .PIPELINE_MASTER_DATA_WIDTH ( walking_stage_datawidth    ),
-        .TRANSACTION_FIFO_DEPTH     ( PLB_STAGE_DEPTH            )
+        .TRANSACTION_FIFO_DEPTH     ( PLB_STAGE_DEPTH            ),
+        .TEST_MODE                  ( TEST_MODE                  )
 
     ) plb_lookup_stage_u (
         
@@ -371,7 +374,8 @@ module mptw_top #(
                 .FORWARDING_BUFFER_DEPTH        ( FORWARDING_BUFFER_DEPTH   ),
                 .MEMORY_TRANSACTION_DATA_WIDTH  ( DATA_WIDTH                ),           
                 .MEMORY_TRANSACTION_ADDR_WIDTH  ( ADDR_WIDTH                ),
-                .WALKING_LEVEL                  ( NUM_STAGES - i            )
+                .WALKING_LEVEL                  ( NUM_STAGES - i            ),
+                .TEST_MODE                      ( TEST_MODE                 )
 
             ) walking_stage_u (
                 
@@ -445,7 +449,8 @@ module mptw_top #(
     mpte_parsing_stage #(
         .PIPELINE_SLAVE_DATA_WIDTH   ( walking_stage_datawidth                                      ),
         .PIPELINE_MASTER_DATA_WIDTH  ( walking_stage_datawidth                                      ),
-        .WALKING_LEVEL               ( 0                                                            )
+        .WALKING_LEVEL               ( 0                                                            ),
+        .TEST_MODE                   ( TEST_MODE                                                    )
     ) last_parsing_stage_u (
         .clk_i                      ( clk_i                                                         ),
         .rst_ni                     ( rst_ni                                                        ),
@@ -539,6 +544,10 @@ module mptw_top #(
     // Also, this allows the valid signal to be high for exactly one
     // clock cycle every time a new data is available on the commit stage
     assign mptw_result_valid_o = retire_to_commit_data_valid;
+
+    mptw_transaction_t debug_output_transaction;
+    assign debug_output_transaction = commit_to_output_data_data;
+    assign plb_entry_o = debug_output_transaction.spa;
 
 endmodule : mptw_top
 

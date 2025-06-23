@@ -23,7 +23,8 @@ import mpt_pkg::*;
 module mpte_parsing_stage #(
     parameter unsigned  PIPELINE_SLAVE_DATA_WIDTH       = 32,
     parameter unsigned  PIPELINE_MASTER_DATA_WIDTH      = 32,
-    parameter unsigned  WALKING_LEVEL                   = 0
+    parameter unsigned  WALKING_LEVEL                   = 0,
+    parameter unsigned  TEST_MODE                       = 0
 ) (
     // Generic Signals
     input  logic                        clk_i,
@@ -283,15 +284,11 @@ module mpte_parsing_stage #(
     //           |_|                      |___/     //
     //////////////////////////////////////////////////
 
-    //////////////////////////////////
-    // FOR TESTING PURPOSES - BEGIN //
-    //////////////////////////////////
-    // Let's assume no error happens
-    assign format_error_cause = NO_ERROR;
-    assign access_page_fault = '0;
-    ////////////////////////////////
-    // FOR TESTING PURPOSES - END //
-    ////////////////////////////////
+    if( TEST_MODE ) begin
+        // Let's assume no error happens
+        assign format_error_cause = NO_ERROR;
+        assign access_page_fault = '0;
+    end
 
     // Part of the transaction stay unchanged
     assign output_transaction.id            = input_transaction.id;

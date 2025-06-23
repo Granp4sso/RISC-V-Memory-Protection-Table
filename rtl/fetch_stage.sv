@@ -18,7 +18,8 @@ import mpt_pkg::*;
 
 module fetch_stage #(
     parameter unsigned PIPELINE_SLAVE_DATA_WIDTH = 32,
-    parameter unsigned PIPELINE_MASTER_DATA_WIDTH = 32
+    parameter unsigned PIPELINE_MASTER_DATA_WIDTH = 32,
+    parameter unsigned  TEST_MODE                 = 0
 ) (
     // Generic Signals
     input  logic                clk_i,
@@ -141,6 +142,10 @@ module fetch_stage #(
     end
 
     // Part of the transaction stay unchanged
+    if( TEST_MODE ) begin
+        assign format_error = NO_ERROR; // FOR DEBUG PURPOSE TIE THIS TO NO ERROR
+    end
+
     assign output_transaction               = input_transaction;
 
     // Update the other fields
