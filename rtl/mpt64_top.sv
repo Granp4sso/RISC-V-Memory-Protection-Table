@@ -47,7 +47,7 @@ module mpt64_top #(
     output logic allow_o                       // Access allowed output (indicates if access is allowed)
 );  
     // Registers
-    mpt_state_e next_state_d, curr_state_q;
+    mpt_state_e state_d, state_q;
     mmpt_reg_t mmpt_q;
     mpt_access_e access_type_q;
     
@@ -83,13 +83,12 @@ module mpt64_top #(
         m_mem_we = 0;
         m_mem_be = 0;
         m_mem_req = 0;
-
-        case (curr_state_q)
+        case (state_q)
             IDLE: begin
                 ptw_busy_o = 0;
                 allow_o = 0;
                 if (ptw_enable_i && addr_valid_i) begin
-                    next_state_d = VALIDATE_ADDRESS;
+                    state_d = VALIDATE_ADDRESS;
                 end
             end
 
@@ -100,31 +99,31 @@ module mpt64_top #(
                     case (mmpt_q.MODE) 
                             // No supervisor domain protection, access is allowed  
                             BARE_MODE: begin
-                                next_state_d = COMMIT;
+                                state_d = COMMIT;
                             end
 
                             // Check if spa_q width is within the allowed range; if valid, compute next MPT pointer, else generate error
                             SMMPT43_MODE: begin
                                 if (spa_u_q.spa43.ZERO != 0) begin
                                     format_error_cause_d = NOT_VALID_ADDR; 
-                                    next_state_d = ERROR;
+                                    state_d = ERROR;
                                 end else begin
                                     a = mmpt_q.PPN * PAGESIZE;
                                     lookup_lvl_cnt_d = 2;
                                     next_lookup_addr_d = a + {43'b0, spa_u_q.spa43.PN2} * MPTSIZE;
-                                    next_state_d = WAIT_FOR_GRANT;
+                                    state_d = WAIT_FOR_GRANT;
                                 end
                             end
 
                             SMMPT52_MODE: begin
                                 if (spa_u_q.spa52.ZERO != 0) begin
                                     format_error_cause_d = NOT_VALID_ADDR; 
-                                    next_state_d = ERROR;
+                                    state_d = ERROR;
                                 end else begin
                                     a = mmpt_q.PPN * PAGESIZE;
                                     lookup_lvl_cnt_d = 3;
                                     next_lookup_addr_d = a + {43'b0, spa_u_q.spa52.PN3} * MPTSIZE;
-                                    next_state_d = WAIT_FOR_GRANT;
+                                    state_d = WAIT_FOR_GRANT;
                                 end
                             end
 
@@ -132,13 +131,13 @@ module mpt64_top #(
                                     a = mmpt_q.PPN * PAGESIZE;
                                     lookup_lvl_cnt_d = 4;
                                     next_lookup_addr_d = a + {40'b0, spa_u_q.spa64.PN4} * MPTSIZE;
-                                    next_state_d = WAIT_FOR_GRANT;
+                                    state_d = WAIT_FOR_GRANT;
                                 end
                             
                             // Generate error if reserved MODE bits are used 
                             default: begin
                                 format_error_cause_d = UNSUPPORTED_MODE; 
-                                next_state_d = ERROR;
+                                state_d = ERROR;
                             end
                         endcase
                     end
@@ -149,7 +148,7 @@ module mpt64_top #(
                 m_mem_req = 1;
                 m_mem_addr = {12'b0, next_lookup_addr_q};
                 if (m_mem_gnt) begin
-                    next_state_d = WAIT_FOR_RVALID;
+                    state_d = WAIT_FOR_RVALID;
                 end
             end
             
@@ -157,7 +156,7 @@ module mpt64_top #(
             WAIT_FOR_RVALID: begin
                 ptw_busy_o = 1;
                 if (m_mem_valid) begin
-                    next_state_d = MPT_LOOKUP;   
+                    state_d = MPT_LOOKUP;   
                 end
             end
             
@@ -167,19 +166,19 @@ module mpt64_top #(
                 ptw_busy_o = 1;
                    if ( !mptl_entry_q.V ) begin  // Check valid bit 
                     format_error_cause_d = NOT_VALID_ENTRY;
-                    next_state_d = ERROR;
+                    state_d = ERROR;
                 end else if (mptl_entry_q.L) begin
                     if ( mptl_entry_q.mpt_payload.leaf.RESERVED != 0 || mptl_entry_q.RESERVED != 0 ) begin
                         format_error_cause_d = RESERVED_BITS_USED;
-                        next_state_d = ERROR;
+                        state_d = ERROR;
                     end else begin
-                        next_state_d = CHECK_PERMISSIONS;
+                        state_d = CHECK_PERMISSIONS;
                     end
                 end else begin 
                     lookup_lvl_cnt_d = lookup_lvl_cnt_q -1; 
                     if (lookup_lvl_cnt_q == 0) begin
                         format_error_cause_d = LEVEL_UNDERFLOW;
-                        next_state_d = ERROR;
+                        state_d = ERROR;
                     end else begin
                         case (mmpt_q.MODE)
                             SMMPT43_MODE: begin
@@ -189,7 +188,7 @@ module mpt64_top #(
                                     3'd1 : pn = spa_u_q.spa43.PN0;
                                     default : begin
                                         format_error_cause_d = INVALID_LEVEL;
-                                        next_state_d = ERROR;
+                                        state_d = ERROR;
                                     end
                                 endcase
                             end
@@ -202,7 +201,7 @@ module mpt64_top #(
                                     3'd1 : pn = spa_u_q.spa52.PN0;
                                     default : begin
                                         format_error_cause_d = INVALID_LEVEL;
-                                        next_state_d = ERROR;
+                                        state_d = ERROR;
                                     end
                                 endcase
                             end
@@ -216,21 +215,21 @@ module mpt64_top #(
                                     3'd1 : pn = spa_u_q.spa64.PN0;
                                     default : begin
                                         format_error_cause_d = INVALID_LEVEL;
-                                        next_state_d = ERROR;
+                                        state_d = ERROR;
                                     end
                                 endcase
                             end
 
                             default: begin
                                 format_error_cause_d = RESERVED_BITS_USED; 
-                                next_state_d = ERROR;
+                                state_d = ERROR;
                             end
                         endcase
 
                          //Compute next MPT pointer
                         a = ((mptl_entry_q.mpt_payload.non_leaf.PPN) * PAGESIZE);
                         next_lookup_addr_d = a + pn * MPTSIZE;
-                        next_state_d = WAIT_FOR_GRANT;
+                        state_d = WAIT_FOR_GRANT;
                     end
                 end
             end
@@ -277,7 +276,7 @@ module mpt64_top #(
 
                     default: begin
                         format_error_cause_d = UNSUPPORTED_MODE; 
-                        next_state_d = ERROR;
+                        state_d = ERROR;
                     end
                 endcase
 
@@ -288,11 +287,11 @@ module mpt64_top #(
                     (access_type_q == ACCESS_WRITE && (mpt_permissions inside {ALLOW_RW, ALLOW_RWX})) ||
                     (access_type_q == ACCESS_EXEC  && (mpt_permissions inside {ALLOW_X, ALLOW_RX, ALLOW_RWX}))) 
                 begin
-                    next_state_d = COMMIT;
+                    state_d = COMMIT;
                     plb_entry_d = {mmpt_q.SDID, spa_u_q.spa64, mpt_permissions};
                 end else begin
                     access_page_fault_d = 1;
-                    next_state_d = ERROR;
+                    state_d = ERROR;
                 end
             end
 
@@ -300,7 +299,7 @@ module mpt64_top #(
             FLUSH: begin
                 ptw_busy_o = 1;
                 if (m_mem_valid) begin
-                    next_state_d = IDLE;    
+                    state_d = IDLE;    
                 end
             end
             
@@ -308,9 +307,10 @@ module mpt64_top #(
             ERROR: begin
                 ptw_busy_o = 1;
                 ptw_valid_o = 1;
+                allow_o = 1;
                 format_error_o = format_error_cause_q;
                 access_page_fault_o = access_page_fault_q;
-                next_state_d = IDLE;
+                state_d = IDLE;
             end
 
             // Access allowed and PLB entry ready
@@ -319,24 +319,24 @@ module mpt64_top #(
                 ptw_busy_o = 1;
                 ptw_valid_o = 1;
                 allow_o = 1;
-                next_state_d = IDLE;
+                state_d = IDLE;
             end
 
             default: begin
                 ptw_busy_o = 1;
-                next_state_d = IDLE;
+                state_d = IDLE;
             end   
-    endcase
+        endcase
 
         // Handle flush request  
         if (flush_i) begin
             // If waiting for a valid memory response and it has not arrived,  
             // or if waiting for a grant and it is received,  
             // go to FLUSH to complete the transaction
-            if ((curr_state_q inside {WAIT_FOR_RVALID, FLUSH} && !m_mem_valid) || (curr_state_q == WAIT_FOR_GRANT && m_mem_gnt)) begin
-                next_state_d = FLUSH;
+            if ((state_q inside {WAIT_FOR_RVALID, FLUSH} && !m_mem_valid) || (state_q == WAIT_FOR_GRANT && m_mem_gnt)) begin
+                state_d = FLUSH;
             end else begin
-                next_state_d = IDLE; // Otherwise, go to IDLE state
+                state_d = IDLE; // Otherwise, go to IDLE state
             end
         end
     end
@@ -344,7 +344,7 @@ module mpt64_top #(
     // State Transition Logic
     always_ff @(posedge clk_i) begin
         if (!rst_ni) begin
-            curr_state_q <= IDLE;
+            state_q <= IDLE;
             spa_u_q <= 0;
             mmpt_q <= 0;
             mptl_entry_q <= 0;
@@ -355,12 +355,12 @@ module mpt64_top #(
             lookup_lvl_cnt_q <= 0;
             next_lookup_addr_q <= 0; 
         end else begin
-            curr_state_q <= next_state_d;
+            state_q <= state_d;
             format_error_cause_q <= format_error_cause_d;
             access_page_fault_q <= 0;
             lookup_lvl_cnt_q <= lookup_lvl_cnt_d; 
             next_lookup_addr_q <= next_lookup_addr_d;
-            case (curr_state_q) 
+            case (state_q) 
                 IDLE: begin
                     if(addr_valid_i) begin
                         spa_u_q <= spa_i;                 
@@ -379,7 +379,7 @@ module mpt64_top #(
                 end
                 
                 default: begin
-                    curr_state_q <= next_state_d;
+                    state_q <= state_d;
                 end
             endcase
         end
