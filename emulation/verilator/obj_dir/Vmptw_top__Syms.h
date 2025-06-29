@@ -12,7 +12,7 @@
 // INCLUDE MODULE CLASSES
 #include "Vmptw_top.h"
 #include "Vmptw_top___024unit.h"
-#include "Vmptw_top_memory_read_stage__pi7.h"
+#include "Vmptw_top_memory_read_stage__pi8.h"
 
 // SYMS CLASS
 class Vmptw_top__Syms : public VerilatedSyms {
@@ -26,11 +26,11 @@ class Vmptw_top__Syms : public VerilatedSyms {
     
     // SUBCELL STATE
     Vmptw_top*                     TOPp;
-    Vmptw_top_memory_read_stage__pi7 TOP__mptw_top__DOT__gen_walking_stages__BRA__0__KET____DOT__walking_stage_u__DOT__mem_stage_u;
-    Vmptw_top_memory_read_stage__pi7 TOP__mptw_top__DOT__gen_walking_stages__BRA__1__KET____DOT__walking_stage_u__DOT__mem_stage_u;
-    Vmptw_top_memory_read_stage__pi7 TOP__mptw_top__DOT__gen_walking_stages__BRA__2__KET____DOT__walking_stage_u__DOT__mem_stage_u;
-    Vmptw_top_memory_read_stage__pi7 TOP__mptw_top__DOT__gen_walking_stages__BRA__3__KET____DOT__walking_stage_u__DOT__mem_stage_u;
-    Vmptw_top_memory_read_stage__pi7 TOP__mptw_top__DOT__plb_lookup_stage_u__DOT__mem_stage_u;
+    Vmptw_top_memory_read_stage__pi8 TOP__mptw_top__DOT__gen_walking_stages__BRA__0__KET____DOT__walking_stage_u__DOT__mem_stage_u;
+    Vmptw_top_memory_read_stage__pi8 TOP__mptw_top__DOT__gen_walking_stages__BRA__1__KET____DOT__walking_stage_u__DOT__mem_stage_u;
+    Vmptw_top_memory_read_stage__pi8 TOP__mptw_top__DOT__gen_walking_stages__BRA__2__KET____DOT__walking_stage_u__DOT__mem_stage_u;
+    Vmptw_top_memory_read_stage__pi8 TOP__mptw_top__DOT__gen_walking_stages__BRA__3__KET____DOT__walking_stage_u__DOT__mem_stage_u;
+    Vmptw_top_memory_read_stage__pi8 TOP__mptw_top__DOT__plb_lookup_stage_u__DOT__mem_stage_u;
     
     // CREATORS
     Vmptw_top__Syms(Vmptw_top* topp, const char* namep);

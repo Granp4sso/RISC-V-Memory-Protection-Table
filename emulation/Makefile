@@ -18,7 +18,11 @@ EMU_LIB_DIR = ${EMU_PROJECT_ROOT}/lib
 
 # Python
 EMU_PYTHON_DIR = python
-EMU_WAVES_DIR = ${EMU_PYTHON_DIR}/waves
+EMU_LSU_DIR = ${EMU_PYTHON_DIR}/lsu
+EMU_MMU_DIR = ${EMU_PYTHON_DIR}/mmu
+
+EMU_LSU_WAVES_DIR = ${EMU_LSU_DIR}/waves
+EMU_MMU_WAVES_DIR = ${EMU_MMU_DIR}/waves
 
 #############
 # Verilator #
@@ -57,18 +61,23 @@ TARGET = sim_bindings$(PYTHON_EXT)
 ###########
 
 # Run the simulation
-run: 
-	cd ${EMU_PYTHON_DIR}; \
+run_lsu: 
+	cd ${EMU_LSU_DIR}; \
 	python3 emulation.py
 
-do:
+run_mmu:
+	cd ${EMU_MMU_DIR}; \
+	python3 emulation.py	
+
+build:
 	${MAKE} clean
 	${MAKE} verilate
-	${MAKE} build
+	${MAKE} compile
 
-build: $(TARGET)
+compile: $(TARGET)
 	cp $(TARGET) ${EMU_LIB_DIR};
-	mv $(TARGET) ${EMU_PYTHON_DIR};
+	cp $(TARGET) ${EMU_LSU_DIR};
+	mv $(TARGET) ${EMU_MMU_DIR};
 
 # Build the pybind11 wrapper
 $(TARGET): ${BUILD_SRC}
@@ -83,15 +92,20 @@ verilate:
 	cd obj_dir; make -f V${TOP_MODULE}.mk
 
 # Generate Waves
-wave:
-	${GTKWAVE} ${EMU_WAVES_DIR}/trace.vcd ${EMU_WAVES_DIR}/conf.gtkw &
+wave_lsu:
+	${GTKWAVE} ${EMU_LSU_WAVES_DIR}/trace.vcd ${EMU_LSU_WAVES_DIR}/conf.gtkw &
+
+wave_mmu:
+	${GTKWAVE} ${EMU_MMU_WAVES_DIR}/gptw_trace.vcd ${EMU_MMU_WAVES_DIR}/conf.gtkw &
+#${GTKWAVE} ${EMU_MMU_WAVES_DIR}/mptw_trace.vcd ${EMU_MMU_WAVES_DIR}/conf.gtkw &
 
 	
 # Remove files
 clean:
 	rm -rf ${EMU_PROJECT_ROOT}/obj_dir
 	rm -rf ${EMU_PROJECT_ROOT}/lib/*
-	rm -f ${EMU_WAVES_DIR}/trace.vcd
+	rm -f ${EMU_LSU_WAVES_DIR}/*_trace.vcd
+	rm -f ${EMU_MMU_WAVES_DIR}/*_trace.vcd
 
 # Targets for building simulation
-.PHONY: run build verilate wave clean
+.PHONY: run_lsu run_mmu build verilate wave_lsu wave_mmu clean

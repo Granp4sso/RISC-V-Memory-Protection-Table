@@ -3,18 +3,28 @@
 
 void uut_init( uut_t * uut, const char * wave_path ){
 
+	bool trace_gen;
+	/*if(strcmp(wave_path,"NONE")) trace_gen = false;
+	else trace_gen = true;*/
+	trace_gen = true;
+
     // Create module and testbench
 
 	uut->mod = new Vmptw_top();
 
-    uut->trace = new VerilatedVcdC();
+    uut->trace = (trace_gen) ? new VerilatedVcdC() : nullptr;
     uut->clkcnt = 0;
 
 	// Generate trace.vcd file
-	Verilated::traceEverOn(true);
-	printf("[tb\t] Trace generation ON\n");
-	uut->mod->trace(uut->trace,99);
-	uut->trace->open(wave_path);
+	if(trace_gen){
+		printf("[tb\t] Trace generation ON\n");
+		Verilated::traceEverOn(true);
+		uut->mod->trace(uut->trace,99);
+		uut->trace->open(wave_path);
+	} else {
+		printf("[tb\t] Trace generation OFF\n");
+	}
+
 }
 
 void uut_cycle(uut_t * uut){

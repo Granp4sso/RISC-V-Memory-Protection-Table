@@ -24,12 +24,12 @@ module mptw_top #(
     parameter unsigned NUM_STAGES                  = 4,                  // Four stages for SMMPT52
     parameter unsigned DATA_WIDTH                  = 64,
     parameter unsigned ADDR_WIDTH                  = 64,
-    parameter unsigned PLB_STAGE_DEPTH             = 64,
+    parameter unsigned PLB_STAGE_DEPTH             = 32,
     parameter unsigned PLB_TRANSACTION_DATA_WIDTH  = 64,                 // 8
     parameter unsigned PLB_TRANSACTION_ADDR_WIDTH  = 64,                 // $bits(plb_lookup_req_t)
     parameter unsigned WALKING_STAGE_MEM_DEPTH     = PLB_STAGE_DEPTH,
-    parameter unsigned FORWARDING_BUFFER_DEPTH     = 0,
-    parameter unsigned REORDER_BUFFER_DEPTH        = 0,
+    parameter unsigned FORWARDING_BUFFER_DEPTH     = 128,
+    parameter unsigned REORDER_BUFFER_DEPTH        = 64,
     parameter unsigned PIPELINE_PASSTHROUGH        = 0,                  // Experimental: remove some pipeline registers
     parameter unsigned TEST_MODE                   = 1                   // Remove ERROR propagation and output IDs on the rdata memory ports
 
