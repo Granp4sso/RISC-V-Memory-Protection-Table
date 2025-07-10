@@ -307,7 +307,7 @@ module mpt64_top #(
             ERROR: begin
                 ptw_busy_o = 1;
                 ptw_valid_o = 1;
-                allow_o = 1;
+                //allow_o = 1;
                 format_error_o = format_error_cause_q;
                 access_page_fault_o = access_page_fault_q;
                 state_d = IDLE;
