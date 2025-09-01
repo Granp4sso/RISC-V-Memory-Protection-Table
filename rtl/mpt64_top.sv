@@ -87,7 +87,8 @@ module mpt64_top #(
             IDLE: begin
                 ptw_busy_o = 0;
                 allow_o = 0;
-                if (ptw_enable_i && addr_valid_i) begin
+                //if (ptw_enable_i && addr_valid_i) begin
+                if (ptw_enable_i) begin
                     state_d = VALIDATE_ADDRESS;
                 end
             end
