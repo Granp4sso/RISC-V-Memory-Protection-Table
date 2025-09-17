@@ -4,7 +4,7 @@
 # Execute this makefile from the object directory:
 #    make -f Vmptw_top.mk
 
-default: Vmptw_top__ALL.a
+default: libVmptw_top
 
 ### Constants...
 # Perl executable (from $PERL)
@@ -17,6 +17,8 @@ SYSTEMC_INCLUDE ?=
 SYSTEMC_LIBDIR ?= 
 
 ### Switches...
+# C++ code coverage  0/1 (from --prof-c)
+VM_PROFC = 0
 # SystemC output mode?  0/1 (from --sc)
 VM_SC = 0
 # Legacy or SystemC output mode?  0/1 (from --sc)
@@ -49,5 +51,10 @@ VM_USER_DIR = \
 include Vmptw_top_classes.mk
 # Include global rules
 include $(VERILATOR_ROOT)/include/verilated.mk
+
+### Library rules (default lib mode)
+libVmptw_top.a: $(VK_OBJS) $(VK_USER_OBJS) $(VM_HIER_LIBS)
+libverilated.a: $(VK_GLOBAL_OBJS)
+libVmptw_top: libVmptw_top.a libverilated.a $(VM_PREFIX)__ALL.a
 
 # Verilated -*- Makefile -*-

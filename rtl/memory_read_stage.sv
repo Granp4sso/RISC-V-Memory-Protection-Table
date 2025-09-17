@@ -318,12 +318,24 @@ module memory_read_stage #(
     );
 
     // The response data can be saved into the current transaction
-    assign grant_fifo_to_valid_fifo         = grant_fifo_data_out;
+    assign grant_fifo_to_valid_fifo.id              = grant_fifo_data_out.id;             
+    assign grant_fifo_to_valid_fifo.speculative     = grant_fifo_data_out.speculative;   
+    assign grant_fifo_to_valid_fifo.completed       = grant_fifo_data_out.completed;   
+    assign grant_fifo_to_valid_fifo.valid           = grant_fifo_data_out.valid;   
+    assign grant_fifo_to_valid_fifo.access_error    = grant_fifo_data_out.access_error;   
+    assign grant_fifo_to_valid_fifo.format_error    = grant_fifo_data_out.format_error;   
+    assign grant_fifo_to_valid_fifo.plb_hit         = grant_fifo_data_out.plb_hit;   
+    assign grant_fifo_to_valid_fifo.mpte_ptr        = grant_fifo_data_out.mpte_ptr;   
+    assign grant_fifo_to_valid_fifo.walking         = grant_fifo_data_out.walking;   
+    assign grant_fifo_to_valid_fifo.access_type     = grant_fifo_data_out.access_type;   
+    assign grant_fifo_to_valid_fifo.spa             = grant_fifo_data_out.spa;   
+    assign grant_fifo_to_valid_fifo.mmpt            = grant_fifo_data_out.mmpt;   
 
     // The MPTE field is used at input time ad the read address as
     // It contains the pointer to the mpte. Once the memory answers,
-    // The content of the mpte field is changed to the actual MPTE data.
+    // The content of the mpte field is changed to the actual MPTE data.    
     assign grant_fifo_to_valid_fifo.mpte    = memory_master_mem_rdata;
+    
 
     //////////////////////////////////////////////////
     //   __   __    _ _    _   ___ ___ ___ ___      //

@@ -4,21 +4,21 @@
 
 #include "Vmptw_top__pch.h"
 #include "Vmptw_top__Syms.h"
-#include "Vmptw_top___024unit.h"
+#include "Vmptw_top___024root.h"
 
-void Vmptw_top___024unit___ctor_var_reset(Vmptw_top___024unit* vlSelf);
+void Vmptw_top___024root___ctor_var_reset(Vmptw_top___024root* vlSelf);
 
-Vmptw_top___024unit::Vmptw_top___024unit(Vmptw_top__Syms* symsp, const char* v__name)
+Vmptw_top___024root::Vmptw_top___024root(Vmptw_top__Syms* symsp, const char* v__name)
     : VerilatedModule{v__name}
     , vlSymsp{symsp}
  {
     // Reset structure values
-    Vmptw_top___024unit___ctor_var_reset(this);
+    Vmptw_top___024root___ctor_var_reset(this);
 }
 
-void Vmptw_top___024unit::__Vconfigure(bool first) {
+void Vmptw_top___024root::__Vconfigure(bool first) {
     if (false && first) {}  // Prevent unused
 }
 
-Vmptw_top___024unit::~Vmptw_top___024unit() {
+Vmptw_top___024root::~Vmptw_top___024root() {
 }

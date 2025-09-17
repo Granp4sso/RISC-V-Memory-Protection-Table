@@ -26,6 +26,12 @@ class Transaction:
 PTW_ID = 0
 MPTW_ID = 1
 
+PARAM_MMU_MODE_2D = 0
+PARAM_MMU_MODE_3D = 1
+PARAM_MMU_MODE_3D_SPEC = 2
+
+WALKING_LEVELS_NUM = 4
+
 class TransactionGenerator:
     def __init__(self, num_transactions, delay_range=(1, 3), locality_parameter=0.5, levels=1):
         self.delay_range = delay_range
@@ -83,7 +89,7 @@ class TransactionGenerator:
         self.result_data = [0, 0]               # result_data[0] for PTW, [1] for MPTW
 
         ## Output fields for issued transactions (for hardware interface)
-        self.spa = 0
+        self.spa = [0, 0]
         self.mmpt = 0
         self.access_type = 0
         self.result_data_out = 0
@@ -91,6 +97,9 @@ class TransactionGenerator:
         ## Internal progress tracking
         self._current_idx = 0
         self._complete_idx = 0
+
+        ## GLOBAL BUFFER
+        self.completion_cnt = 0           
 
 
     def _random_delay(self, min_val, max_val):
@@ -128,7 +137,7 @@ class TransactionGenerator:
         #addresses.sort()
         return addresses
 
-    def cycle(self, clock_cycle, verbose=False):
+    def cycle(self, clock_cycle, verbose, mmu_mode):
         """
         One simulation cycle: checks for global hits, issues transactions, and handles completions.
         """
@@ -139,6 +148,7 @@ class TransactionGenerator:
 
         self.pqueue_valid = False  # Default to invalid unless fired this cycle
         self.valid[PTW_ID] = False
+        self.valid[MPTW_ID] = False
 
         # Search the first available 3D Walking transaction (i.e. not G-checked yet, not walked)
         txn = next(
@@ -148,9 +158,9 @@ class TransactionGenerator:
             )
         
         if txn:
-            self.spa = txn.spa
+            self.spa[PTW_ID] = txn.spa
         else:
-            self.spa = 0
+            self.spa[PTW_ID] = 0
 
         ######################
         # Global Hit Check   #
@@ -196,7 +206,7 @@ class TransactionGenerator:
                 self.hQUEUE.popleft()
                 txn.h_queued = False
                 # Issue transaction
-                self.spa = txn.spa
+                self.spa[PTW_ID] = txn.spa
                 self.mmpt = txn.mmpt
                 self.access_type = txn.access_type
                 self.valid[PTW_ID] = True
@@ -213,7 +223,7 @@ class TransactionGenerator:
                 None
             )
             if txn:
-                current_level = sum(txn.h_complete)
+                current_level = sum(txn.h_complete) if sum(txn.h_complete) < WALKING_LEVELS_NUM else  WALKING_LEVELS_NUM - 1
                 txn.h_complete[current_level] = True
                 self.pQUEUE.append(txn)
                 if verbose:
@@ -224,63 +234,94 @@ class TransactionGenerator:
         # MPTW Queue Output Logic  #
         ############################
 
-        if self.ready[MPTW_ID] and self.pQUEUE:
-            txn = self.pQUEUE.popleft()
-            self.pqueue_data_out = txn
-            self.pqueue_valid = True
-            if verbose:
-                print(f"[TXGEN] Issued from pQUEUE txn ID={txn.id} @cycle {clock_cycle} (SPA=0x{txn.spa:x})")
+        if mmu_mode == PARAM_MMU_MODE_2D:
+            # If we are in 2D mode, no MPT is used
+            txn = None
+            if self.pQUEUE:
+                txn = next(
+                    (t for t in self.transactions
+                    if t == self.pQUEUE[0]),
+                    None
+                )
 
-        self.valid[MPTW_ID] = self.pqueue_valid
+            if txn:
+                # Remove the transaction from the pqueue
+                self.pQUEUE.popleft()
+                current_level = sum(txn.h_complete)
+                if txn.g_complete or current_level == WALKING_LEVELS_NUM:
+                    txn.efficiency = 1 # Let's reuse efficiency as a completion flag
+                    if verbose:
+                        print(f"[TXGEN][GPTW] Complete MMU translation for txn ID={txn.id} @cycle {clock_cycle}")
+                else:
+                    txn.h_queued = True
+                    self.hQUEUE.append(txn)
+                    #print(f"{txn.spa:#018x}")
+                    if verbose:
+                        print(f"[TXGEN][GPTW] Moving txn ID={txn.id} to the next walking stage @cycle {clock_cycle}")
+            
+        else:
+            # Otherwise, let's use MPTW (3D walking or 3D_SPEC walking)
+            if self.ready[MPTW_ID] and self.pQUEUE:
+                # Select the transaction on the top of the pQUEUE
+                txn = next(
+                    (t for t in self.transactions
+                    if t == self.pQUEUE[0]),
+                    None
+                )
+                # Pop the transaction from the pQUEUE
+                self.pQUEUE.popleft()
+                self.valid[MPTW_ID] = True
+                self.spa[MPTW_ID] = txn.spa
 
-                    
-    '''
-    def cycle(self, clock_cycle, verbose=False):
+                # If 3D Spec mode is on, we can just requeue to hQUEUE during P-Stage
+                if mmu_mode == PARAM_MMU_MODE_3D_SPEC:
+                    current_level = sum(txn.h_complete)
+                    if current_level != WALKING_LEVELS_NUM:
+                        txn.h_queued = True
+                        self.hQUEUE.append(txn)
 
-        ######################
-        # Guest Access Check #
-        ######################
+            # --- Handle P-Stage Completion ---
+            if self.result_valid[MPTW_ID]:
+                txn = next(
+                    (t for t in self.transactions
+                    if t.result_data == self.result_data[MPTW_ID] and t.complete_clock == 0),
+                    None
+                )
 
-        #####################
-        # Host Access Check #
-        #####################
+                if txn:
+                    current_level = sum(txn.p_complete)
+                    txn.p_complete[current_level] = True
+                    current_level = current_level + 1
+                    if txn.g_complete or current_level == WALKING_LEVELS_NUM:
+                        # We are checking the PA permissions
+                        # Therefore, the transaction is completed
+                        txn.efficiency = 1 # Let's reuse efficiency as a completion flag
+                        if verbose:
+                            print(f"[TXGEN][MPTW] Complete MMU translation for txn ID={txn.id} @cycle {clock_cycle}")
+                    else:
+                        if mmu_mode != PARAM_MMU_MODE_3D_SPEC:
+                            txn.h_queued = True
+                            self.hQUEUE.append(txn)
+                        if verbose:
+                            print(f"[TXGEN][MPTW] Complete P-Stage Walking LEVEL={current_level} for txn ID={txn.id} @cycle {clock_cycle}")
+                            print(f"[TXGEN][MPTW] Moving txn ID={txn.id} to the next walking stage @cycle {clock_cycle}")
 
-        #####################
-        # Permission Checks #
-        #####################
+        ##############################
+        # In-Order completion check  #
+        ##############################
 
-        self.valid = False
-
-        # --- Issue logic ---
-        if self._current_idx < len(self.transactions):
-            txn = self.transactions[self._current_idx]
-
-            # Either scheduled now or previously, and ready just became high
-            if txn.schedule_clock <= clock_cycle and self.ready:
-                # Issue transaction
-                self.spa = txn.spa
-                self.mmpt = txn.mmpt
-                self.access_type = txn.access_type
-                self.valid = True
-
-                txn.issued_clock = clock_cycle
-                if verbose:
-                    print(f"[TXGEN] Issued txn ID={txn.id} @cycle {clock_cycle} (sched={txn.schedule_clock})")
-
-                self._current_idx += 1
-
-        # --- Handle result completion ---
-        if self.valid_result:
-            txn = next(
+        txn = next(
                 (t for t in self.transactions
-                if t.result_data == self.result_data and t.complete_clock == 0),
+                if t.id == self.completion_cnt and t.efficiency == 1.0 ),
                 None
             )
-            if txn:
-                txn.complete_clock = clock_cycle
-                if verbose:
-                    print(f"[TXGEN] Complete txn ID={txn.id} @cycle {clock_cycle}")
-    '''
+        
+        if txn:
+            # Complete
+            self.completion_cnt = self.completion_cnt + 1
+            txn.complete_clock = clock_cycle
+            if verbose:
+                print(f"[TXGEN] Complete Txn ID={txn.id} @cycle {clock_cycle}")
 
     def is_done(self):
         """Returns True when all transactions are issued and completed."""
@@ -391,6 +432,35 @@ class TransactionGenerator:
         print("-" * len(header))
 
         for txn in list(self.pQUEUE):  # Copy to avoid mutation while printing
+            print(
+                f"{txn.id:>4} | "
+                f"0x{txn.idi:010x} | "
+                f"0x{txn.spa:010x} | "
+                f"{txn.schedule_clock:5} | "
+                f"{txn.issued_clock:6} | "
+                f"{txn.complete_clock:8} | "
+                f"{txn.delay:5} | "
+                f"{str(txn.g_complete):>7}"
+            )
+
+    def dump_hqueue(self):
+        """
+        Print the contents of the current hQUEUE in a structured format.
+        """
+        print("\n=== hQUEUE Contents ===")
+
+        if not self.hQUEUE:
+            print("  (empty)")
+            return
+
+        header = (
+            f"{'ID':>4} | {'IDI':>12} | {'SPA':>12} | {'Sched':>5} | "
+            f"{'Issued':>6} | {'Complete':>8} | {'Delay':>5} | {'g_comp':>7}"
+        )
+        print(header)
+        print("-" * len(header))
+
+        for txn in list(self.hQUEUE):  # Copy to avoid mutation while printing
             print(
                 f"{txn.id:>4} | "
                 f"0x{txn.idi:010x} | "

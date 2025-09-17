@@ -177,6 +177,13 @@ class Memory:
                 self.valid = True
                 self.data = entry["value"]
                 entry["completed"] = True
+                # Reset the entry (just for multi walking)
+                entry["requested"] = False
+                entry["grant_cycle"] = 0
+                entry["granted"] = False
+                entry["valid_cycle"] = 0
+                entry["completed"] = False
+
 
             if verbose:
                 print(f"{str(entry)}")

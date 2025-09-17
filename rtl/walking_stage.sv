@@ -197,7 +197,19 @@ module walking_stage #(
 
     assign walking_output_transaction = from_walking_data;
     // By default, the output transaction is just the output of the walking
-    assign output_transaction           = walking_output_transaction;
+    assign output_transaction.id              = walking_output_transaction.id;             
+    assign output_transaction.speculative     = walking_output_transaction.speculative;   
+    assign output_transaction.completed       = walking_output_transaction.completed;   
+    assign output_transaction.valid           = walking_output_transaction.valid;   
+    assign output_transaction.access_error    = walking_output_transaction.access_error;   
+    assign output_transaction.format_error    = walking_output_transaction.format_error;   
+    assign output_transaction.plb_hit         = walking_output_transaction.plb_hit;   
+    assign output_transaction.mpte_ptr        = walking_output_transaction.mpte_ptr;   
+    assign output_transaction.access_type     = walking_output_transaction.access_type;   
+    assign output_transaction.spa             = walking_output_transaction.spa;   
+    assign output_transaction.mmpt            = walking_output_transaction.mmpt; 
+    assign output_transaction.mpte            = walking_output_transaction.mpte;
+
     assign output_transaction.walking   = ( walking_output_transaction.walking == MPT_WALKING_FWD ) ? MPT_WALKING_DO : walking_output_transaction.walking ;
 
     // If the output transaction matched in the fwd buffer, it skipped the walking.

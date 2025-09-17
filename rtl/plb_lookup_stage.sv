@@ -146,7 +146,15 @@ module plb_lookup_stage #(
     // HIT or MISS into the data field for a transaction
 
     // Unchanged signals
-    assign output_transaction               = intermedate_transaction;     
+    assign output_transaction.id              = intermedate_transaction.id;             
+    assign output_transaction.speculative     = intermedate_transaction.speculative;
+    assign output_transaction.valid           = intermedate_transaction.valid;   
+    assign output_transaction.access_error    = intermedate_transaction.access_error;   
+    assign output_transaction.format_error    = intermedate_transaction.format_error;  
+    assign output_transaction.walking         = intermedate_transaction.walking;   
+    assign output_transaction.access_type     = intermedate_transaction.access_type;   
+    assign output_transaction.spa             = intermedate_transaction.spa;   
+    assign output_transaction.mmpt            = intermedate_transaction.mmpt;   
 
     // A transaction is completed if we had a hit
     assign output_transaction.completed     = plb_hit;

@@ -36,10 +36,12 @@ VERILATOR_INCLUDE_VLTSTD = /usr/share/verilator/include/vltstd/
 VINCLUDE = -I${RTL_DIR} -I${HEADERS_DIR}
 
 # Disable warnings
-VERILATOR_WARNINGSBYPASS = -Wno-UNUSED -Wno-SYNCASYNCNET -Wno-PINMISSING
+VERILATOR_WARNINGSBYPASS = 	-Wno-UNUSED -Wno-SYNCASYNCNET -Wno-PINMISSING \
+							-Wno-GENUNNAMED -Wno-EOFNEWLINE -Wno-ENUMVALUE -Wno-MULTIDRIVEN -Wno-LATCH
 
 # Verilator CPP sources
-VERILATOR_CPP_SRC = $(wildcard $(EMU_PROJECT_ROOT)/obj_dir/*.cpp) ${VERILATOR_INCLUDE}/verilated.cpp ${VERILATOR_INCLUDE}/verilated_vcd_c.cpp
+VERILATOR_CPP_SRC = $(wildcard $(EMU_PROJECT_ROOT)/obj_dir/*.cpp) ${VERILATOR_INCLUDE}/verilated.cpp ${VERILATOR_INCLUDE}/verilated_vcd_c.cpp \
+					${VERILATOR_INCLUDE}/verilated_threads.cpp ${VERILATOR_INCLUDE}/verilated_profiler.cpp
 
 VERILATOR_BUILD_INCLUDE = -I${VERILATOR_INCLUDE} -I${VERILATOR_INCLUDE_VLTSTD} -I${EMU_PROJECT_ROOT}/obj_dir -I${EMU_SRC_DIR} \
 
@@ -47,7 +49,7 @@ VERILATOR_BUILD_INCLUDE = -I${VERILATOR_INCLUDE} -I${VERILATOR_INCLUDE_VLTSTD} -
 # Python #
 ##########
 
-PYTHON_INC := $(shell python3 -m pybind11 --includes)
+PYTHON_INC := $(shell python3 -m pybind11 --includes)		# Let's include pybind11 headers
 PYTHON_EXT := $(shell python3-config --extension-suffix)
 CXX := g++
 CXXFLAGS := -O3 -Wall -shared -std=c++17 -fPIC $(PYTHON_INC) ${VERILATOR_BUILD_INCLUDE}

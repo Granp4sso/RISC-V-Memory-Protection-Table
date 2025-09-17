@@ -146,7 +146,17 @@ module fetch_stage #(
         assign format_error = NO_ERROR; // FOR DEBUG PURPOSE TIE THIS TO NO ERROR
     end
 
-    assign output_transaction               = input_transaction;
+    // Unchanged Signals
+    assign output_transaction.id              = input_transaction.id;             
+    assign output_transaction.speculative     = input_transaction.speculative;   
+    assign output_transaction.completed       = input_transaction.completed;   
+    assign output_transaction.valid           = input_transaction.valid;   
+    assign output_transaction.plb_hit         = input_transaction.plb_hit;   
+    assign output_transaction.mpte_ptr        = input_transaction.mpte_ptr;   
+    assign output_transaction.access_type     = input_transaction.access_type;   
+    assign output_transaction.spa             = input_transaction.spa;   
+    assign output_transaction.mmpt            = input_transaction.mmpt;   
+    assign output_transaction.mpte            = input_transaction.mpte; 
 
     // Update the other fields
     assign output_transaction.walking       = ( format_error != NO_ERROR ) ? MPT_WALKING_SKIP : MPT_WALKING_DO ;

@@ -3,10 +3,13 @@
 import sim_bindings
 import argparse
 from memory import Memory
-from transaction_gen import TransactionGenerator
+from transaction_gen import *
+
 
 NUM_STAGES = 4
-CLK_CYCLES = 1024
+CLK_CYCLES = 4096
+
+PARAM_MMU_MODE = PARAM_MMU_MODE_2D
 
 def run_sim(num_transactions,
             throughput_delay_l,
@@ -60,7 +63,7 @@ def run_sim(num_transactions,
             grant_delay=(0, 0),
             valid_delay=(1, 1)
         )
-    gtlb_cache.setup_cache(0.5)
+    gtlb_cache.setup_cache(0.8)
 
     
     # Host TLB(s) (multiple for simulation reasons)
@@ -75,7 +78,7 @@ def run_sim(num_transactions,
         for _ in range(NUM_STAGES)
     ]
     for i in range(NUM_STAGES):
-        htlb_cache[i].setup_cache(0.0)
+        htlb_cache[i].setup_cache(0.9)
 
     # PLB
     print("[Cache Generation] Create MPT Walker PLB")
@@ -85,7 +88,7 @@ def run_sim(num_transactions,
             grant_delay=(0, 0),
             valid_delay=(1, 1)
         )
-    plb_cache.setup_cache(1.0)
+    plb_cache.setup_cache(0.9)
     
     #######################
     # Memories Generation #
@@ -125,52 +128,83 @@ def run_sim(num_transactions,
 
     print("Starting simulation loop...")
     for clk in range(clk_cycles):
-        transaction_gen.ready[0] = gptw_uut.get_mptw_ready_o()
+        transaction_gen.ready[PTW_ID] = gptw_uut.get_mptw_ready_o()
+        transaction_gen.ready[MPTW_ID] = mptw_uut.get_mptw_ready_o()
 
+        ##############
+        # Global TLB #
+        ##############
+         
         # Check gTLB
         transaction_gen.g_hit_valid = 0
-        gtlb_cache.addr = transaction_gen.spa
+        gtlb_cache.addr = transaction_gen.spa[PTW_ID]
         gtlb_cache_index = gtlb_cache.convert_addr_to_id()
         if gtlb_cache_index != -1:
             if gtlb_cache.read(gtlb_cache_index) == 1:
                 transaction_gen.g_hit_valid = 1
                 transaction_gen.g_hit_data = gtlb_cache.addr
 
+        ##############
+        # PT Walking #
+        ##############
+
         # G-Stage Walking (One Column)
-        for i in range(NUM_STAGES):
+        for i in range(NUM_STAGES + 1):
             if i == 0:
                 assign_cache_signals(htlb_cache[0], gptw_uut)
                 htlb_cache[0].cycle(clk, verbose=False)
             else:
                 assign_mem_signals(hmem[i], gptw_uut, i-1)
-                hmem[i].cycle(clk, verbose=False)
+                hmem[i-1].cycle(clk, verbose=False)
 
-        transaction_gen.result_valid[0] = gptw_uut.get_mptw_result_valid_o()
-        transaction_gen.result_data[0] = gptw_uut.get_plb_entry_o()
-        if transaction_gen.result_valid[0]:
-            print(f"VALID @{clk} for {transaction_gen.result_data[0]}")
-
-        # MPTW Walking
-        transaction_gen.ready[1] = 0
+        transaction_gen.result_valid[PTW_ID] = gptw_uut.get_mptw_result_valid_o()
+        transaction_gen.result_data[PTW_ID] = gptw_uut.get_plb_entry_o()
+        if transaction_gen.result_valid[PTW_ID]:
+            print(f"VALID @{clk} for {transaction_gen.result_data[PTW_ID]}")
         
         # Connect Wires to GPTW
-        gptw_uut.set_mptw_transaction_valid_i(transaction_gen.valid[0])
+        gptw_uut.set_mptw_transaction_valid_i(transaction_gen.valid[PTW_ID])
         gptw_uut.set_mmpt_reg_i(transaction_gen.mmpt)
-        gptw_uut.set_spa_i(transaction_gen.spa)
+        gptw_uut.set_spa_i(transaction_gen.spa[PTW_ID])
         gptw_uut.set_access_type_i(transaction_gen.access_type)
 
-        # Connect Wires to MPTW
+        ###############
+        # MPT Walking #
+        ###############
 
-        # EVAL SIMULATIOn
-                
-        # Transaction Generator
-        transaction_gen.cycle(clk, verbose=True)
+        # MPT Walking
+        for i in range(NUM_STAGES + 1):
+            if i == 0:
+                assign_cache_signals(plb_cache, mptw_uut)
+                plb_cache.cycle(clk, verbose=False)
+            else:
+                assign_mem_signals(pmem[i-1], mptw_uut, i-1)
+                pmem[i-1].cycle(clk, verbose=False)
+
+        transaction_gen.result_valid[MPTW_ID] = mptw_uut.get_mptw_result_valid_o()
+        transaction_gen.result_data[MPTW_ID] = mptw_uut.get_plb_entry_o()
+        if transaction_gen.result_valid[MPTW_ID]:
+            print(f"VALID @{clk} for {transaction_gen.result_data[MPTW_ID]}")
+
+        # Connect Wires to MPTW
+        mptw_uut.set_mptw_transaction_valid_i(transaction_gen.valid[MPTW_ID])
+        mptw_uut.set_mmpt_reg_i(transaction_gen.mmpt)
+        mptw_uut.set_spa_i(transaction_gen.spa[MPTW_ID])
+        mptw_uut.set_access_type_i(transaction_gen.access_type)
+
+        #########################
+        # Update the simulation #
+        #########################
+
+        transaction_gen.cycle(clk, True, PARAM_MMU_MODE)
         gptw_uut.eval()
+        mptw_uut.eval()
 
     #transaction_gen.print_results()
     #overhead = transaction_gen.return_overhead(plb_hit_rate)
     transaction_gen.dump_transactions()
     transaction_gen.dump_pqueue()
+    transaction_gen.dump_hqueue()
     print("Destroying simulation...")
     gptw_uut.destroy()
     mptw_uut.destroy()
@@ -192,6 +226,7 @@ def assign_mem_signals(mem, ptw, port_num):
     ptw.set_walking_mem_master_mem_gnt(port_num, int(mem.gnt))
     ptw.set_walking_mem_master_mem_valid(port_num, int(mem.valid))
     ptw.set_walking_mem_master_mem_rdata(port_num, mem.data)
+
 
 if __name__ == "__main__":
     '''
@@ -233,14 +268,14 @@ if __name__ == "__main__":
         f.write(f"{overhead}\n")'''
     
     overhead = run_sim(
-        num_transactions        =16,
+        num_transactions        =32,
         throughput_delay_l      =1,
         throughput_delay_u      =4,
         locality_parameter      =0.6,
-        mem_gnt_delay_l         =4,#24,
-        mem_gnt_delay_u         =8,#48,
-        mem_valid_delay_l       =8,#48,
-        mem_valid_delay_u       =12,#96,
+        mem_gnt_delay_l         =24,#4,
+        mem_gnt_delay_u         =48,#8,
+        mem_valid_delay_l       =48,#8,
+        mem_valid_delay_u       =96,#12,
         plb_hit_rate            =0.9,
         page_size_distribution  =[0.0, 0.0, 0.0, 1.0],
         process_id              =0  # pass it along
