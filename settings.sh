@@ -72,3 +72,5 @@ export SIM_SRC_DIR=${SIM_DIR}/src
 export SIM_WAVES_DIR=${SIM_DIR}/waves
 
 echo -e "${SUCCESS}Environment set for ${ARCH}${VANILLA}"
+
+# TODO: Add checks for pybind11
