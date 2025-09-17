@@ -55,7 +55,7 @@ for dep in "${DEPENDENCIES[@]}"; do
     dep_path="$(command -v "$dep")"
     if [ -z "$dep_path" ]; then
         echo -e "${FAILURE}[dependencies_check] Can't find $dep_bin${VANILLA}, aborting ..." >&2
-        exit 1
+        return 1  # Use 'return' instead of 'exit' when sourcing the script
     else
         echo -e "${SUCCESS}[dependencies_check] Found $dep_bin at $dep_path${VANILLA}"
     fi
