@@ -7,9 +7,8 @@ from transaction_gen import *
 
 
 NUM_STAGES = 4
-CLK_CYCLES = 4096
-
-PARAM_MMU_MODE = PARAM_MMU_MODE_2D
+CLK_CYCLES = (4096*8)
+TLB_HIT_RATE = 0.95
 
 def run_sim(num_transactions,
             throughput_delay_l,
@@ -21,6 +20,7 @@ def run_sim(num_transactions,
             mem_valid_delay_u,
             plb_hit_rate,
             page_size_distribution,
+            param_mmu_mode,
             process_id):
 
     clk_cycles = CLK_CYCLES
@@ -63,7 +63,7 @@ def run_sim(num_transactions,
             grant_delay=(0, 0),
             valid_delay=(1, 1)
         )
-    gtlb_cache.setup_cache(0.8)
+    gtlb_cache.setup_cache(TLB_HIT_RATE*0.9)
 
     
     # Host TLB(s) (multiple for simulation reasons)
@@ -78,7 +78,7 @@ def run_sim(num_transactions,
         for _ in range(NUM_STAGES)
     ]
     for i in range(NUM_STAGES):
-        htlb_cache[i].setup_cache(0.9)
+        htlb_cache[i].setup_cache(TLB_HIT_RATE)
 
     # PLB
     print("[Cache Generation] Create MPT Walker PLB")
@@ -88,7 +88,7 @@ def run_sim(num_transactions,
             grant_delay=(0, 0),
             valid_delay=(1, 1)
         )
-    plb_cache.setup_cache(0.9)
+    plb_cache.setup_cache(plb_hit_rate)
     
     #######################
     # Memories Generation #
@@ -154,7 +154,7 @@ def run_sim(num_transactions,
                 assign_cache_signals(htlb_cache[0], gptw_uut)
                 htlb_cache[0].cycle(clk, verbose=False)
             else:
-                assign_mem_signals(hmem[i], gptw_uut, i-1)
+                assign_mem_signals(hmem[i-1], gptw_uut, i-1)
                 hmem[i-1].cycle(clk, verbose=False)
 
         transaction_gen.result_valid[PTW_ID] = gptw_uut.get_mptw_result_valid_o()
@@ -196,9 +196,9 @@ def run_sim(num_transactions,
         # Update the simulation #
         #########################
 
-        transaction_gen.cycle(clk, True, PARAM_MMU_MODE)
         gptw_uut.eval()
         mptw_uut.eval()
+        transaction_gen.cycle(clk, True, param_mmu_mode)
 
     #transaction_gen.print_results()
     #overhead = transaction_gen.return_overhead(plb_hit_rate)
@@ -209,6 +209,8 @@ def run_sim(num_transactions,
     gptw_uut.destroy()
     mptw_uut.destroy()
     
+    overhead = transaction_gen.return_overhead(plb_hit_rate)
+
     return overhead
 
 def assign_cache_signals(mem, ptw):
@@ -229,7 +231,18 @@ def assign_mem_signals(mem, ptw, port_num):
 
 
 if __name__ == "__main__":
-    '''
+    
+    #########################
+    # Simulation known bugs #
+    #########################
+    
+    # 1 - When the MPT stalls (i.e. mptw not ready) the simulation fails to detect timely such stalls.
+    #     As a consequence, some transactions are sent as valid when the MPT is not ready, loosing some transactions.
+    #     A simulated replay mechanism should be added to solve this issue. Alternatively, we can increase either the
+    #     ROB size or the internal memory buffers to reduce the likelyhood of stalls
+    # 2 - The memory is occasionally not generating the last valid for the last transaction (idk why yet), resulting
+    #     in a non completed simulation. 
+    
     parser = argparse.ArgumentParser(description="Run MPTW simulation.")
 
     parser.add_argument("--num_transactions", type=int, required=True)
@@ -241,6 +254,7 @@ if __name__ == "__main__":
     parser.add_argument("--mem_valid_delay_l", type=int, required=True)
     parser.add_argument("--mem_valid_delay_u", type=int, required=True)
     parser.add_argument("--plb_hit_rate", type=float, required=True)
+    parser.add_argument("--param_mmu_mode", type=int, required=True)
     parser.add_argument("--page_size_distribution", type=float, nargs=4, required=True)
     parser.add_argument("--process_id", type=int, default=None, help="ID of the process")
     args = parser.parse_args()
@@ -255,20 +269,20 @@ if __name__ == "__main__":
         mem_valid_delay_l=args.mem_valid_delay_l,
         mem_valid_delay_u=args.mem_valid_delay_u,
         plb_hit_rate=args.plb_hit_rate,
+        param_mmu_mode=args.param_mmu_mode,
         page_size_distribution=args.page_size_distribution,
         process_id=args.process_id  # pass it along
     )
-
-    
 
     # Write to a file named with the process_id if provided, else default to overhead.out
     output_file = f"overhead_{args.process_id}.out" if args.process_id is not None else "overhead.out"
 
     with open(output_file, "w") as f:
-        f.write(f"{overhead}\n")'''
-    
+        f.write(f"{overhead}\n")
+        
+    '''
     overhead = run_sim(
-        num_transactions        =32,
+        num_transactions        =128,
         throughput_delay_l      =1,
         throughput_delay_u      =4,
         locality_parameter      =0.6,
@@ -277,8 +291,10 @@ if __name__ == "__main__":
         mem_valid_delay_l       =48,#8,
         mem_valid_delay_u       =96,#12,
         plb_hit_rate            =0.9,
-        page_size_distribution  =[0.0, 0.0, 0.0, 1.0],
+        page_size_distribution  =[1, 0.0, 0.0, 0.0],
+        param_mmu_mode          =PARAM_MMU_MODE_2D,
         process_id              =0  # pass it along
     )
+    '''
 
 

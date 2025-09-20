@@ -18,7 +18,8 @@ class Memory:
                 "grant_cycle": 0,
                 "granted": False,
                 "valid_cycle": 0,
-                "completed": False
+                "completed": False,
+                "count": 0
             }
             for _ in range(size)
         ]
@@ -179,10 +180,11 @@ class Memory:
                 entry["completed"] = True
                 # Reset the entry (just for multi walking)
                 entry["requested"] = False
-                entry["grant_cycle"] = 0
+                #entry["grant_cycle"] = 0
                 entry["granted"] = False
-                entry["valid_cycle"] = 0
+                #entry["valid_cycle"] = 0
                 entry["completed"] = False
+                entry["count"] = entry["count"] + 1
 
 
             if verbose:
@@ -216,5 +218,6 @@ class Memory:
                 f"0x{addr:04x}: 0x{entry['value']:016x} | "
                 f"requested={entry['requested']} granted={entry['granted']} "
                 f"completed={entry['completed']} grant_cycle={entry['grant_cycle']} "
-                f"valid_cycle={entry['valid_cycle']}"
+                f"valid_cycle={entry['valid_cycle']} "
+                f"count={entry["count"]}"
             )

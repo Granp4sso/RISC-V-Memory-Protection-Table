@@ -316,7 +316,7 @@ module retire_stage #(
 
     // ROB memories are implemented as an addressable register file.
     // The allowed operations are Write, Read and Clear.
-    // The number of ROB Memories supported equals the ROB_PORT_NUM.
+    // The number of ROB Memories supported equals the RETIRE_PORT_NUM.
     // ROB Memories are built using ROB Entries, which are as many
     // As the ROB_DEPTH, and store an entire transaction
 

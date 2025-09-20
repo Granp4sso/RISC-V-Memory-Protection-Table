@@ -249,7 +249,7 @@ class TransactionGenerator:
                 self.pQUEUE.popleft()
                 current_level = sum(txn.h_complete)
                 if txn.g_complete or current_level == WALKING_LEVELS_NUM:
-                    txn.efficiency = 1 # Let's reuse efficiency as a completion flag
+                    txn.efficiency = 1 # Let's reuse efficiency as a completion flag (cause I am lazy)
                     if verbose:
                         print(f"[TXGEN][GPTW] Complete MMU translation for txn ID={txn.id} @cycle {clock_cycle}")
                 else:
